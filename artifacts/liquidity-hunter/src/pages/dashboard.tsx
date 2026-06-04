@@ -1,18 +1,24 @@
 import { useState, useMemo } from "react";
-import { RefreshCw, TrendingUp, TrendingDown, Minus, AlertCircle, ChevronUp, ChevronDown, Activity, Target, Layers, BarChart2, Zap } from "lucide-react";
+import { RefreshCw, Zap, TrendingUp, TrendingDown, Minus, ChevronUp, ChevronDown, AlertCircle, Activity } from "lucide-react";
 import {
   useListSymbols,
   useAnalyzeCrypto,
   useAnalyzeForex,
   getAnalyzeCryptoQueryKey,
   getAnalyzeForexQueryKey,
+  type SmcReport,
 } from "@workspace/api-client-react";
-import { Badge } from "@/components/ui/badge";
+import { ConfluenceCard } from "@/components/ConfluenceCard";
+import { IntelligenceSheet } from "@/components/IntelligenceSheet";
 
 type Market = "crypto" | "forex";
-type Timeframe = "1h" | "4h" | "1d";
 
-const TIMEFRAMES: Timeframe[] = ["1h", "4h", "1d"];
+const TRADING_STYLES: Array<{ label: string; timeframes: string[] }> = [
+  { label: "Scalp", timeframes: ["1h"] },
+  { label: "Intraday", timeframes: ["1h", "4h"] },
+  { label: "Swing", timeframes: ["4h", "1d"] },
+  { label: "All", timeframes: ["1h", "4h", "1d"] },
+];
 
 function fmtPrice(p: number, market: Market): string {
   if (market === "forex") return p.toFixed(5);
@@ -21,108 +27,156 @@ function fmtPrice(p: number, market: Market): string {
   return p.toFixed(6);
 }
 
-function fmtTime(ts: number): string {
-  return new Date(ts * 1000).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+function getConfidence(report: SmcReport): number {
+  return Math.round(((report.structure.confidence + report.dailyBias.strength) / 2) * 100);
+}
+
+function getBias(report: SmcReport): "bullish" | "bearish" | "neutral" {
+  return report.structure.bias !== "neutral" ? report.structure.bias as "bullish" | "bearish" : report.dailyBias.bias as "bullish" | "bearish" | "neutral";
 }
 
 function BiasIcon({ bias }: { bias: string }) {
-  if (bias === "bullish") return <TrendingUp className="w-3.5 h-3.5 text-[hsl(var(--bullish))]" />;
-  if (bias === "bearish") return <TrendingDown className="w-3.5 h-3.5 text-destructive" />;
-  return <Minus className="w-3.5 h-3.5 text-muted-foreground" />;
+  if (bias === "bullish") return <TrendingUp className="w-4 h-4 text-[hsl(var(--bullish))]" />;
+  if (bias === "bearish") return <TrendingDown className="w-4 h-4 text-destructive" />;
+  return <Minus className="w-4 h-4 text-muted-foreground" />;
 }
 
-function BiasLabel({ bias, className = "" }: { bias: string; className?: string }) {
-  const color =
-    bias === "bullish" ? "text-[hsl(var(--bullish))]" :
-    bias === "bearish" ? "text-destructive" :
-    "text-muted-foreground";
-  return <span className={`font-semibold uppercase text-xs tracking-wider ${color} ${className}`}>{bias}</span>;
-}
-
-function ConfidenceBar({ value, label }: { value: number; label?: string }) {
-  const pct = Math.round(value * 100);
-  const color = pct > 65 ? "bg-[hsl(var(--bullish))]" : pct > 40 ? "bg-primary" : "bg-destructive";
-  return (
-    <div className="flex items-center gap-2 w-full">
-      {label && <span className="text-xs text-muted-foreground w-20 shrink-0">{label}</span>}
-      <div className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden">
-        <div className={`h-full rounded-full ${color} transition-all duration-500`} style={{ width: `${pct}%` }} />
+// A single timeframe analysis card
+function TfAgentCard({
+  tf,
+  report,
+  market,
+  isLoading,
+  error,
+  onOpen,
+}: {
+  tf: string;
+  report: SmcReport | undefined;
+  market: Market;
+  isLoading: boolean;
+  error: unknown;
+  onOpen: () => void;
+}) {
+  if (isLoading) {
+    return (
+      <div className="rounded-sm border border-border bg-card p-4 animate-pulse space-y-3">
+        <div className="flex items-center justify-between">
+          <div className="h-4 w-10 bg-muted rounded-sm" />
+          <div className="h-4 w-16 bg-muted rounded-sm" />
+        </div>
+        <div className="h-8 w-3/4 bg-muted rounded-sm" />
+        <div className="h-3 w-1/2 bg-muted rounded-sm" />
+        <div className="h-3 w-2/3 bg-muted rounded-sm" />
       </div>
-      <span className="text-xs text-muted-foreground w-8 text-right">{pct}%</span>
-    </div>
-  );
-}
-
-function ScoreBar({ value, max = 5 }: { value: number; max?: number }) {
-  const pct = Math.min(100, (value / max) * 100);
-  return (
-    <div className="flex items-center gap-1.5">
-      <div className="w-16 h-1 bg-muted rounded-full overflow-hidden">
-        <div className="h-full bg-primary rounded-full" style={{ width: `${pct}%` }} />
-      </div>
-      <span className="text-xs text-muted-foreground">{value.toFixed(2)}</span>
-    </div>
-  );
-}
-
-function Panel({ title, icon: Icon, children, className = "" }: { title: string; icon: React.ElementType; children: React.ReactNode; className?: string }) {
-  return (
-    <div className={`bg-card border border-border rounded-sm ${className}`}>
-      <div className="flex items-center gap-2 px-3 py-2 border-b border-border bg-muted/30">
-        <Icon className="w-3.5 h-3.5 text-primary" />
-        <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">{title}</span>
-      </div>
-      <div className="p-3">{children}</div>
-    </div>
-  );
-}
-
-function EmptyState({ message }: { message: string }) {
-  return <p className="text-xs text-muted-foreground italic">{message}</p>;
-}
-
-export default function Dashboard() {
-  const [market, setMarket] = useState<Market>("crypto");
-  const [symbol, setSymbol] = useState("BTCUSDT");
-  const [timeframe, setTimeframe] = useState<Timeframe>("4h");
-  const [correlatedSymbol, setCorrelatedSymbol] = useState("ETHUSDT");
-  const [smtEnabled, setSmtEnabled] = useState(true);
-
-  const { data: symbols } = useListSymbols();
-
-  const symbolOptions = useMemo(
-    () => (market === "crypto" ? symbols?.crypto ?? [] : symbols?.forex ?? []),
-    [market, symbols],
-  );
-
-  function handleMarketSwitch(m: Market) {
-    setMarket(m);
-    if (m === "crypto") {
-      setSymbol("BTCUSDT");
-      setCorrelatedSymbol("ETHUSDT");
-    } else {
-      setSymbol("EURUSD=X");
-      setCorrelatedSymbol("GBPUSD=X");
-    }
+    );
   }
 
-  const cryptoParams = {
-    symbol,
-    timeframe,
-    correlatedSymbol: smtEnabled ? correlatedSymbol : undefined,
-  };
-  const forexParams = {
-    symbol,
-    timeframe,
-    correlatedSymbol: smtEnabled ? correlatedSymbol : undefined,
-  };
+  if (error || !report) {
+    return (
+      <div className="rounded-sm border border-destructive/30 bg-destructive/5 p-4 flex items-center gap-2">
+        <AlertCircle className="w-4 h-4 text-destructive shrink-0" />
+        <div>
+          <p className="text-xs font-semibold">{tf}</p>
+          <p className="text-[10px] text-muted-foreground">Data unavailable</p>
+        </div>
+      </div>
+    );
+  }
 
-  const {
-    data: cryptoReport,
-    isLoading: cryptoLoading,
-    error: cryptoError,
-    refetch: refetchCrypto,
-  } = useAnalyzeCrypto(cryptoParams, {
+  const bias = getBias(report);
+  const conf = getConfidence(report);
+  const topDraw = report.draw[0];
+  const altDraw = report.draw[1];
+
+  const borderColor =
+    bias === "bullish" ? "border-[hsl(var(--bullish))]/30" :
+    bias === "bearish" ? "border-destructive/30" :
+    "border-border";
+  const bgGrad =
+    bias === "bullish" ? "from-[hsl(var(--bullish))]/5 to-transparent" :
+    bias === "bearish" ? "from-destructive/5 to-transparent" :
+    "from-muted/20 to-transparent";
+  const drawColor =
+    bias === "bullish" ? "text-[hsl(var(--bullish))]" :
+    bias === "bearish" ? "text-destructive" :
+    "text-primary";
+
+  return (
+    <button
+      onClick={onOpen}
+      className={`rounded-sm border ${borderColor} bg-gradient-to-b ${bgGrad} p-4 text-left hover:opacity-90 active:scale-[0.99] transition-all w-full space-y-3 group`}
+    >
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-1.5">
+          <span className="text-xs font-bold text-muted-foreground uppercase tracking-widest">{tf}</span>
+          <Activity className="w-3 h-3 text-primary" />
+        </div>
+        <span className={`text-[10px] px-1.5 py-0.5 rounded-sm font-semibold uppercase ${
+          bias === "bullish" ? "bg-[hsl(var(--bullish))]/15 text-[hsl(var(--bullish))]" :
+          bias === "bearish" ? "bg-destructive/15 text-destructive" :
+          "bg-muted text-muted-foreground"
+        }`}>{bias}</span>
+      </div>
+
+      {/* Next draw target */}
+      <div>
+        <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1">Next Draw on Liquidity</p>
+        {topDraw ? (
+          <div className="flex items-center gap-1.5">
+            {topDraw.direction === "long"
+              ? <ChevronUp className={`w-5 h-5 ${drawColor} shrink-0`} />
+              : <ChevronDown className={`w-5 h-5 ${drawColor} shrink-0`} />}
+            <span className={`text-xl font-bold font-mono ${drawColor}`}>
+              {fmtPrice(topDraw.price, market)}
+            </span>
+          </div>
+        ) : (
+          <p className="text-sm text-muted-foreground italic">No clear target</p>
+        )}
+      </div>
+
+      {/* Confidence */}
+      <div className="space-y-1">
+        <div className="flex items-center justify-between text-[10px] text-muted-foreground">
+          <span>Conf {conf}%</span>
+          {report.smt.detected && (
+            <span className="text-primary font-semibold">SMT ⚡</span>
+          )}
+        </div>
+        <div className="w-full h-1 bg-muted rounded-full overflow-hidden">
+          <div
+            className={`h-full rounded-full ${conf > 65 ? "bg-[hsl(var(--bullish))]" : conf > 40 ? "bg-primary" : "bg-destructive"}`}
+            style={{ width: `${conf}%` }}
+          />
+        </div>
+      </div>
+
+      {/* Alt target */}
+      {altDraw && (
+        <div className="border-t border-border/40 pt-2 flex items-center gap-1.5 text-[10px]">
+          <span className="text-muted-foreground">Alt Target</span>
+          <span className="font-mono text-muted-foreground">{fmtPrice(altDraw.price, market)}</span>
+        </div>
+      )}
+
+      <div className="text-[10px] text-primary/60 group-hover:text-primary/90 transition-colors text-right">
+        Tap for Intelligence Sheet →
+      </div>
+    </button>
+  );
+}
+
+// A single TF fetch wrapper
+function useTfReport(
+  market: Market,
+  symbol: string,
+  tf: string,
+  correlatedSymbol: string | undefined,
+) {
+  const cryptoParams = { symbol, timeframe: tf, correlatedSymbol };
+  const forexParams = { symbol, timeframe: tf, correlatedSymbol };
+
+  const crypto = useAnalyzeCrypto(cryptoParams, {
     query: {
       enabled: market === "crypto" && !!symbol,
       queryKey: getAnalyzeCryptoQueryKey(cryptoParams),
@@ -130,12 +184,7 @@ export default function Dashboard() {
     },
   });
 
-  const {
-    data: forexReport,
-    isLoading: forexLoading,
-    error: forexError,
-    refetch: refetchForex,
-  } = useAnalyzeForex(forexParams, {
+  const forex = useAnalyzeForex(forexParams, {
     query: {
       enabled: market === "forex" && !!symbol,
       queryKey: getAnalyzeForexQueryKey(forexParams),
@@ -143,430 +192,265 @@ export default function Dashboard() {
     },
   });
 
-  const report = market === "crypto" ? cryptoReport : forexReport;
-  const isLoading = market === "crypto" ? cryptoLoading : forexLoading;
-  const error = market === "crypto" ? cryptoError : forexError;
-  const refetch = market === "crypto" ? refetchCrypto : refetchForex;
+  return market === "crypto" ? crypto : forex;
+}
 
+// Per-TF wrapper
+function TfBlock({
+  market,
+  symbol,
+  tf,
+  correlatedSymbol,
+  onOpen,
+}: {
+  market: Market;
+  symbol: string;
+  tf: string;
+  correlatedSymbol: string | undefined;
+  onOpen: (tf: string, report: SmcReport) => void;
+}) {
+  const { data, isLoading, error } = useTfReport(market, symbol, tf, correlatedSymbol);
+
+  return (
+    <TfAgentCard
+      tf={tf}
+      report={data}
+      market={market}
+      isLoading={isLoading}
+      error={error}
+      onOpen={() => data && onOpen(tf, data)}
+    />
+  );
+}
+
+export default function Dashboard() {
+  const [market, setMarket] = useState<Market>("crypto");
+  const [symbol, setSymbol] = useState("BTCUSDT");
+  const [correlatedSymbol, setCorrelatedSymbol] = useState<string>("ETHUSDT");
+  const [smtEnabled, setSmtEnabled] = useState(true);
+  const [styleIndex, setStyleIndex] = useState(3); // default "All"
+  const [sheet, setSheet] = useState<{ tf: string; report: SmcReport } | null>(null);
+  const [confluenceTf, setConfluenceTf] = useState<string | null>(null);
+
+  const { data: symbols } = useListSymbols();
+
+  const symbolOptions = useMemo(
+    () => (market === "crypto" ? symbols?.crypto ?? [] : symbols?.forex ?? []),
+    [market, symbols],
+  );
   const corrOptions = useMemo(
-    () => symbolOptions.filter((s) => s.symbol !== symbol),
+    () => symbolOptions.filter(s => s.symbol !== symbol),
     [symbolOptions, symbol],
   );
+
+  const activeStyle = TRADING_STYLES[styleIndex];
+  const corrSym = smtEnabled ? correlatedSymbol : undefined;
+
+  function handleMarketSwitch(m: Market) {
+    setMarket(m);
+    setSheet(null);
+    setConfluenceTf(null);
+    if (m === "crypto") { setSymbol("BTCUSDT"); setCorrelatedSymbol("ETHUSDT"); }
+    else { setSymbol("EURUSD=X"); setCorrelatedSymbol("GBPUSD=X"); }
+  }
+
+  function handleOpenSheet(tf: string, report: SmcReport) {
+    setSheet({ tf, report });
+  }
+
+  function handleConfluenceSelect(tf: string) {
+    setConfluenceTf(tf);
+  }
+
+  // For confluence card — we gather loaded reports from each TF
+  const tf1h = useTfReport(market, symbol, "1h", corrSym);
+  const tf4h = useTfReport(market, symbol, "4h", corrSym);
+  const tf1d = useTfReport(market, symbol, "1d", corrSym);
+
+  const allTfReports = useMemo(() => {
+    const acc: Array<{ tf: string; report: SmcReport }> = [];
+    if (tf1h.data) acc.push({ tf: "1h", report: tf1h.data });
+    if (tf4h.data) acc.push({ tf: "4h", report: tf4h.data });
+    if (tf1d.data) acc.push({ tf: "1d", report: tf1d.data });
+    return acc;
+  }, [tf1h.data, tf4h.data, tf1d.data]);
+
+  const confluenceReports = useMemo(
+    () => allTfReports.filter(r => activeStyle.timeframes.includes(r.tf)),
+    [allTfReports, activeStyle],
+  );
+
+  const primaryReport = tf4h.data ?? tf1h.data ?? tf1d.data;
+  const isAnyLoading = tf1h.isLoading || tf4h.isLoading || tf1d.isLoading;
+
+  // When user selects TF from confluence card, open the intelligence sheet
+  const confluenceSheetReport = useMemo(() => {
+    if (!confluenceTf) return null;
+    return allTfReports.find(r => r.tf === confluenceTf) ?? null;
+  }, [confluenceTf, allTfReports]);
 
   return (
     <div className="min-h-screen bg-background text-foreground font-mono">
       {/* Header */}
-      <header className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-10">
-        <div className="max-w-screen-2xl mx-auto px-4 py-2 flex items-center gap-3 flex-wrap">
-          <div className="flex items-center gap-2 mr-2">
+      <header className="border-b border-border bg-card/60 backdrop-blur-sm sticky top-0 z-40">
+        <div className="max-w-screen-xl mx-auto px-4 py-2.5 flex flex-wrap items-center gap-2.5">
+          <div className="flex items-center gap-2 mr-1">
             <Zap className="w-4 h-4 text-primary" />
-            <span className="font-bold text-sm text-primary tracking-tight">LIQUIDITY HUNTER</span>
+            <span className="font-bold text-sm text-primary tracking-tight">SMC PULSE PREDICT</span>
           </div>
 
-          {/* Market toggle */}
-          <div className="flex rounded-sm overflow-hidden border border-border" data-testid="market-toggle">
-            {(["crypto", "forex"] as Market[]).map((m) => (
-              <button
-                key={m}
-                onClick={() => handleMarketSwitch(m)}
-                className={`px-3 py-1 text-xs font-semibold uppercase tracking-wider transition-colors ${
-                  market === m ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:text-foreground"
-                }`}
-                data-testid={`market-btn-${m}`}
-              >
+          {/* Market */}
+          <div className="flex rounded-sm overflow-hidden border border-border">
+            {(["crypto", "forex"] as Market[]).map(m => (
+              <button key={m} onClick={() => handleMarketSwitch(m)}
+                className={`px-3 py-1 text-xs font-bold uppercase tracking-wider transition-colors ${market === m ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:text-foreground"}`}>
                 {m}
               </button>
             ))}
           </div>
 
-          {/* Symbol selector */}
-          <select
-            value={symbol}
-            onChange={(e) => setSymbol(e.target.value)}
-            className="bg-muted border border-border text-foreground text-xs rounded-sm px-2 py-1 font-semibold"
-            data-testid="symbol-select"
-          >
-            {symbolOptions.map((s) => (
-              <option key={s.symbol} value={s.symbol}>{s.label}</option>
-            ))}
+          {/* Symbol */}
+          <select value={symbol} onChange={e => setSymbol(e.target.value)}
+            className="bg-muted border border-border text-foreground text-xs rounded-sm px-2 py-1 font-semibold">
+            {symbolOptions.map(s => <option key={s.symbol} value={s.symbol}>{s.label}</option>)}
           </select>
 
-          {/* Timeframe */}
-          <div className="flex rounded-sm overflow-hidden border border-border" data-testid="timeframe-toggle">
-            {TIMEFRAMES.map((tf) => (
-              <button
-                key={tf}
-                onClick={() => setTimeframe(tf)}
-                className={`px-2.5 py-1 text-xs font-semibold uppercase transition-colors ${
-                  timeframe === tf ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:text-foreground"
-                }`}
-                data-testid={`tf-btn-${tf}`}
-              >
-                {tf}
+          {/* Trading Style */}
+          <div className="flex rounded-sm overflow-hidden border border-border">
+            {TRADING_STYLES.map((style, i) => (
+              <button key={style.label} onClick={() => setStyleIndex(i)}
+                className={`px-3 py-1 text-xs font-bold uppercase tracking-wider transition-colors ${styleIndex === i ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:text-foreground"}`}>
+                {style.label}
               </button>
             ))}
           </div>
 
-          {/* SMT correlated */}
+          {/* SMT */}
           <div className="flex items-center gap-1.5">
-            <button
-              onClick={() => setSmtEnabled(!smtEnabled)}
-              className={`text-xs px-2 py-1 rounded-sm border transition-colors ${
-                smtEnabled ? "border-primary/50 bg-primary/10 text-primary" : "border-border bg-muted text-muted-foreground"
-              }`}
-              data-testid="smt-toggle"
-            >
+            <button onClick={() => setSmtEnabled(!smtEnabled)}
+              className={`text-xs px-2 py-1 rounded-sm border transition-colors ${smtEnabled ? "border-primary/50 bg-primary/10 text-primary" : "border-border bg-muted text-muted-foreground"}`}>
               SMT
             </button>
             {smtEnabled && (
-              <select
-                value={correlatedSymbol}
-                onChange={(e) => setCorrelatedSymbol(e.target.value)}
-                className="bg-muted border border-border text-foreground text-xs rounded-sm px-2 py-1"
-                data-testid="correlated-select"
-              >
-                {corrOptions.map((s) => (
-                  <option key={s.symbol} value={s.symbol}>{s.label}</option>
-                ))}
+              <select value={correlatedSymbol} onChange={e => setCorrelatedSymbol(e.target.value)}
+                className="bg-muted border border-border text-foreground text-xs rounded-sm px-2 py-1">
+                {corrOptions.map(s => <option key={s.symbol} value={s.symbol}>{s.label}</option>)}
               </select>
             )}
           </div>
 
+          {/* Price + Refresh */}
           <div className="ml-auto flex items-center gap-3">
-            {report && (
+            {primaryReport && (
               <div className="text-right">
-                <div className="text-base font-bold text-foreground" data-testid="current-price">
-                  {fmtPrice(report.currentPrice, market)}
-                </div>
-                <div className="text-xs text-muted-foreground">
-                  {report.symbol} · {report.timeframe} · {new Date(report.generatedAt * 1000).toLocaleTimeString()}
-                </div>
+                <div className="text-base font-bold">{fmtPrice(primaryReport.currentPrice, market)}</div>
+                <div className="text-[10px] text-muted-foreground">{symbol} · {new Date(primaryReport.generatedAt * 1000).toLocaleTimeString()}</div>
               </div>
             )}
-            <button
-              onClick={() => refetch()}
-              disabled={isLoading}
-              className="flex items-center gap-1.5 bg-primary/10 hover:bg-primary/20 text-primary border border-primary/30 rounded-sm px-3 py-1.5 text-xs font-semibold transition-colors disabled:opacity-50"
-              data-testid="refresh-btn"
-            >
-              <RefreshCw className={`w-3 h-3 ${isLoading ? "animate-spin" : ""}`} />
-              REFRESH
-            </button>
           </div>
         </div>
       </header>
 
-      {/* Main content */}
-      <main className="max-w-screen-2xl mx-auto px-4 py-4">
-        {isLoading && (
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3">
-            {Array.from({ length: 8 }).map((_, i) => (
-              <div key={i} className="h-40 bg-card border border-border rounded-sm animate-pulse" />
-            ))}
-          </div>
+      <main className="max-w-screen-xl mx-auto px-4 py-5 space-y-5">
+
+        {/* Confluence overview */}
+        {confluenceReports.length > 0 && (
+          <ConfluenceCard
+            reports={confluenceReports}
+            onSelect={tf => {
+              const found = allTfReports.find(r => r.tf === tf);
+              if (found) handleOpenSheet(found.tf, found.report);
+            }}
+          />
         )}
 
-        {error && !isLoading && (
-          <div className="flex flex-col items-center justify-center py-20 gap-4">
-            <AlertCircle className="w-8 h-8 text-destructive" />
-            <div className="text-sm text-muted-foreground text-center max-w-md">
-              Failed to load analysis for <strong>{symbol}</strong>. The data provider may be temporarily unavailable.
-            </div>
-            <button
-              onClick={() => refetch()}
-              className="bg-primary text-primary-foreground px-4 py-2 rounded-sm text-xs font-semibold"
-            >
-              Try Again
-            </button>
-          </div>
-        )}
+        {/* Style label */}
+        <div className="flex items-center gap-3">
+          <span className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">
+            {activeStyle.label} — Timeframe Agents
+          </span>
+          <div className="flex-1 h-px bg-border" />
+          <span className="text-[10px] text-muted-foreground">{activeStyle.timeframes.join(" · ")}</span>
+        </div>
 
-        {report && !isLoading && (
-          <div className="space-y-3">
-            {/* Top row — structure + daily bias + draw targets */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-              {/* Structure */}
-              <Panel title="Market Structure" icon={Activity}>
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <BiasIcon bias={report.structure.trend} />
-                      <span className="text-sm font-bold">{report.structure.trend.toUpperCase()}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs text-muted-foreground">Bias:</span>
-                      <BiasLabel bias={report.structure.bias} />
-                    </div>
-                  </div>
-                  <ConfidenceBar value={report.structure.confidence} label="Confidence" />
+        {/* TF Agent Cards */}
+        <div className={`grid gap-4 ${
+          activeStyle.timeframes.length === 1 ? "grid-cols-1 max-w-sm" :
+          activeStyle.timeframes.length === 2 ? "grid-cols-1 sm:grid-cols-2" :
+          "grid-cols-1 sm:grid-cols-3"
+        }`}>
+          {activeStyle.timeframes.map(tf => (
+            <TfBlock
+              key={tf}
+              market={market}
+              symbol={symbol}
+              tf={tf}
+              correlatedSymbol={corrSym}
+              onOpen={handleOpenSheet}
+            />
+          ))}
+        </div>
 
-                  {report.structure.breaks.length > 0 && (
-                    <div className="space-y-1">
-                      <p className="text-xs text-muted-foreground uppercase tracking-wider">Recent Breaks</p>
-                      {report.structure.breaks.slice(-4).reverse().map((b, i) => (
-                        <div key={i} className="flex items-center justify-between text-xs" data-testid={`structure-break-${i}`}>
-                          <div className="flex items-center gap-1.5">
-                            <span className={`px-1.5 py-0.5 rounded-sm text-[10px] font-bold ${
-                              b.type === "BOS" ? "bg-primary/20 text-primary" : "bg-yellow-500/20 text-yellow-400"
-                            }`}>{b.type}</span>
-                            <BiasLabel bias={b.direction} />
-                          </div>
-                          <span className="text-muted-foreground font-mono">{fmtPrice(b.price, market)}</span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-
-                  {report.structure.pivots.length > 0 && (
-                    <div className="space-y-1">
-                      <p className="text-xs text-muted-foreground uppercase tracking-wider">Recent Pivots</p>
-                      <div className="flex flex-wrap gap-1">
-                        {report.structure.pivots.slice(-8).map((p, i) => (
-                          <span key={i} className={`text-[10px] px-1.5 py-0.5 rounded-sm font-bold ${
-                            p.type === "HH" ? "bg-[hsl(var(--bullish))]/20 text-[hsl(var(--bullish))]" :
-                            p.type === "HL" ? "bg-[hsl(var(--bullish))]/10 text-[hsl(var(--bullish))]/70" :
-                            p.type === "LH" ? "bg-destructive/10 text-destructive/70" :
-                            "bg-destructive/20 text-destructive"
-                          }`}>{p.type}</span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
+        {/* Session context footer */}
+        {primaryReport && !isAnyLoading && (
+          <div className="border border-border/50 rounded-sm bg-muted/20 px-4 py-3">
+            <div className="flex flex-wrap gap-x-6 gap-y-1 text-xs">
+              <div className="flex items-center gap-1.5 text-muted-foreground">
+                <span className="font-semibold text-foreground">Daily Bias</span>
+                <BiasIcon bias={primaryReport.dailyBias.bias} />
+                <span className={primaryReport.dailyBias.bias === "bullish" ? "text-[hsl(var(--bullish))]" : primaryReport.dailyBias.bias === "bearish" ? "text-destructive" : "text-muted-foreground"}>
+                  {primaryReport.dailyBias.bias.toUpperCase()}
+                </span>
+                <span className="text-muted-foreground">({primaryReport.dailyBias.consecutiveDays}d)</span>
+              </div>
+              <div className="flex items-center gap-1.5 text-muted-foreground">
+                <span className="font-semibold text-foreground">PD Position</span>
+                <span className={
+                  primaryReport.pdArray.currentBias === "premium" ? "text-destructive" :
+                  primaryReport.pdArray.currentBias === "discount" ? "text-[hsl(var(--bullish))]" :
+                  "text-primary"
+                }>{primaryReport.pdArray.currentBias.toUpperCase()}</span>
+              </div>
+              {primaryReport.liquidity.nearestBSL && (
+                <div className="flex items-center gap-1.5 text-muted-foreground">
+                  <span className="font-semibold text-[hsl(var(--bullish))]">BSL</span>
+                  <span className="font-mono">{fmtPrice(primaryReport.liquidity.nearestBSL.price, market)}</span>
                 </div>
-              </Panel>
-
-              {/* Daily Bias */}
-              <Panel title="Daily Bias" icon={TrendingUp}>
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <BiasIcon bias={report.dailyBias.bias} />
-                      <span className="text-lg font-bold">
-                        <BiasLabel bias={report.dailyBias.bias} className="text-base" />
-                      </span>
-                    </div>
-                    <div className="text-right">
-                      <div className="text-xs text-muted-foreground">Consecutive</div>
-                      <div className="text-sm font-bold">{report.dailyBias.consecutiveDays}d</div>
-                    </div>
-                  </div>
-                  <ConfidenceBar value={report.dailyBias.strength} label="Strength" />
-                  {report.dailyBias.referencedSwing && (
-                    <div className="bg-muted/50 rounded-sm px-2 py-1.5">
-                      <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-0.5">Swing Reference</p>
-                      <p className="text-xs font-mono">{report.dailyBias.referencedSwing}</p>
-                    </div>
-                  )}
+              )}
+              {primaryReport.liquidity.nearestSSL && (
+                <div className="flex items-center gap-1.5 text-muted-foreground">
+                  <span className="font-semibold text-destructive">SSL</span>
+                  <span className="font-mono">{fmtPrice(primaryReport.liquidity.nearestSSL.price, market)}</span>
                 </div>
-              </Panel>
-
-              {/* Draw Targets */}
-              <Panel title="Draw on Liquidity" icon={Target}>
-                <div className="space-y-2">
-                  {report.draw.length === 0 && <EmptyState message="No high-probability targets identified" />}
-                  {report.draw.map((d, i) => (
-                    <div key={i} className="flex items-center justify-between gap-2" data-testid={`draw-target-${i}`}>
-                      <div className="flex items-center gap-1.5 min-w-0">
-                        {d.direction === "long"
-                          ? <ChevronUp className="w-3 h-3 text-[hsl(var(--bullish))] shrink-0" />
-                          : <ChevronDown className="w-3 h-3 text-destructive shrink-0" />}
-                        <span className="text-xs truncate" title={d.label}>{d.label}</span>
-                      </div>
-                      <ScoreBar value={d.score} max={3} />
-                    </div>
-                  ))}
+              )}
+              {primaryReport.smt.detected && (
+                <div className="flex items-center gap-1.5">
+                  <Zap className="w-3 h-3 text-primary" />
+                  <span className={primaryReport.smt.type === "bearish_smt" ? "text-destructive" : "text-[hsl(var(--bullish))]"}>
+                    {primaryReport.smt.type?.replace("_", " ").toUpperCase()}
+                  </span>
                 </div>
-              </Panel>
-            </div>
-
-            {/* Second row — liquidity + OBs */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              {/* Liquidity */}
-              <Panel title="Liquidity Pools" icon={Layers}>
-                <div className="space-y-2">
-                  {/* Nearest highlight */}
-                  {(report.liquidity.nearestBSL || report.liquidity.nearestSSL) && (
-                    <div className="grid grid-cols-2 gap-2 mb-3">
-                      {report.liquidity.nearestBSL && (
-                        <div className="bg-[hsl(var(--bullish))]/10 border border-[hsl(var(--bullish))]/20 rounded-sm p-2" data-testid="nearest-bsl">
-                          <p className="text-[10px] text-[hsl(var(--bullish))] uppercase tracking-wider font-semibold">Nearest BSL</p>
-                          <p className="text-sm font-bold font-mono">{fmtPrice(report.liquidity.nearestBSL.price, market)}</p>
-                          <p className="text-[10px] text-muted-foreground">Score: {report.liquidity.nearestBSL.score.toFixed(2)}</p>
-                        </div>
-                      )}
-                      {report.liquidity.nearestSSL && (
-                        <div className="bg-destructive/10 border border-destructive/20 rounded-sm p-2" data-testid="nearest-ssl">
-                          <p className="text-[10px] text-destructive uppercase tracking-wider font-semibold">Nearest SSL</p>
-                          <p className="text-sm font-bold font-mono">{fmtPrice(report.liquidity.nearestSSL.price, market)}</p>
-                          <p className="text-[10px] text-muted-foreground">Score: {report.liquidity.nearestSSL.score.toFixed(2)}</p>
-                        </div>
-                      )}
-                    </div>
-                  )}
-
-                  {report.liquidity.pools.length === 0 && <EmptyState message="No liquidity pools detected" />}
-                  <div className="space-y-1 max-h-48 overflow-y-auto">
-                    {report.liquidity.pools.map((pool, i) => (
-                      <div key={i} className={`flex items-center gap-2 text-xs py-1 border-b border-border/50 last:border-0 ${pool.wasSwept ? "opacity-50" : ""}`} data-testid={`pool-${i}`}>
-                        <span className={`text-[10px] font-bold w-8 shrink-0 ${pool.type === "BSL" || pool.type === "EQH" ? "text-[hsl(var(--bullish))]" : "text-destructive"}`}>{pool.type}</span>
-                        <span className="font-mono flex-1">{fmtPrice(pool.price, market)}</span>
-                        <span className="text-muted-foreground">{pool.touches}x</span>
-                        {pool.session && <span className="text-[10px] text-muted-foreground">{pool.session}</span>}
-                        {pool.wasSwept && <span className="text-[10px] text-yellow-400 font-semibold">SWEPT</span>}
-                        <ScoreBar value={pool.score} max={5} />
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </Panel>
-
-              {/* Order Blocks */}
-              <Panel title="Order Blocks" icon={BarChart2}>
-                <div className="space-y-1 max-h-64 overflow-y-auto">
-                  {report.orderBlocks.length === 0 && <EmptyState message="No order blocks detected" />}
-                  {report.orderBlocks.map((ob, i) => (
-                    <div key={i} className={`flex items-center gap-2 text-xs py-1.5 border-b border-border/50 last:border-0 ${ob.isMitigated && !ob.isBreaker ? "opacity-40" : ""}`} data-testid={`ob-${i}`}>
-                      <span className={`text-[10px] font-bold shrink-0 ${ob.type === "bullish" ? "text-[hsl(var(--bullish))]" : "text-destructive"}`}>
-                        {ob.type === "bullish" ? "BULL" : "BEAR"}
-                      </span>
-                      <div className="flex-1 min-w-0">
-                        <div className="font-mono">{fmtPrice(ob.proximal, market)} → {fmtPrice(ob.distal, market)}</div>
-                      </div>
-                      <div className="flex items-center gap-1 shrink-0">
-                        {ob.hasFvg && <span className="text-[10px] bg-primary/20 text-primary px-1 rounded-sm">FVG</span>}
-                        {ob.isBreaker && <span className="text-[10px] bg-yellow-500/20 text-yellow-400 px-1 rounded-sm">BRK</span>}
-                        {ob.isMitigated && !ob.isBreaker && <span className="text-[10px] bg-muted text-muted-foreground px-1 rounded-sm">MIT</span>}
-                        {ob.valid && !ob.isMitigated && <span className="text-[10px] bg-[hsl(var(--bullish))]/20 text-[hsl(var(--bullish))] px-1 rounded-sm">LIVE</span>}
-                      </div>
-                      <ScoreBar value={ob.strength} max={3} />
-                    </div>
-                  ))}
-                </div>
-              </Panel>
-            </div>
-
-            {/* Third row — FVG + PD Array + SMT */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-              {/* FVG */}
-              <Panel title="Fair Value Gaps" icon={Activity}>
-                <div className="space-y-1 max-h-52 overflow-y-auto">
-                  {report.fvg.length === 0 && <EmptyState message="No fair value gaps detected" />}
-                  {report.fvg.slice(-10).reverse().map((gap, i) => (
-                    <div key={i} className="flex items-center gap-2 text-xs py-1.5 border-b border-border/50 last:border-0" data-testid={`fvg-${i}`}>
-                      <span className={`text-[10px] font-bold shrink-0 ${gap.type === "bullish" ? "text-[hsl(var(--bullish))]" : "text-destructive"}`}>
-                        {gap.type === "bullish" ? "BULL" : "BEAR"}
-                      </span>
-                      <div className="flex-1 min-w-0">
-                        <div className="font-mono text-[10px]">{fmtPrice(gap.bottom, market)} – {fmtPrice(gap.top, market)}</div>
-                        <div className="flex items-center gap-1 mt-0.5">
-                          <div className="w-16 h-1 bg-muted rounded-full overflow-hidden">
-                            <div
-                              className={`h-full rounded-full ${gap.fillFraction >= 1 ? "bg-muted-foreground" : "bg-primary"}`}
-                              style={{ width: `${Math.round(gap.fillFraction * 100)}%` }}
-                            />
-                          </div>
-                          <span className="text-[10px] text-muted-foreground">{Math.round(gap.fillFraction * 100)}%</span>
-                        </div>
-                      </div>
-                      {gap.isInversion && <span className="text-[10px] bg-yellow-500/20 text-yellow-400 px-1 rounded-sm shrink-0">INV</span>}
-                    </div>
-                  ))}
-                </div>
-              </Panel>
-
-              {/* PD Array */}
-              <Panel title="PD Array" icon={Layers}>
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs text-muted-foreground">Current Position</span>
-                    <span className={`text-xs font-bold uppercase ${
-                      report.pdArray.currentBias === "premium" ? "text-destructive" :
-                      report.pdArray.currentBias === "discount" ? "text-[hsl(var(--bullish))]" :
-                      "text-primary"
-                    }`}>{report.pdArray.currentBias}</span>
-                  </div>
-
-                  <div className="bg-muted/40 rounded-sm p-2 text-xs space-y-1">
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Range ({report.pdArray.dealingRange.timeframe})</span>
-                      <span className="font-mono">{fmtPrice(report.pdArray.dealingRange.low, market)} – {fmtPrice(report.pdArray.dealingRange.high, market)}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Equilibrium</span>
-                      <span className="font-mono text-primary">{fmtPrice(report.pdArray.equilibrium, market)}</span>
-                    </div>
-                  </div>
-
-                  <div className="space-y-1 max-h-32 overflow-y-auto">
-                    {report.pdArray.zones.map((zone, i) => (
-                      <div key={i} className="flex items-center justify-between text-xs" data-testid={`pd-zone-${i}`}>
-                        <div className="flex items-center gap-1.5 min-w-0">
-                          <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${
-                            zone.type === "premium" ? "bg-destructive" :
-                            zone.type === "discount" ? "bg-[hsl(var(--bullish))]" : "bg-primary"
-                          }`} />
-                          <span className="text-muted-foreground truncate text-[10px]">{zone.label}</span>
-                        </div>
-                        <span className="text-[10px] text-muted-foreground ml-1">{zone.timeframe.split("(")[1]?.replace(")", "") ?? zone.timeframe}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </Panel>
-
-              {/* SMT */}
-              <Panel title="SMT Divergence" icon={Zap}>
-                <div className="space-y-3">
-                  <div className={`flex items-center gap-2 p-2 rounded-sm border ${
-                    report.smt.detected
-                      ? report.smt.type === "bearish_smt" ? "border-destructive/30 bg-destructive/10" : "border-[hsl(var(--bullish))]/30 bg-[hsl(var(--bullish))]/10"
-                      : "border-border bg-muted/30"
-                  }`} data-testid="smt-status">
-                    {report.smt.detected
-                      ? <Zap className={`w-4 h-4 ${report.smt.type === "bearish_smt" ? "text-destructive" : "text-[hsl(var(--bullish))]"}`} />
-                      : <Minus className="w-4 h-4 text-muted-foreground" />
-                    }
-                    <div>
-                      <p className={`text-xs font-bold uppercase ${
-                        report.smt.detected
-                          ? report.smt.type === "bearish_smt" ? "text-destructive" : "text-[hsl(var(--bullish))]"
-                          : "text-muted-foreground"
-                      }`}>
-                        {report.smt.detected ? report.smt.type?.replace("_", " ") : "No Divergence"}
-                      </p>
-                      {report.smt.detected && report.smt.time && (
-                        <p className="text-[10px] text-muted-foreground">{fmtTime(report.smt.time)}</p>
-                      )}
-                    </div>
-                  </div>
-
-                  {report.smt.detected && (
-                    <ConfidenceBar value={report.smt.confidence} label="Confidence" />
-                  )}
-
-                  <div className="space-y-1 text-xs">
-                    {report.smt.primarySymbol && (
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Primary</span>
-                        <span className="font-mono">{report.smt.primarySymbol}</span>
-                      </div>
-                    )}
-                    {report.smt.correlatedSymbol && (
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Correlated</span>
-                        <span className="font-mono">{report.smt.correlatedSymbol}</span>
-                      </div>
-                    )}
-                    {!smtEnabled && (
-                      <p className="text-[10px] text-muted-foreground italic">Enable SMT toggle to activate divergence analysis</p>
-                    )}
-                  </div>
-                </div>
-              </Panel>
+              )}
             </div>
           </div>
         )}
       </main>
+
+      {/* Intelligence Sheet */}
+      {sheet && (
+        <IntelligenceSheet
+          report={sheet.report}
+          market={market}
+          onClose={() => setSheet(null)}
+        />
+      )}
+      {confluenceSheetReport && !sheet && (
+        <IntelligenceSheet
+          report={confluenceSheetReport.report}
+          market={market}
+          onClose={() => setConfluenceTf(null)}
+        />
+      )}
     </div>
   );
 }
