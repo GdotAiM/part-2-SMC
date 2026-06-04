@@ -1,19 +1,25 @@
-import { X, TrendingUp, TrendingDown, Minus, Layers, BarChart2, Activity, Zap, ChevronUp, ChevronDown } from "lucide-react";
+import { X, TrendingUp, TrendingDown, Minus, Layers, BarChart2, Activity, Zap, ChevronUp, ChevronDown, Target, Check, AlertTriangle } from "lucide-react";
 import type { SmcReport } from "@workspace/api-client-react";
 import { AgentPipeline } from "./AgentPipeline";
 import { AgentChat } from "./AgentChat";
 
+type Market = "crypto" | "forex";
+
 type Props = {
   report: SmcReport;
-  market: "crypto" | "forex";
+  market: Market;
   onClose: () => void;
 };
 
-function fmtPrice(p: number, market: "crypto" | "forex"): string {
+function fmtPrice(p: number, market: Market): string {
   if (market === "forex") return p.toFixed(5);
   if (p >= 10000) return p.toLocaleString("en-US", { maximumFractionDigits: 2 });
   if (p >= 1) return p.toFixed(4);
   return p.toFixed(6);
+}
+
+function fmtRR(n: number): string {
+  return `1 : ${n.toFixed(2)}`;
 }
 
 function BiasChip({ bias }: { bias: string }) {
@@ -55,23 +61,132 @@ function ConfBar({ value, label }: { value: number; label?: string }) {
   );
 }
 
-export function IntelligenceSheet({ report, market, onClose }: Props) {
+/* ─── Trade Setup derivation ─── */
+function deriveSetup(report: SmcReport) {
   const bias = report.structure.bias !== "neutral" ? report.structure.bias : report.dailyBias.bias;
-  const lastBreak = report.structure.breaks.slice(-1)[0];
-  const liveOBs = report.orderBlocks.filter(ob => ob.valid && !ob.isMitigated);
+  const direction = bias === "bullish" ? "long" : bias === "bearish" ? "short" : null;
+
+  const liveOBs      = report.orderBlocks.filter(ob => ob.valid && !ob.isMitigated);
   const unfilledFVGs = report.fvg.filter(g => g.fillFraction < 0.5);
-  const bslPools = report.liquidity.pools.filter(p => (p.type === "BSL" || p.type === "EQH") && !p.wasSwept);
-  const sslPools = report.liquidity.pools.filter(p => (p.type === "SSL" || p.type === "EQL") && !p.wasSwept);
+
+  let entryLow: number | null  = null;
+  let entryHigh: number | null = null;
+  let entrySource = "";
+
+  if (direction === "long") {
+    const ob = liveOBs
+      .filter(ob => ob.type === "bullish" && ob.proximal < report.currentPrice)
+      .sort((a, b) => b.proximal - a.proximal)[0];
+    const fvg = unfilledFVGs
+      .filter(g => g.type === "bullish" && g.top < report.currentPrice)
+      .sort((a, b) => b.top - a.top)[0];
+    if (ob) {
+      entryLow = Math.min(ob.proximal, ob.distal);
+      entryHigh = Math.max(ob.proximal, ob.distal);
+      entrySource = ob.hasFvg ? "OB + FVG" : "Order Block";
+    } else if (fvg) {
+      entryLow = fvg.bottom;
+      entryHigh = fvg.top;
+      entrySource = "FVG";
+    }
+  } else if (direction === "short") {
+    const ob = liveOBs
+      .filter(ob => ob.type === "bearish" && ob.proximal > report.currentPrice)
+      .sort((a, b) => a.proximal - b.proximal)[0];
+    const fvg = unfilledFVGs
+      .filter(g => g.type === "bearish" && g.bottom > report.currentPrice)
+      .sort((a, b) => a.bottom - b.bottom)[0];
+    if (ob) {
+      entryLow = Math.min(ob.proximal, ob.distal);
+      entryHigh = Math.max(ob.proximal, ob.distal);
+      entrySource = ob.hasFvg ? "OB + FVG" : "Order Block";
+    } else if (fvg) {
+      entryLow = fvg.bottom;
+      entryHigh = fvg.top;
+      entrySource = "FVG";
+    }
+  }
+
+  /* Stop Loss */
+  let stopLoss: number | null = null;
+  let slSource = "";
+  if (direction === "long") {
+    const sslPrice = report.liquidity.nearestSSL?.price;
+    if (sslPrice && sslPrice < report.currentPrice) { stopLoss = sslPrice * 0.9995; slSource = "Below SSL"; }
+    else if (entryLow !== null) { stopLoss = entryLow * 0.9985; slSource = "Below entry zone"; }
+  } else if (direction === "short") {
+    const bslPrice = report.liquidity.nearestBSL?.price;
+    if (bslPrice && bslPrice > report.currentPrice) { stopLoss = bslPrice * 1.0005; slSource = "Above BSL"; }
+    else if (entryHigh !== null) { stopLoss = entryHigh * 1.0015; slSource = "Above entry zone"; }
+  }
+
+  /* Take-profit levels */
+  const tp1 = report.draw[0] ?? null;
+  const tp2 = report.draw[1] ?? null;
+
+  /* R:R */
+  let rrRatio: number | null = null;
+  if (entryLow !== null && entryHigh !== null && stopLoss !== null && tp1 !== null) {
+    const entryMid = (entryLow + entryHigh) / 2;
+    const risk = Math.abs(entryMid - stopLoss);
+    const reward = Math.abs(tp1.price - entryMid);
+    if (risk > 0) rrRatio = reward / risk;
+  }
+
+  /* Checklist */
+  const hasEntry = entryLow !== null && entryHigh !== null;
+  const checklist = [
+    { label: "Daily bias confirmed",                  pass: report.dailyBias.bias === bias && bias !== "neutral" },
+    { label: "Structure aligns with direction",        pass: report.structure.bias === bias && bias !== "neutral" },
+    { label: `Price in ${direction === "long" ? "discount" : "premium"} zone`,
+      pass: direction === "long"
+        ? report.pdArray.currentBias === "discount"
+        : direction === "short"
+          ? report.pdArray.currentBias === "premium"
+          : false },
+    { label: "OB / FVG entry zone identified",        pass: hasEntry },
+    { label: "Clear liquidity draw target",           pass: tp1 !== null },
+    { label: "SMT divergence supports direction",     pass: report.smt.detected },
+  ];
+
+  const passCount = checklist.filter(c => c.pass).length;
+  const grade: "A" | "B" | "C" | "wait" =
+    passCount >= 5 ? "A" : passCount >= 4 ? "B" : passCount >= 3 ? "C" : "wait";
+
+  return { direction, entryLow, entryHigh, entrySource, stopLoss, slSource, tp1, tp2, rrRatio, checklist, passCount, grade };
+}
+
+export function IntelligenceSheet({ report, market, onClose }: Props) {
+  const bias      = report.structure.bias !== "neutral" ? report.structure.bias : report.dailyBias.bias;
+  const lastBreak = report.structure.breaks.slice(-1)[0];
+  const liveOBs   = report.orderBlocks.filter(ob => ob.valid && !ob.isMitigated);
+  const unfilledFVGs = report.fvg.filter(g => g.fillFraction < 0.5);
+  const bslPools  = report.liquidity.pools.filter(p => (p.type === "BSL" || p.type === "EQH") && !p.wasSwept);
+  const sslPools  = report.liquidity.pools.filter(p => (p.type === "SSL" || p.type === "EQL") && !p.wasSwept);
 
   const confidenceDrivers: string[] = [];
-  if (report.structure.confidence > 0.7) confidenceDrivers.push("Strong structure alignment");
+  if (report.structure.confidence > 0.7)              confidenceDrivers.push("Strong structure alignment");
   if (report.liquidity.nearestBSL || report.liquidity.nearestSSL) confidenceDrivers.push("Nearby liquidity pool identified");
-  if (liveOBs.some(ob => ob.hasFvg)) confidenceDrivers.push("OB + FVG confluence detected");
-  if (report.structure.breaks.length > 0) confidenceDrivers.push("Recent BOS/MSS displacement");
-  if (report.dailyBias.consecutiveDays >= 3) confidenceDrivers.push(`${report.dailyBias.consecutiveDays}-day consecutive bias`);
-  if (report.smt.detected) confidenceDrivers.push(`SMT divergence: ${report.smt.type?.replace("_", " ")}`);
-  if (report.pdArray.currentBias !== "equilibrium") confidenceDrivers.push(`Price in ${report.pdArray.currentBias} zone`);
-  if (confidenceDrivers.length === 0) confidenceDrivers.push("Insufficient confluence — wait for clearer setup");
+  if (liveOBs.some(ob => ob.hasFvg))                  confidenceDrivers.push("OB + FVG confluence detected");
+  if (report.structure.breaks.length > 0)             confidenceDrivers.push("Recent BOS/MSS displacement");
+  if (report.dailyBias.consecutiveDays >= 3)          confidenceDrivers.push(`${report.dailyBias.consecutiveDays}-day consecutive bias`);
+  if (report.smt.detected)                            confidenceDrivers.push(`SMT divergence: ${report.smt.type?.replace("_", " ")}`);
+  if (report.pdArray.currentBias !== "equilibrium")   confidenceDrivers.push(`Price in ${report.pdArray.currentBias} zone`);
+  if (confidenceDrivers.length === 0)                 confidenceDrivers.push("Insufficient confluence — wait for clearer setup");
+
+  const setup = deriveSetup(report);
+
+  const gradeColor =
+    setup.grade === "A" ? "text-[hsl(var(--bullish))] border-[hsl(var(--bullish))]/40 bg-[hsl(var(--bullish))]/10" :
+    setup.grade === "B" ? "text-primary border-primary/40 bg-primary/10" :
+    setup.grade === "C" ? "text-yellow-400 border-yellow-500/40 bg-yellow-500/10" :
+    "text-muted-foreground border-border bg-muted/30";
+
+  const dirColor = setup.direction === "long"
+    ? "text-[hsl(var(--bullish))]"
+    : setup.direction === "short"
+      ? "text-destructive"
+      : "text-muted-foreground";
 
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-end" onClick={onClose}>
@@ -79,7 +194,7 @@ export function IntelligenceSheet({ report, market, onClose }: Props) {
         className="relative h-full w-full max-w-2xl bg-background border-l border-border flex flex-col shadow-2xl"
         onClick={e => e.stopPropagation()}
       >
-        {/* Header */}
+        {/* ── Header ── */}
         <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-card/80 shrink-0">
           <div className="flex items-center gap-3">
             <div>
@@ -95,11 +210,136 @@ export function IntelligenceSheet({ report, market, onClose }: Props) {
           </button>
         </div>
 
-        {/* Scrollable body */}
+        {/* ── Scrollable body ── */}
         <div className="flex-1 overflow-y-auto">
           <div className="p-4 space-y-5">
 
-            {/* 1. Structure */}
+            {/* ══ 0. Trade Setup Summary ══ */}
+            <Section title="Trade Setup Summary" icon={Target}>
+              {/* Grade badge + direction */}
+              <div className="flex items-center justify-between mb-1">
+                <div className="flex items-center gap-2">
+                  <span className={`text-xs font-bold px-2.5 py-1 rounded-sm border ${gradeColor}`}>
+                    {setup.grade === "wait" ? "WAIT" : `GRADE  ${setup.grade}`}
+                  </span>
+                  {setup.direction && (
+                    <span className={`text-xs font-bold uppercase ${dirColor}`}>
+                      {setup.direction === "long" ? "▲ LONG" : "▼ SHORT"}
+                    </span>
+                  )}
+                </div>
+                <span className="text-[10px] text-muted-foreground">{setup.passCount}/6 confluence</span>
+              </div>
+
+              {/* Entry / SL / TP table */}
+              <div className="rounded-sm border border-border overflow-hidden">
+                {/* Entry zone */}
+                <div className="grid grid-cols-[110px_1fr] border-b border-border/60">
+                  <div className="px-3 py-2.5 bg-muted/30 border-r border-border/60">
+                    <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Entry Zone</p>
+                    {setup.entrySource && <p className="text-[9px] text-primary/60 mt-0.5">{setup.entrySource}</p>}
+                  </div>
+                  <div className="px-3 py-2.5 flex items-center">
+                    {setup.entryLow !== null && setup.entryHigh !== null ? (
+                      <span className={`text-sm font-bold font-mono ${dirColor}`}>
+                        {fmtPrice(setup.entryLow, market)}
+                        <span className="text-muted-foreground mx-1.5">–</span>
+                        {fmtPrice(setup.entryHigh, market)}
+                      </span>
+                    ) : (
+                      <span className="text-xs text-muted-foreground italic">No zone identified — wait for price to return to OB/FVG</span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Stop Loss */}
+                <div className="grid grid-cols-[110px_1fr] border-b border-border/60">
+                  <div className="px-3 py-2.5 bg-muted/30 border-r border-border/60">
+                    <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Stop Loss</p>
+                    {setup.slSource && <p className="text-[9px] text-destructive/60 mt-0.5">{setup.slSource}</p>}
+                  </div>
+                  <div className="px-3 py-2.5 flex items-center gap-3">
+                    {setup.stopLoss !== null ? (
+                      <span className="text-sm font-bold font-mono text-destructive">
+                        {fmtPrice(setup.stopLoss, market)}
+                      </span>
+                    ) : (
+                      <span className="text-xs text-muted-foreground italic">Pending entry zone</span>
+                    )}
+                  </div>
+                </div>
+
+                {/* TP 1 */}
+                <div className={`grid grid-cols-[110px_1fr] ${setup.tp2 ? "border-b border-border/60" : ""}`}>
+                  <div className="px-3 py-2.5 bg-muted/30 border-r border-border/60">
+                    <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Target 1</p>
+                    {setup.tp1 && <p className="text-[9px] text-[hsl(var(--bullish))]/60 mt-0.5 truncate">{setup.tp1.label}</p>}
+                  </div>
+                  <div className="px-3 py-2.5 flex items-center gap-3">
+                    {setup.tp1 ? (
+                      <>
+                        <span className="text-sm font-bold font-mono text-[hsl(var(--bullish))]">
+                          {fmtPrice(setup.tp1.price, market)}
+                        </span>
+                        {setup.rrRatio !== null && (
+                          <span className={`text-[10px] px-1.5 py-0.5 rounded-sm font-bold border ${
+                            setup.rrRatio >= 3 ? "bg-[hsl(var(--bullish))]/15 border-[hsl(var(--bullish))]/30 text-[hsl(var(--bullish))]" :
+                            setup.rrRatio >= 2 ? "bg-primary/15 border-primary/30 text-primary" :
+                            "bg-muted border-border text-muted-foreground"
+                          }`}>
+                            R:R {fmtRR(setup.rrRatio)}
+                          </span>
+                        )}
+                      </>
+                    ) : (
+                      <span className="text-xs text-muted-foreground italic">No draw target</span>
+                    )}
+                  </div>
+                </div>
+
+                {/* TP 2 (optional) */}
+                {setup.tp2 && (
+                  <div className="grid grid-cols-[110px_1fr]">
+                    <div className="px-3 py-2.5 bg-muted/30 border-r border-border/60">
+                      <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Target 2</p>
+                      <p className="text-[9px] text-[hsl(var(--bullish))]/60 mt-0.5 truncate">{setup.tp2.label}</p>
+                    </div>
+                    <div className="px-3 py-2.5 flex items-center">
+                      <span className="text-sm font-bold font-mono text-[hsl(var(--bullish))]/70">
+                        {fmtPrice(setup.tp2.price, market)}
+                      </span>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Confluence checklist */}
+              <div className="mt-3 space-y-1">
+                <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-2">Entry Checklist</p>
+                {setup.checklist.map((item, i) => (
+                  <div key={i} className="flex items-center gap-2 text-[11px]">
+                    <span className={`w-4 h-4 rounded-full flex items-center justify-center shrink-0 ${item.pass ? "bg-[hsl(var(--bullish))]/20" : "bg-muted"}`}>
+                      {item.pass
+                        ? <Check className="w-2.5 h-2.5 text-[hsl(var(--bullish))]" />
+                        : <AlertTriangle className="w-2.5 h-2.5 text-muted-foreground/50" />}
+                    </span>
+                    <span className={item.pass ? "text-foreground/80" : "text-muted-foreground/60 line-through decoration-muted-foreground/30"}>
+                      {item.label}
+                    </span>
+                  </div>
+                ))}
+              </div>
+
+              {/* Grade explanation */}
+              {setup.grade === "wait" && (
+                <div className="mt-2 flex items-start gap-2 text-[11px] text-muted-foreground bg-muted/30 rounded-sm px-3 py-2 border border-border/50">
+                  <AlertTriangle className="w-3.5 h-3.5 shrink-0 mt-0.5 text-yellow-400" />
+                  <span>Fewer than 3 confluence factors present. Wait for clearer alignment before entering.</span>
+                </div>
+              )}
+            </Section>
+
+            {/* ══ 1. Structure ══ */}
             <Section title="Structure" icon={Activity}>
               <div className="grid grid-cols-2 gap-2">
                 <div className="bg-muted/40 rounded-sm p-2.5">
@@ -124,7 +364,7 @@ export function IntelligenceSheet({ report, market, onClose }: Props) {
               <ConfBar value={report.structure.confidence} label="Confidence" />
             </Section>
 
-            {/* 2. Liquidity Map */}
+            {/* ══ 2. Liquidity Map ══ */}
             <Section title="Liquidity Map" icon={Layers}>
               <div className="grid grid-cols-2 gap-2">
                 <div>
@@ -158,8 +398,6 @@ export function IntelligenceSheet({ report, market, onClose }: Props) {
                   </div>
                 </div>
               </div>
-
-              {/* Equal Highs/Lows */}
               {report.liquidity.pools.filter(p => p.type === "EQH" || p.type === "EQL").slice(0, 4).map((p, i) => (
                 <div key={i} className="flex items-center justify-between text-[11px] bg-yellow-500/10 border border-yellow-500/20 rounded-sm px-2.5 py-1.5">
                   <span className="text-yellow-400 font-semibold">{p.type === "EQH" ? "Equal Highs" : "Equal Lows"}</span>
@@ -169,7 +407,7 @@ export function IntelligenceSheet({ report, market, onClose }: Props) {
               ))}
             </Section>
 
-            {/* 3. Imbalance Zones */}
+            {/* ══ 3. Imbalance Zones ══ */}
             <Section title="Imbalance Zones" icon={BarChart2}>
               {unfilledFVGs.length === 0 && <p className="text-xs text-muted-foreground italic">No significant unfilled FVGs</p>}
               <div className="space-y-1.5">
@@ -186,7 +424,7 @@ export function IntelligenceSheet({ report, market, onClose }: Props) {
               </div>
             </Section>
 
-            {/* 4. Order Flow */}
+            {/* ══ 4. Order Flow ══ */}
             <Section title="Order Flow" icon={Activity}>
               <div className="space-y-1.5">
                 {report.structure.breaks.slice(-5).reverse().map((b, i) => (
@@ -198,8 +436,6 @@ export function IntelligenceSheet({ report, market, onClose }: Props) {
                 ))}
                 {report.structure.breaks.length === 0 && <p className="text-xs text-muted-foreground italic">No recent structure breaks</p>}
               </div>
-
-              {/* Live OBs */}
               {liveOBs.length > 0 && (
                 <div className="mt-2 space-y-1">
                   <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Live Order Blocks</p>
@@ -214,7 +450,7 @@ export function IntelligenceSheet({ report, market, onClose }: Props) {
               )}
             </Section>
 
-            {/* 5. Confidence Drivers */}
+            {/* ══ 5. Confidence Drivers ══ */}
             <Section title="Confidence Drivers" icon={Zap}>
               <div className="space-y-1.5">
                 {confidenceDrivers.map((driver, i) => (
@@ -229,8 +465,6 @@ export function IntelligenceSheet({ report, market, onClose }: Props) {
                 <ConfBar value={report.dailyBias.strength} label="Daily Bias" />
                 {report.smt.detected && <ConfBar value={report.smt.confidence} label="SMT" />}
               </div>
-
-              {/* Draw targets */}
               <div className="mt-3 space-y-1">
                 <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Draw on Liquidity</p>
                 {report.draw.slice(0, 3).map((d, i) => (
@@ -243,14 +477,15 @@ export function IntelligenceSheet({ report, market, onClose }: Props) {
               </div>
             </Section>
 
-            {/* 6. Agent Pipeline */}
+            {/* ══ 6. Agent Pipeline ══ */}
             <Section title="Agent Pipeline" icon={Zap}>
               <AgentPipeline report={report} />
             </Section>
+
           </div>
         </div>
 
-        {/* Chat — fixed at bottom */}
+        {/* ── Chat — fixed at bottom ── */}
         <div className="border-t border-border shrink-0 h-72 flex flex-col">
           <AgentChat report={report} />
         </div>
