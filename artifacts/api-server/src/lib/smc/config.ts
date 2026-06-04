@@ -13,23 +13,25 @@ export const SMC_CONFIG = {
   } as Record<string, number>,
 
   liquidityHalfLifeBars: {
-    "1h": 200,
-    "4h": 200,
-    "1d": 200,
+    "1m":  80,
+    "5m":  100,
+    "15m": 120,
+    "1h":  200,
+    "4h":  200,
+    "1d":  200,
+    "1w":  100,
   } as Record<string, number>,
 
   sessionWeights: {
-    asia: 1.3,
-    london: 1.2,
-    newYork: 1.2,
-    overlap: 1.5,
+    asia:     1.3,
+    london:   1.2,
+    newYork:  1.2,
+    overlap:  1.5,
     offHours: 0.8,
   },
 
   smaPeriod: 20,
-
   obLookForward: 3,
-
   maxCandles: 300,
   maxDailyCandles: 60,
 };
