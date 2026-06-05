@@ -23,7 +23,7 @@ export function buildReport(
   timeframe: string,
   options: BuildReportOptions = {},
 ): SmcReport {
-  const structure = analyzeStructure(candles);
+  const structure = analyzeStructure(candles, timeframe);
   const fvg = analyzeFVG(candles, market);
   const liquidity = analyzeLiquidity(candles, timeframe, market);
   const orderBlocks = analyzeOrderBlocks(candles, fvg);

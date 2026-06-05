@@ -37,9 +37,12 @@ function findPivots(candles: Candle[], atr: number[], lookback: number): { highs
   return { highs, lows };
 }
 
-export function analyzeStructure(candles: Candle[]): StructureResult {
-  const atr = calcATR(candles, SMC_CONFIG.atrPeriod);
-  const { highs, lows } = findPivots(candles, atr, SMC_CONFIG.pivotLookback);
+export function analyzeStructure(candles: Candle[], timeframe = "4h"): StructureResult {
+  const pivotLookback = SMC_CONFIG.pivotLookbackPerTf[timeframe] ?? SMC_CONFIG.pivotLookback;
+  const atrPeriod     = SMC_CONFIG.atrPeriodPerTf[timeframe]     ?? SMC_CONFIG.atrPeriod;
+
+  const atr = calcATR(candles, atrPeriod);
+  const { highs, lows } = findPivots(candles, atr, pivotLookback);
 
   const pivots: StructurePoint[] = [];
   const breaks: StructureBreak[] = [];
@@ -49,8 +52,10 @@ export function analyzeStructure(candles: Candle[]): StructureResult {
   let lastLH: number | null = null;
   let lastLL: number | null = null;
 
-  const allPivotIndices = [...highs.map(i => ({ i, isHigh: true })), ...lows.map(i => ({ i, isHigh: false }))]
-    .sort((a, b) => a.i - b.i);
+  const allPivotIndices = [
+    ...highs.map(i => ({ i, isHigh: true })),
+    ...lows.map(i => ({ i, isHigh: false })),
+  ].sort((a, b) => a.i - b.i);
 
   for (const { i, isHigh } of allPivotIndices) {
     const price = isHigh ? candles[i].high : candles[i].low;
@@ -89,14 +94,10 @@ export function analyzeStructure(candles: Candle[]): StructureResult {
   }
 
   const recentPivots = pivots.slice(-12);
-  const recentHighs = recentPivots.filter(p => p.type === "HH" || p.type === "LH");
-  const recentLows = recentPivots.filter(p => p.type === "HL" || p.type === "LL");
-
   const bullishPivots = recentPivots.filter(p => p.type === "HH" || p.type === "HL");
   const bearishPivots = recentPivots.filter(p => p.type === "LH" || p.type === "LL");
 
   const totalBars = candles.length;
-
   const weightedBullish = bullishPivots.reduce((acc, p) => acc + (0.5 + 0.5 * (p.index / totalBars)), 0);
   const weightedBearish = bearishPivots.reduce((acc, p) => acc + (0.5 + 0.5 * (p.index / totalBars)), 0);
   const totalWeight = weightedBullish + weightedBearish;

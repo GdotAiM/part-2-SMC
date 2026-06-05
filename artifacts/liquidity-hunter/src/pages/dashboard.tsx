@@ -77,11 +77,11 @@ function getRoles(tfs: Tf[]): Record<Tf, string> {
 /* ─── TF Agent Card ─── */
 function TfAgentCard({
   tf, report, market, isLoading, error, onOpen,
-  role, anchorBias, isAnchor,
+  role, anchorTf, anchorBias, isAnchor,
 }: {
   tf: Tf; report: SmcReport | undefined; market: Market;
   isLoading: boolean; error: unknown; onOpen: () => void;
-  role?: string; anchorBias?: string; isAnchor?: boolean;
+  role?: string; anchorTf?: string; anchorBias?: string; isAnchor?: boolean;
 }) {
   if (isLoading) {
     return (
@@ -168,9 +168,13 @@ function TfAgentCard({
       {aligned !== null && (
         <div className={`flex items-center gap-1 text-[10px] font-semibold ${aligned ? "text-[hsl(var(--bullish))]" : "text-yellow-400"}`}>
           {aligned ? (
-            <><span className="w-1.5 h-1.5 rounded-full bg-[hsl(var(--bullish))] shrink-0" />Aligned with {TF_LABEL_MAP[anchorBias ? tf : tf]} · {anchorBias?.toUpperCase()}</>
+            <><span className="w-1.5 h-1.5 rounded-full bg-[hsl(var(--bullish))] shrink-0" />
+              Aligned with {anchorTf ? (TF_LABEL_MAP[anchorTf] ?? anchorTf.toUpperCase()) : "HTF"} · {anchorBias?.toUpperCase()}
+            </>
           ) : (
-            <><span className="w-1.5 h-1.5 rounded-full bg-yellow-400 shrink-0" />⚠ Counter-trend — caution</>
+            <><span className="w-1.5 h-1.5 rounded-full bg-yellow-400 shrink-0" />
+              ⚠ Counter-trend vs {anchorTf ? (TF_LABEL_MAP[anchorTf] ?? anchorTf.toUpperCase()) : "HTF"} — caution
+            </>
           )}
         </div>
       )}
@@ -420,6 +424,7 @@ export default function Dashboard() {
                 error={q.error}
                 onOpen={() => q.data && setSheet({ tf, report: q.data })}
                 role={cascade.roles[tf]}
+                anchorTf={cascade.anchorTf}
                 anchorBias={cascade.anchorBias}
                 isAnchor={isAnchor}
               />

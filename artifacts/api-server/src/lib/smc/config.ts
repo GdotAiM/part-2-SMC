@@ -12,6 +12,39 @@ export const SMC_CONFIG = {
     forex: 0,
   } as Record<string, number>,
 
+  /* Per-timeframe pivot lookback — shorter TFs need tighter pivots */
+  pivotLookbackPerTf: {
+    "1m":  2,
+    "5m":  2,
+    "15m": 3,
+    "1h":  5,
+    "4h":  5,
+    "1d":  5,
+    "1w":  5,
+  } as Record<string, number>,
+
+  /* Per-timeframe ATR period — shorter TFs react faster */
+  atrPeriodPerTf: {
+    "1m":  6,
+    "5m":  8,
+    "15m": 10,
+    "1h":  14,
+    "4h":  14,
+    "1d":  14,
+    "1w":  14,
+  } as Record<string, number>,
+
+  /* Per-timeframe minimum touches for a liquidity pool to count */
+  minTouchesPerTf: {
+    "1m":  1,
+    "5m":  1,
+    "15m": 1,
+    "1h":  2,
+    "4h":  2,
+    "1d":  2,
+    "1w":  2,
+  } as Record<string, number>,
+
   liquidityHalfLifeBars: {
     "1m":  80,
     "5m":  100,
