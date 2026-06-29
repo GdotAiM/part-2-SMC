@@ -1,0 +1,361 @@
+You are a senior software architect, technical writer, quantitative trading engineer, and AI engineer.
+
+Your task is NOT to modify any source code.
+
+Instead, perform a complete architectural analysis of the entire codebase and generate comprehensive project documentation.
+
+Read every relevant file before writing anything.
+
+Do not assume anything.
+
+Only document what actually exists in the project.
+
+If a feature is incomplete, clearly state that.
+
+Produce the following documentation.
+
+⸻
+
+1. README.md
+
+Create a professional GitHub README that includes:
+
+* Project title
+* Project description
+* Vision
+* Key Features
+* Screenshots section (placeholders if images do not exist)
+* Demo section
+* Architecture overview
+* Technology stack
+* AI pipeline overview
+* ICT/SMC concepts implemented
+* Frontend overview
+* Backend overview
+* API overview
+* Installation instructions
+* Environment variables
+* Running locally
+* Development workflow
+* Project structure
+* Example API requests
+* Example API responses
+* Screenshots section
+* Roadmap
+* Future improvements
+* Contributing
+* License
+* Credits
+
+The README should be professional enough for:
+
+* GitHub
+* Hackathon judging
+* Recruiters
+* Software engineering portfolios
+
+⸻
+
+2. TECHNICAL_REPORT.md
+
+Generate a complete technical report explaining the project in detail.
+
+Include sections such as:
+
+Executive Summary
+
+Project Goals
+
+System Overview
+
+Complete Architecture
+
+Frontend Architecture
+
+Backend Architecture
+
+AI Architecture
+
+Trading Engine
+
+Market Data Pipeline
+
+Analysis Pipeline
+
+Structure Detection
+
+Liquidity Detection
+
+Order Block Detection
+
+Fair Value Gap Detection
+
+PD Arrays
+
+Daily Bias
+
+SMT Divergence
+
+Draw Target Engine
+
+Confidence Scoring
+
+Market Narrative
+
+Multi-Timeframe Cascade
+
+Confluence Engine
+
+Trade Planning
+
+AI Agents
+
+REST API
+
+Database
+
+Caching
+
+Validation
+
+Logging
+
+Generated Types
+
+Performance
+
+Scalability
+
+Security
+
+Current Limitations
+
+Future Improvements
+
+Deployment
+
+Testing Strategy
+
+Lessons Learned
+
+The report should explain HOW every subsystem works internally.
+
+Include data flow diagrams using Markdown where appropriate.
+
+⸻
+
+3. ARCHITECTURE.md
+
+Create a document specifically describing the software architecture.
+
+Include:
+
+Complete folder tree
+
+Responsibilities of every folder
+
+Responsibilities of every major file
+
+Frontend component hierarchy
+
+Backend module hierarchy
+
+Data flow
+
+Request lifecycle
+
+Analysis lifecycle
+
+Agent lifecycle
+
+State management
+
+API communication
+
+Generated code
+
+Shared libraries
+
+OpenAPI generation
+
+Type generation
+
+Zod validation
+
+Database layer
+
+Dependency graph
+
+Include Mermaid diagrams where appropriate.
+
+⸻
+
+4. FRONTEND.md
+
+Document every frontend component.
+
+For every page, sheet, card, dialog, and reusable component explain:
+
+Purpose
+
+Props
+
+State
+
+Data source
+
+Interactions
+
+User flow
+
+Relationship to backend
+
+Rendering logic
+
+Any animations or transitions
+
+Explain the Intelligence Sheet, Confluence Sheet, Dashboard, cards, charts, and navigation.
+
+⸻
+
+5. BACKEND.md
+
+Document every backend module.
+
+For every file explain:
+
+Purpose
+
+Inputs
+
+Outputs
+
+Algorithms
+
+Dependencies
+
+Interfaces
+
+Error handling
+
+Performance considerations
+
+Explain every analysis algorithm in plain English.
+
+Do not simply describe the code.
+
+Explain the trading logic behind it.
+
+⸻
+
+6. AI_SYSTEM.md
+
+Explain:
+
+How prompts are built
+
+System prompts
+
+Agent roles
+
+Pipeline
+
+Streaming
+
+Context construction
+
+Reasoning flow
+
+Trade explanation generation
+
+Future AI roadmap
+
+⸻
+
+7. ICT_IMPLEMENTATION.md
+
+Explain every ICT concept implemented.
+
+Examples:
+
+Market Structure
+
+BOS
+
+CHoCH
+
+Liquidity
+
+Equal Highs
+
+Equal Lows
+
+Buy-side Liquidity
+
+Sell-side Liquidity
+
+Order Blocks
+
+Breaker Blocks
+
+Fair Value Gaps
+
+Inversion FVG
+
+Premium
+
+Discount
+
+Equilibrium
+
+SMT Divergence
+
+Draw on Liquidity
+
+Daily Bias
+
+For each concept explain:
+
+The ICT definition
+
+How the algorithm detects it
+
+Current implementation
+
+Strengths
+
+Known limitations
+
+Future improvements
+
+⸻
+
+Documentation Rules
+
+Read the codebase before writing.
+
+Do not invent features.
+
+Reference actual files and modules.
+
+Explain both the engineering and trading reasoning.
+
+Write for:
+
+Software engineers
+
+AI engineers
+
+Quantitative developers
+
+Hackathon judges
+
+Professional traders
+
+Recruiters
+
+Assume the reader has never seen the project before.
+
+The documentation should be comprehensive enough that another engineer could understand and continue developing the project without asking the original author.
+
+Generate all documentation as Markdown files and commit to the repository.

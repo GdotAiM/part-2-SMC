@@ -3,7 +3,8 @@ import type { Request, Response } from "express";
 
 const router: IRouter = Router();
 
-const DEEPSEEK_BASE = "https://api.deepseek.com/v1";
+const FIREWORKS_BASE = "https://api.fireworks.ai/inference/v1";
+const FIREWORKS_MODEL = "accounts/fireworks/models/llama-v3p3-70b-instruct";
 
 function buildSystemPrompt(report: Record<string, unknown>): string {
   const r = report as {
