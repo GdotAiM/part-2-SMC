@@ -1,0 +1,490 @@
+# Technical Report — SMC Pulse Predict (Liquidity Hunter)
+
+## Executive Summary
+
+SMC Pulse Predict is a full-stack financial intelligence platform that applies the Inner Circle Trader (ICT) methodology to live crypto and forex markets. It combines a deterministic algorithmic engine (which classifies institutional price action concepts in real time) with an LLM-powered analyst (which synthesises the data into natural-language institutional narratives). The result is a tool that performs, in seconds, the multi-timeframe analysis a trained SMC trader would conduct manually.
+
+The platform processes OHLCV market data through a pipeline of 8 specialised modules — structure, liquidity, order blocks, fair value gaps, PD arrays, daily bias, SMT divergence, and draw target scoring — and surfaces the results through a high-density React dashboard, a visual chart layer with SMC overlays, and a streaming AI analyst.
+
+---
+
+## Project Goals
+
+1. **Automate SMC analysis** — eliminate the 30–60 minutes a trader typically spends manually classifying structure, marking OBs/FVGs, and identifying liquidity on multiple charts
+2. **Multi-timeframe cascade** — present the top-down relationship between timeframes (HTF sets direction, LTF provides entry) in a single view
+3. **Institutional narrative** — generate a concise, machine-readable narrative of the current market context for both UI display and AI agent grounding
+4. **AI literacy layer** — embed a specialised AI analyst that can answer questions about the current market setup using ICT/SMC vocabulary
+5. **Visual confirmation** — render a TradingView-quality chart with all detected concepts overlaid, so traders can visually validate the algorithmic read
+
+---
+
+## System Overview
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│  React SPA (liquidity-hunter)                                    │
+│  Dashboard → Intelligence Sheets → Chart View → AI Chat         │
+└────────────────────┬────────────────────────────────────────────┘
+                     │ REST / SSE
+┌────────────────────▼────────────────────────────────────────────┐
+│  Express 5 API Server (api-server)                               │
+│  ┌────────────────┐  ┌─────────────────┐  ┌──────────────────┐  │
+│  │ Analysis Route │  │  Agents Route   │  │  60s TTL Cache   │  │
+│  │ GET /analysis  │  │ POST /agents    │  │  Map<key,entry>  │  │
+│  └───────┬────────┘  └────────┬────────┘  └──────────────────┘  │
+│          │                   │                                   │
+│  ┌───────▼────────┐   ┌──────▼─────────┐                        │
+│  │  SMC Engine    │   │  Fireworks AI  │                        │
+│  │  (8 modules)   │   │  Llama 3.3 70B │                        │
+│  └───────┬────────┘   └────────────────┘                        │
+└──────────┼──────────────────────────────────────────────────────┘
+           │
+    ┌──────┴──────┐
+    │  Market Data │
+    │  Binance API │  (crypto)
+    │  Yahoo Finance│ (forex)
+    └─────────────┘
+```
+
+---
+
+## Frontend Architecture
+
+### Technology Decisions
+
+**React 18** was chosen for its concurrent features and large ecosystem. The app does not use Server-Side Rendering (SSR) — all data fetching is client-side, which simplifies deployment.
+
+**TanStack Query** manages server state. Key benefits for this app:
+- Built-in deduplication: if 3 components request the same TF report, only 1 HTTP call is made
+- `staleTime: 60_000` aligns perfectly with the server's 60s cache TTL
+- Background refetch on window focus is disabled to prevent unnecessary API calls
+
+**Vite** provides < 100ms HMR, making the development cycle fast for iterating on the dense UI.
+
+**Tailwind CSS** + **shadcn/ui**: shadcn provides accessible primitive components (Sheet, Dialog, Select) while Tailwind handles all layout and styling. The dark theme is achieved via CSS variables — `hsl(var(--bullish))` for green and `text-destructive` for red.
+
+**Lightweight Charts v5**: Chosen over full TradingView charts because it is MIT-licensed, lightweight (< 100KB gzipped), and embeddable in any React app without an API key. The v5 upgrade changed the series creation API from `chart.addCandlestickSeries()` to `chart.addSeries(CandlestickSeries, options)`.
+
+### State Architecture
+
+```
+Dashboard (page-level controller)
+├── Server state: TanStack Query (7 TF reports, symbol list)
+├── UI state: useState (market, symbol, style, open sheets)
+└── Derived state: useMemo (cascade roles, confluence reports)
+    ├── ConfluenceCard (presentational)
+    ├── TfAgentCard × N (presentational + tap handler)
+    ├── IntelligenceSheet (overlay, owns agent state)
+    │   ├── AgentPipeline (owns SSE stream state)
+    │   └── AgentChat (owns message history state)
+    └── ChartView (overlay, owns chart lifecycle)
+```
+
+No prop drilling beyond 2 levels. Components that need data receive it directly from the dashboard. Components that need to fire actions receive callbacks.
+
+---
+
+## Backend Architecture
+
+### Express 5
+
+Express 5 (currently in release candidate) was chosen for its first-class async/await support in route handlers — errors thrown in async handlers are automatically forwarded to the error handler, eliminating the `try/catch` with `next(err)` boilerplate that plagues Express 4.
+
+### Stateless Design
+
+The server holds no persistent state. Every analysis request is computed fresh from live market data (or served from the in-process TTL cache). This means:
+- Horizontal scaling works without shared state
+- No database migrations to manage
+- Cold start is instant
+
+The `lib/db` package contains a Drizzle ORM setup but is not wired to any route — it exists as a scaffold for future features (trade journal, alert history, user settings).
+
+---
+
+## AI Architecture
+
+### Model Selection
+
+**Fireworks AI** was selected as the LLM inference provider because:
+- OpenAI-compatible API — no custom SDK needed
+- Sub-second first-token latency (< 500ms typical)
+- Llama 3.3 70B is the sweet spot of quality vs cost for this application
+- Generous rate limits on the free tier for development
+
+**Llama 3.3 70B Instruct** performs well on the SMC analyst task because:
+- 128K context window accommodates the full system prompt + conversation history
+- The model has strong financial reasoning capability from training data
+- Instruction-following is reliable enough to consistently produce structured 2–4 sentence outputs per agent
+
+### Prompt Design
+
+The system prompt is a structured text brief, not free-form prose. This was a deliberate design choice: structured prompts produce more consistent outputs because they anchor the model's response to specific numeric values rather than allowing it to speculate.
+
+The prompt includes every quantitative value the model might need:
+- Exact prices for OBs, FVGs, BSL, SSL
+- Confidence percentages
+- Session names
+- Draw target rankings with scores
+
+This grounds the model completely — it cannot hallucinate price levels because every level it might mention is literally in the context.
+
+### Streaming Architecture
+
+```
+Browser                Server              Fireworks AI
+   │                     │                     │
+   │ POST /agents/ask    │                     │
+   │────────────────────►│                     │
+   │                     │ POST chat/completions│
+   │                     │────────────────────►│
+   │                     │ SSE token stream     │
+   │                     │◄────────────────────│
+   │  data: {content:""} │                     │
+   │◄────────────────────│                     │
+   │  data: {content:""} │                     │
+   │◄────────────────────│                     │
+   │  data: {done: true} │                     │
+   │◄────────────────────│                     │
+```
+
+The server acts as a streaming proxy — it receives SSE from Fireworks and re-emits it to the browser. This avoids exposing the `FIREWORKS_API_KEY` to the client and allows server-side logging and error handling.
+
+---
+
+## Trading Engine
+
+### Design Philosophy
+
+The SMC engine is **deterministic and algorithmic** — no machine learning, no probability models trained on past data. Every detected concept follows the ICT methodology's rules:
+- Pivots are defined by price position relative to neighbours (not candle colour)
+- OBs are the last opposite-direction candle before a displacement
+- FVGs are 3-candle imbalance patterns
+- Liquidity is at swing highs/lows and equal levels
+
+This approach was chosen because:
+1. **Interpretability**: Every output can be traced back to a specific price action rule
+2. **No training data required**: The engine works immediately on any symbol or timeframe
+3. **Consistency**: The same candle sequence always produces the same result
+4. **Alignment with the methodology**: ICT analysis is rule-based, not statistical
+
+---
+
+## Market Data Pipeline
+
+### Crypto — Binance REST API
+
+```
+fetchBinanceCandles("BTCUSDT", "4h")
+    ↓
+GET https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=4h&limit=300
+    ↓
+Response: [[openTime, open, high, low, close, volume, ...], ...]
+    ↓
+Map to Candle[]: { time: openTime/1000, open, high, low, close, volume }
+    ↓
+Return 300 Candle objects
+```
+
+Binance provides accurate, millisecond-precision OHLCV data with no authentication required for market data. The public REST endpoint is rate-limited but the 60s TTL cache effectively prevents rate limit violations — each unique symbol/TF combination is fetched at most once per 60 seconds.
+
+### Forex — Yahoo Finance REST API
+
+```
+fetchYahooCandles("EURUSD=X", "1h")
+    ↓
+GET https://query1.finance.yahoo.com/v8/finance/chart/EURUSD=X?interval=60m&range=60d
+    ↓
+Response: { chart: { result: [{ timestamp: [], indicators: { quote: [{ open, high, low, close, volume }] } }] } }
+    ↓
+Zip parallel arrays into Candle[], filter nulls
+    ↓
+Return Candle objects
+```
+
+Yahoo Finance is an unofficial API and does not guarantee stability. The `range` parameter is set per-timeframe to ensure enough bars are returned (e.g., `range=60d` for hourly data to get ~360 bars).
+
+---
+
+## Analysis Pipeline
+
+### Data Flow
+
+```
+buildReport(candles, symbol, market, timeframe, options)
+          │
+          ├─ analyzeStructure(candles, tf)
+          │    ├─ calcATR(candles, period)
+          │    ├─ findPivots(candles, atr, lookback)
+          │    ├─ classifyPivots() → HH/HL/LH/LL[]
+          │    ├─ findBreaks() → BOS/CHoCH[]
+          │    ├─ detectPhase(breaks, bias)
+          │    └─ return StructureResult
+          │
+          ├─ analyzeFVG(candles, market)
+          │    ├─ scan 3-candle windows
+          │    ├─ track fill fractions
+          │    ├─ detect inversions
+          │    └─ return FairValueGap[]
+          │
+          ├─ analyzeLiquidity(candles, tf, market)
+          │    ├─ findPivots() (shared logic)
+          │    ├─ score each pool
+          │    ├─ probabilityOfSweep per pool
+          │    └─ return LiquidityResult
+          │
+          ├─ analyzeOrderBlocks(candles, fvg)
+          │    ├─ detect displacement moves
+          │    ├─ find last opposite candle
+          │    ├─ check FVG confluence
+          │    ├─ score confidence
+          │    ├─ check mitigation
+          │    └─ return OrderBlock[]
+          │
+          ├─ analyzePdArray(candles, tf)
+          │    ├─ find dealing range
+          │    ├─ compute equilibrium
+          │    └─ return PdArrayResult
+          │
+          ├─ analyzeDailyBias(dailyCandles)
+          │    ├─ structure-based bias (primary)
+          │    ├─ SMA fallback (weak)
+          │    └─ return DailyBiasResult
+          │
+          ├─ analyzeSMT(primaryCandles, corrCandles, ...)
+          │    ├─ align by timestamp
+          │    ├─ find diverging swing points
+          │    ├─ magnitude + timing confidence
+          │    └─ return SmtDivergence
+          │
+          ├─ HTF bias → OB confidence adjustment
+          │    (applied here where both bias and OBs are known)
+          │
+          ├─ confluenceBoost() per draw target
+          │    └─ scored + ranked DrawTarget[]
+          │
+          ├─ deriveSessionState() → string
+          ├─ candles.slice(-100) → chart data
+          ├─ buildMarketNarrative() → string
+          └─ return SmcReport
+```
+
+---
+
+## Confidence Scoring
+
+### Structure Confidence
+
+```
+confidence = alignedBreaks / max(1, totalBreaks)
+  where alignedBreaks = breaks whose direction matches the dominant bias
+  clamped to [0.25, 0.92]
+```
+
+A structure with 4 bearish BOS and 1 bullish CHoCH → `4/5 = 0.80` confidence bearish.
+
+### Order Block Confidence
+
+Starts at 0.50. Factors applied:
+- Displacement magnitude > 2× ATR: `+0.20`
+- FVG confluence within 0.5%: `+0.15`
+- Volume spike (crypto, 1.5× average): `+0.10`
+- Breaker block: `-0.10`
+- HTF bias aligned: `+0.12` (applied in `report.ts`)
+- Counter-trend OB: `-0.15` (applied in `report.ts`)
+
+Clamped to [0.05, 0.97].
+
+### Liquidity Pool Probability of Sweep
+
+```
+base = exp(-distance_pct × 8)    (exponential decay by % distance)
++ session_boost × 0.10           (London/NY overlap = max boost)
++ recency_boost × 0.08           (formed in last 20 bars = max)
++ touches × 0.05                 (capped at 0.20)
++ htf_bias_boost × 0.15          (if pool type matches HTF bias)
+clamped to [0.05, 0.95]
+```
+
+### Draw Target Score
+
+```
+baseScore = liquidityPool.score × proximity × biasScore
+finalScore = baseScore × confluenceMultiplier
+  where confluenceMultiplier = 1.0
+    + (0.35 × nearOB.confidence) if OB within 0.5%
+    + 0.20 if price inside unfilled FVG
+    + 0.10 if in bias-aligned PD zone
+    + 0.08 if SMT detected
+```
+
+---
+
+## Multi-Timeframe Cascade
+
+The cascade system identifies how the three active timeframes relate to each other. For Intraday mode (M15 / H1 / H4):
+
+```
+Sort by TF weight: H4 > H1 > M15
+Anchor = highest-weight TF with a loaded report
+
+Roles:
+  H4  → BIAS SETTER   (sets the macro direction)
+  H1  → CONFIRMATION  (must align with H4 to validate)
+  M15 → ENTRY TRIGGER (lowest TF — seeks entry after confluence)
+
+Alignment check:
+  For each non-anchor TF:
+    getBias(report) === anchorBias → "Aligned"
+    getBias(report) !== anchorBias → "Counter-trend — caution"
+```
+
+The cascade card shows this as a visual flow diagram with directional arrows. A counter-trend lower TF is flagged with a yellow warning — the trader should wait for the lower TF to flip before entering.
+
+---
+
+## Caching
+
+### In-Memory TTL Cache (`routes/analysis.ts`)
+
+```ts
+const cache = new Map<string, { data: unknown; expiresAt: number }>();
+const CACHE_TTL_MS = 60_000; // 60 seconds
+
+// Key: "crypto|BTCUSDT|4h|ETHUSDT"
+// Eviction: FIFO at 500 entries (prevents unbounded memory growth)
+```
+
+The 60s TTL was chosen to match the dashboard's auto-refresh interval. This means:
+- Fresh data on every auto-refresh cycle
+- No wasted API calls within a 60s window
+- Rate limit pressure on Binance/Yahoo is minimal
+
+The cache survives across requests but is reset on server restart. There is no distributed cache — this is intentional for the current single-process architecture.
+
+---
+
+## REST API
+
+### Endpoint Summary
+
+| Method | Path | Description |
+|---|---|---|
+| GET | `/api/health` | Health check |
+| GET | `/api/symbols` | Supported symbols list |
+| GET | `/api/analysis/crypto` | Full SMC report for crypto |
+| GET | `/api/analysis/forex` | Full SMC report for forex |
+| POST | `/api/agents/ask` | Streaming Q&A (SSE) |
+| POST | `/api/agents/pipeline` | Streaming 4-agent pipeline (SSE) |
+
+### Response Shape (SmcReport)
+
+The `SmcReport` is the central data contract of the entire system. Every UI component and AI agent reads from the same structure:
+
+```ts
+interface SmcReport {
+  symbol: string;
+  market: "crypto" | "forex";
+  timeframe: string;
+  currentPrice: number;
+  generatedAt: number;           // Unix timestamp
+  candles: Candle[];             // Last 100 bars for chart
+  structure: StructureResult;    // Pivots, breaks, phase, bias, confidence
+  liquidity: LiquidityResult;    // BSL/SSL pools with sweep probability
+  orderBlocks: OrderBlock[];     // Active OBs with confidence
+  fvg: FairValueGap[];           // Unfilled gaps
+  pdArray: PdArrayResult;        // Premium/Discount/EQ zones
+  dailyBias: DailyBiasResult;    // HTF 1D bias with evidence
+  smt: SmtDivergence;            // Correlated pair divergence
+  draw: DrawTarget[];            // Ranked price objectives
+  narrative: string;             // Auto-generated market narrative
+  sessionState: string;          // ICT session classification
+}
+```
+
+---
+
+## Validation
+
+The server performs minimal runtime validation on query parameters (symbol is required, timeframe defaults to "4h"). The `lib/api-zod` package contains Zod schemas generated from the OpenAPI spec — these are available for use in middleware but are not currently wired to the request pipeline. The OpenAPI spec in `lib/api-spec/openapi.yaml` is the canonical API contract.
+
+---
+
+## Logging
+
+Pino provides structured JSON logging. Every HTTP request logs:
+- Request: method, URL, request ID
+- Response: status code, response time in milliseconds
+
+SMC engine errors and AI agent failures are logged at `ERROR` level with the error object and relevant context (symbol, agent name).
+
+---
+
+## Current Limitations
+
+| Limitation | Impact | Potential Fix |
+|---|---|---|
+| Yahoo Finance unofficial API | Forex may fail under load | Use a commercial data provider (Alpha Vantage, Twelve Data) |
+| In-process cache not shared | Multiple server instances have independent caches | Add Redis |
+| Single CHoCH not confirmed | CHoCH without a follow-through BOS may be premature | Require a confirming BOS before classifying CHoCH as reversal |
+| No multi-candle OBs | ICT sometimes uses 2–3 candle OB zones | Extend OB detection to merge consecutive qualifying candles |
+| No WebSocket live feed | Price updates are pull-based (60s poll) | Connect a Binance/forex WebSocket for sub-second price updates |
+| No persistence | No trade journal, alert history, or user preferences | Add Drizzle ORM + PostgreSQL |
+| Yahoo forex gaps | Weekend gaps and holiday gaps create false pivots | Filter candles by trading-hours timestamp before analysis |
+
+---
+
+## Security
+
+- No user authentication (public, read-only analysis tool)
+- `FIREWORKS_API_KEY` stored as a server-side environment secret — never exposed to the browser
+- CORS is open (all origins) — acceptable for a public analysis tool without user data
+- No user-supplied content reaches the SMC engine — all inputs are validated symbol strings and timeframe strings
+- AI endpoint bodies are typed and validated — malformed JSON returns 400
+
+---
+
+## Deployment
+
+The platform is designed for deployment on Replit, which manages:
+- TLS termination and HTTPS
+- Domain routing
+- Process management (pnpm workspace workflows)
+- Secrets injection
+
+For self-hosting: run the API server and frontend as two separate processes. A reverse proxy (nginx/Caddy) routes `/api/*` to the API server and everything else to the Vite-built static files.
+
+---
+
+## Testing Strategy
+
+The current codebase has no automated test suite. The recommended testing approach for future implementation:
+
+**SMC engine** (highest priority):
+- Unit tests for each analyser module with known candle fixtures
+- Property tests to verify invariants (e.g., "an OB's proximal must always be between proximal and distal")
+- Regression tests for the two critical bug fixes (pivot colour filter, bullish OB proximal)
+
+**API routes**:
+- Integration tests against a mock Binance/Yahoo response
+- Cache hit/miss verification
+- Error handling for upstream failures
+
+**Frontend**:
+- Component tests (React Testing Library) for IntelligenceSheet, ConfluenceCard, ChartView
+- E2E tests (Playwright) for the full dashboard flow
+
+---
+
+## Lessons Learned
+
+1. **Pivot colour filtering is incorrect in ICT**: The original implementation rejected swing highs that were bearish candles, suppressing many valid pivots. ICT pivots depend only on price geometry — not candle colour.
+
+2. **OB proximal boundary matters**: The KZO line shown to traders is the proximal level. For a bullish OB (which is a bearish candle), the proximal is the candle's `open` (top of the body) — not the `close`. Getting this wrong would show traders the wrong entry zone.
+
+3. **Lightweight Charts v5 is a breaking change**: The entire series creation API changed from `chart.addCandlestickSeries()` to `chart.addSeries(CandlestickSeries, options)`. Markers also moved from `series.setMarkers()` to `createSeriesMarkers(series, markers)`.
+
+4. **Canvas overlay over chart**: Using a `<canvas>` absolutely positioned over the Lightweight Charts container, with `pointer-events: none`, is the cleanest way to render arbitrary shapes (OB rectangles, session bands) that the library doesn't natively support. The canvas must be redrawn on every `subscribeVisibleTimeRangeChange` event.
+
+5. **Yahoo Finance nulls**: The Yahoo API returns `null` values in OHLCV arrays for hours when the market is closed. Not filtering these causes crashes in the SMC engine (division by zero in ATR, null prices in comparisons). Always filter out null candles.
+
+6. **AI grounding via numbers**: Injecting exact price levels into the system prompt is far more effective than asking the model to "use the SMC concepts in the context". The model produces specific, accurate analysis when given specific, accurate numbers.

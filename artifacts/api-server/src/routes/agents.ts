@@ -3,7 +3,7 @@ import type { Request, Response } from "express";
 
 const router: IRouter = Router();
 
-const FIREWORKS_BASE = "https://api.fireworks.ai/inference/v1";
+const FIREWORKS_BASE  = "https://api.fireworks.ai/inference/v1";
 const FIREWORKS_MODEL = "accounts/fireworks/models/llama-v3p3-70b-instruct";
 
 function buildSystemPrompt(report: Record<string, unknown>): string {
@@ -22,15 +22,15 @@ function buildSystemPrompt(report: Record<string, unknown>): string {
     draw: Array<{ label: string; score: number; direction: string }>;
   };
 
-  const recentBreaks = (r.structure.breaks ?? []).slice(-3).map(b => `${b.type} ${b.direction} @ ${b.price}`).join(", ") || "none";
-  const bslInfo = r.liquidity.nearestBSL ? `BSL @ ${r.liquidity.nearestBSL.price} (score ${r.liquidity.nearestBSL.score.toFixed(2)})` : "none";
-  const sslInfo = r.liquidity.nearestSSL ? `SSL @ ${r.liquidity.nearestSSL.price} (score ${r.liquidity.nearestSSL.score.toFixed(2)})` : "none";
-  const liveOBs = (r.orderBlocks ?? []).filter(ob => ob.valid && !ob.isMitigated).slice(0, 5)
+  const recentBreaks  = (r.structure.breaks ?? []).slice(-3).map(b => `${b.type} ${b.direction} @ ${b.price}`).join(", ") || "none";
+  const bslInfo       = r.liquidity.nearestBSL ? `BSL @ ${r.liquidity.nearestBSL.price} (score ${r.liquidity.nearestBSL.score.toFixed(2)})` : "none";
+  const sslInfo       = r.liquidity.nearestSSL ? `SSL @ ${r.liquidity.nearestSSL.price} (score ${r.liquidity.nearestSSL.score.toFixed(2)})` : "none";
+  const liveOBs       = (r.orderBlocks ?? []).filter(ob => ob.valid && !ob.isMitigated).slice(0, 5)
     .map(ob => `${ob.type} OB ${ob.proximal}→${ob.distal}${ob.hasFvg ? " +FVG" : ""}${ob.isBreaker ? " BREAKER" : ""}`).join(", ") || "none";
-  const unfilledFVGs = (r.fvg ?? []).filter(g => g.fillFraction < 0.5).slice(-5)
+  const unfilledFVGs  = (r.fvg ?? []).filter(g => g.fillFraction < 0.5).slice(-5)
     .map(g => `${g.type} FVG ${g.bottom}–${g.top} (${Math.round(g.fillFraction * 100)}% filled)${g.isInversion ? " INV" : ""}`).join(", ") || "none";
-  const topDraws = (r.draw ?? []).slice(0, 3).map(d => `${d.label} (score ${d.score.toFixed(2)})`).join(", ");
-  const smtLine = r.smt.detected ? `DETECTED — ${r.smt.type} (${Math.round(r.smt.confidence * 100)}% confidence) between ${r.smt.primarySymbol} / ${r.smt.correlatedSymbol}` : "Not detected";
+  const topDraws      = (r.draw ?? []).slice(0, 3).map(d => `${d.label} (score ${d.score.toFixed(2)})`).join(", ");
+  const smtLine       = r.smt.detected ? `DETECTED — ${r.smt.type} (${Math.round(r.smt.confidence * 100)}% confidence) between ${r.smt.primarySymbol} / ${r.smt.correlatedSymbol}` : "Not detected";
   const liquidityPools = (r.liquidity.pools ?? []).slice(0, 8)
     .map(p => `${p.type} @ ${p.price} (${p.touches}x${p.session ? " " + p.session : ""}${p.wasSwept ? " SWEPT" : ""})`).join(", ");
 
@@ -79,6 +79,8 @@ INSTRUCTIONS:
 - Keep answers concise but thorough — 3–6 sentences unless more detail is requested.`;
 }
 
+// ── /agents/ask — streaming Q&A with report context ──────────────────────────
+
 router.post("/agents/ask", async (req: Request, res: Response): Promise<void> => {
   const { question, report, history = [] } = req.body as {
     question: string;
@@ -96,7 +98,7 @@ router.post("/agents/ask", async (req: Request, res: Response): Promise<void> =>
     return;
   }
 
-  const apiKey = process.env.DEEPSEEK_API_KEY;
+  const apiKey = process.env.FIREWORKS_API_KEY;
   if (!apiKey) {
     res.status(500).json({ error: "AI not configured" });
     return;
@@ -113,14 +115,14 @@ router.post("/agents/ask", async (req: Request, res: Response): Promise<void> =>
   res.setHeader("X-Accel-Buffering", "no");
 
   try {
-    const response = await fetch(`${DEEPSEEK_BASE}/chat/completions`, {
+    const response = await fetch(`${FIREWORKS_BASE}/chat/completions`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        model: "deepseek-chat",
+        model: FIREWORKS_MODEL,
         stream: true,
         max_tokens: 1024,
         messages: [
@@ -132,14 +134,14 @@ router.post("/agents/ask", async (req: Request, res: Response): Promise<void> =>
 
     if (!response.ok || !response.body) {
       const text = await response.text();
-      res.write(`data: ${JSON.stringify({ error: `DeepSeek error: ${response.status} ${text}` })}\n\n`);
+      res.write(`data: ${JSON.stringify({ error: `AI error: ${response.status} ${text}` })}\n\n`);
       res.end();
       return;
     }
 
-    const reader = response.body.getReader();
+    const reader  = response.body.getReader();
     const decoder = new TextDecoder();
-    let buffer = "";
+    let buffer    = "";
 
     while (true) {
       const { done, value } = await reader.read();
@@ -153,14 +155,10 @@ router.post("/agents/ask", async (req: Request, res: Response): Promise<void> =>
         if (!trimmed || trimmed === "data: [DONE]") continue;
         if (!trimmed.startsWith("data: ")) continue;
         try {
-          const json = JSON.parse(trimmed.slice(6));
+          const json  = JSON.parse(trimmed.slice(6));
           const delta = json.choices?.[0]?.delta?.content;
-          if (delta) {
-            res.write(`data: ${JSON.stringify({ content: delta })}\n\n`);
-          }
-        } catch {
-          // skip malformed chunk
-        }
+          if (delta) res.write(`data: ${JSON.stringify({ content: delta })}\n\n`);
+        } catch { /* skip malformed chunk */ }
       }
     }
 
@@ -173,6 +171,8 @@ router.post("/agents/ask", async (req: Request, res: Response): Promise<void> =>
   }
 });
 
+// ── /agents/pipeline — sequential multi-agent analysis ───────────────────────
+
 router.post("/agents/pipeline", async (req: Request, res: Response): Promise<void> => {
   const { report } = req.body as { report: Record<string, unknown> };
 
@@ -181,7 +181,7 @@ router.post("/agents/pipeline", async (req: Request, res: Response): Promise<voi
     return;
   }
 
-  const apiKey = process.env.DEEPSEEK_API_KEY;
+  const apiKey = process.env.FIREWORKS_API_KEY;
   if (!apiKey) {
     res.status(500).json({ error: "AI not configured" });
     return;
@@ -217,14 +217,14 @@ router.post("/agents/pipeline", async (req: Request, res: Response): Promise<voi
     res.write(`data: ${JSON.stringify({ agent, type: "start" })}\n\n`);
 
     try {
-      const response = await fetch(`${DEEPSEEK_BASE}/chat/completions`, {
+      const response = await fetch(`${FIREWORKS_BASE}/chat/completions`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${apiKey}`,
         },
         body: JSON.stringify({
-          model: "deepseek-chat",
+          model: FIREWORKS_MODEL,
           stream: true,
           max_tokens: 512,
           messages: [
@@ -239,9 +239,9 @@ router.post("/agents/pipeline", async (req: Request, res: Response): Promise<voi
         continue;
       }
 
-      const reader = response.body.getReader();
+      const reader  = response.body.getReader();
       const decoder = new TextDecoder();
-      let buffer = "";
+      let buffer    = "";
 
       while (true) {
         const { done, value } = await reader.read();
@@ -255,14 +255,10 @@ router.post("/agents/pipeline", async (req: Request, res: Response): Promise<voi
           if (!trimmed || trimmed === "data: [DONE]") continue;
           if (!trimmed.startsWith("data: ")) continue;
           try {
-            const json = JSON.parse(trimmed.slice(6));
+            const json  = JSON.parse(trimmed.slice(6));
             const delta = json.choices?.[0]?.delta?.content;
-            if (delta) {
-              res.write(`data: ${JSON.stringify({ agent, type: "delta", content: delta })}\n\n`);
-            }
-          } catch {
-            // skip
-          }
+            if (delta) res.write(`data: ${JSON.stringify({ agent, type: "delta", content: delta })}\n\n`);
+          } catch { /* skip */ }
         }
       }
 
