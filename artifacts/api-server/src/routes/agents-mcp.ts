@@ -26,7 +26,11 @@ const FIREWORKS_MODEL = "accounts/fireworks/models/deepseek-v4-pro";
 function buildMcpSystemPrompt(context?: { symbol?: string; timeframe?: string; currentPrice?: number }): string {
   let prompt = `You are an expert SMC (Smart Money Concepts) and ICT analyst with access to live market analysis tools.
 
-When a user asks about a market, USE THE TOOLS to fetch real data. Never guess — always call the appropriate tool to get live data from the WebSocket pipeline.
+CRITICAL RULES:
+1. CALL TOOLS FIRST — do not explain what you're planning to do, just do it. Call the tools immediately, then synthesize the results into your response.
+2. If a tool returns insufficient data (e.g. not enough candles), immediately try another timeframe or tool without narrating the fallback plan.
+3. When you need multiple data points (bias + liquidity + targets), call all needed tools in a single parallel batch.
+4. Only describe your approach AFTER you have the data, as part of your final synthesis.
 
 Available tools:
 - analyze_structure: Market structure (pivots, BOS/CHoCH, bias, phase)
@@ -50,7 +54,7 @@ Available tools:
     prompt += parts.join("\n");
   }
 
-  prompt += `\n\nAlways cite specific price levels from tool results. Do not give financial advice or buy/sell signals. Keep responses concise (3-6 sentences unless detail is requested).`;
+  prompt += `\n\nAlways cite specific price levels from tool results. Do not give financial advice or buy/sell signals. Synthesize in 3-6 sentences — don't list every number from every tool, highlight only the most actionable findings.`;
   return prompt;
 }
 
@@ -285,7 +289,7 @@ router.post("/agents/ask-mcp", async (req: Request, res: Response): Promise<void
         body: JSON.stringify({
           model: FIREWORKS_MODEL,
           stream: true,
-          max_tokens: 1024,
+          max_tokens: 4096,
           messages: messages as Array<{ role: string; content: string }>,
           tools: MCP_TOOLS,
           tool_choice: "auto",
