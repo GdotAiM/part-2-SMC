@@ -310,14 +310,23 @@ class ForexWsManager {
         }
       }
     } catch (err) {
-      logger.debug({ err, symbol, tf }, "Forex poll failed");
+      logger.warn({ err, symbol, tf }, "Forex poll failed");
     }
   }
 
   private async fetchCandles(symbol: string, tf: string): Promise<Candle[]> {
     if (this.apiKey) {
-      return this.fetchFinnhubCandles(symbol, tf);
+      try {
+        const finnhubResult = await this.fetchFinnhubCandles(symbol, tf);
+        if (finnhubResult.length > 0) return finnhubResult;
+        logger.debug({ symbol, tf }, "Finnhub REST returned no candles, falling back to Yahoo");
+      } catch (err) {
+        // Finnhub REST failed (network error, rate limit, premium-only endpoint, etc.) —
+        // fall through to Yahoo which is always available and free
+        logger.debug({ err, symbol, tf }, "Finnhub REST failed, falling back to Yahoo");
+      }
     }
+    // No API key, or Finnhub returned empty/errored — use Yahoo REST (always available, free)
     return fetchYahooCandles(symbol, tf);
   }
 
