@@ -59,12 +59,13 @@ export type McpStreamEvent =
 export async function askAgentsMcp(
   question: string,
   history: ChatMessage[],
+  context: { symbol?: string; timeframe?: string; currentPrice?: number } | undefined,
   onEvent: (event: McpStreamEvent) => void,
 ): Promise<void> {
   const res = await fetch(apiUrl("/agents/ask-mcp"), {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ question, history }),
+    body: JSON.stringify({ question, history, context }),
   });
 
   if (!res.ok || !res.body) throw new Error(`HTTP ${res.status}`);

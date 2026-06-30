@@ -21,9 +21,10 @@ const router: IRouter = Router();
 const FIREWORKS_BASE = "https://api.fireworks.ai/inference/v1";
 const FIREWORKS_MODEL = "accounts/fireworks/models/deepseek-v4-pro";
 
-// ── System prompt (minimal — tools do the heavy lifting) ──────────────────────
+// ── System prompt builder (includes dashboard context when available) ────────
 
-const MCP_SYSTEM_PROMPT = `You are an expert SMC (Smart Money Concepts) and ICT analyst with access to live market analysis tools.
+function buildMcpSystemPrompt(context?: { symbol?: string; timeframe?: string; currentPrice?: number }): string {
+  let prompt = `You are an expert SMC (Smart Money Concepts) and ICT analyst with access to live market analysis tools.
 
 When a user asks about a market, USE THE TOOLS to fetch real data. Never guess — always call the appropriate tool to get live data from the WebSocket pipeline.
 
@@ -38,9 +39,20 @@ Available tools:
 - get_draw_targets: Ranked draw-on-liquidity targets
 - build_full_report: Complete SMC report (all 8 dimensions)
 - get_live_candles: Raw OHLCV candles from real-time feed
-- scan_all_timeframes: Multi-timeframe cascade (M1→W1)
+- scan_all_timeframes: Multi-timeframe cascade (M1→W1)`;
 
-Always cite specific price levels from tool results. Do not give financial advice or buy/sell signals. Keep responses concise (3-6 sentences unless detail is requested).`;
+  if (context?.symbol) {
+    const parts = [`\n\nDASHBOARD CONTEXT (the user is currently viewing this market):`];
+    parts.push(`- Symbol: ${context.symbol}`);
+    if (context.timeframe) parts.push(`- Timeframe: ${context.timeframe}`);
+    if (context.currentPrice != null) parts.push(`- Current Price: ${context.currentPrice}`);
+    parts.push(`\nIf the user asks a question without specifying a symbol or timeframe, DEFAULT to the dashboard context above. For example, if they ask "where are institutions likely sitting?", they mean ${context.symbol} on the ${context.timeframe ?? "current"} timeframe.`);
+    prompt += parts.join("\n");
+  }
+
+  prompt += `\n\nAlways cite specific price levels from tool results. Do not give financial advice or buy/sell signals. Keep responses concise (3-6 sentences unless detail is requested).`;
+  return prompt;
+}
 
 // ── Tool definitions (OpenAI function-calling format) ─────────────────────────
 
@@ -230,9 +242,10 @@ async function executeToolCall(name: string, args: Record<string, unknown>): Pro
 // ── POST /api/agents/ask-mcp ──────────────────────────────────────────────────
 
 router.post("/agents/ask-mcp", async (req: Request, res: Response): Promise<void> => {
-  const { question, history = [] } = req.body as {
+  const { question, history = [], context } = req.body as {
     question: string;
     history?: Array<{ role: "user" | "assistant" | "tool"; content: string; tool_call_id?: string; tool_calls?: Array<{ id: string; type: "function"; function: { name: string; arguments: string } }> }>;
+    context?: { symbol?: string; timeframe?: string; currentPrice?: number };
   };
 
   if (!question || typeof question !== "string") {
@@ -252,7 +265,7 @@ router.post("/agents/ask-mcp", async (req: Request, res: Response): Promise<void
   res.setHeader("X-Accel-Buffering", "no");
 
   const messages: Array<{ role: string; content: string; tool_calls?: unknown; tool_call_id?: string }> = [
-    { role: "system", content: MCP_SYSTEM_PROMPT },
+    { role: "system", content: buildMcpSystemPrompt(context) },
     ...history.slice(-8),
     { role: "user", content: question },
   ];
