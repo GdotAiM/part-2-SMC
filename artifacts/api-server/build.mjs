@@ -100,6 +100,10 @@ async function buildAll() {
       "puppeteer",
       "puppeteer-core",
       "electron",
+      // fastmcp → xsschema optional deps (only zod is needed)
+      "effect",
+      "sury",
+      "@valibot/to-json-schema",
     ],
     sourcemap: "linked",
     plugins: [

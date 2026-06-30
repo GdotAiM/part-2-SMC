@@ -4,6 +4,7 @@ import symbolsRouter from "./symbols.js";
 import analysisRouter from "./analysis.js";
 import agentsRouter from "./agents.js";
 import streamRouter from "./stream.js";
+import agentsMcpRouter from "./agents-mcp.js";
 
 const router: IRouter = Router();
 
@@ -12,5 +13,6 @@ router.use(symbolsRouter);
 router.use(analysisRouter);
 router.use(agentsRouter);
 router.use(streamRouter);
+router.use(agentsMcpRouter);
 
 export default router;
