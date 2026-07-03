@@ -118,7 +118,7 @@ AI analyst endpoints. Both stream Server-Sent Events (SSE) back to the client.
 
 **Authentication**: Reads `FIREWORKS_API_KEY` from environment. Returns 500 if not set.
 
-**Model**: `accounts/fireworks/models/llama-v3p3-70b-instruct` via `https://api.fireworks.ai/inference/v1/chat/completions`
+**Model**: `accounts/fireworks/models/deepseek-v4-pro` via `https://api.fireworks.ai/inference/v1/chat/completions`
 
 **`/agents/ask` request body**:
 ```json

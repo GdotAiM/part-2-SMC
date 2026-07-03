@@ -25,7 +25,7 @@ Most retail traders lose because they see charts the wrong way. Institutions don
 | **SMT Divergence** | Correlated-pair divergence detection (BTC/ETH, EUR/GBP) with magnitude + timing scoring |
 | **Draw on Liquidity** | Confluence-boosted target scoring that ranks BSL/SSL/OB/FVG as next price objectives |
 | **Visual Chart Layer** | TradingView Lightweight Charts (v5) with session backgrounds, OB/FVG rectangles, BOS/CHoCH markers, KZO lines |
-| **AI Agent System** | Fireworks AI (Llama 3.3 70B) — streaming Q&A + 4-agent sequential analysis pipeline |
+| **AI Agent System** | Fireworks AI (DeepSeek V4 Pro) — streaming Q&A + 4-agent sequential analysis pipeline |
 | **Market Narrative** | Auto-generated institutional narrative string per report |
 | **Session State** | Real-time ICT session inference: Asian Range / London Expansion / NY Open / PM Distribution |
 | **Real-Time Price Feed** | Binance US WebSocket (crypto) + Finnhub WS / Yahoo polling (forex) with SSE push to browser |
@@ -101,7 +101,7 @@ Run locally (see Installation below) then visit `http://localhost:5173`.
 | Logger | Pino (JSON structured logging) |
 | Data (Crypto) | Binance REST API (no key required for OHLCV) |
 | Data (Forex) | Yahoo Finance REST API |
-| AI | Fireworks AI — Llama 3.3 70B Instruct (SSE streaming) |
+| AI | Fireworks AI — DeepSeek V4 Pro (SSE streaming) |
 | Cache | In-process Map, 60s TTL |
 
 ### Frontend

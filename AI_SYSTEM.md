@@ -2,7 +2,7 @@
 
 ## Overview
 
-The AI layer provides two modes of interaction, both powered by **Fireworks AI** (Llama 3.3 70B Instruct) via an OpenAI-compatible streaming API. Neither mode requires pre-training — the model is grounded entirely by injecting the live `SmcReport` into the system prompt at request time.
+The AI layer provides two modes of interaction, both powered by **Fireworks AI** (DeepSeek V4 Pro) via an OpenAI-compatible streaming API. Neither mode requires pre-training — the model is grounded entirely by injecting the live `SmcReport` into the system prompt at request time.
 
 ---
 
@@ -11,7 +11,7 @@ The AI layer provides two modes of interaction, both powered by **Fireworks AI**
 | Property | Value |
 |---|---|
 | Provider | Fireworks AI |
-| Model | `accounts/fireworks/models/llama-v3p3-70b-instruct` |
+| Model | `accounts/fireworks/models/deepseek-v4-pro` |
 | Context | Live SmcReport injected per request |
 | Streaming | Server-Sent Events (SSE) — token-by-token |
 | Auth | `FIREWORKS_API_KEY` environment secret |

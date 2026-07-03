@@ -109,6 +109,45 @@ function drawOverlay(
     }
   }
 
+  // ── PD Array zone band ────────────────────────────────────────────────────────
+  const { dealingRange, equilibrium: eq, currentBias } = rep.pdArray;
+  if (dealingRange?.high && dealingRange?.low && eq != null) {
+    const yDRH = yOf(dealingRange.high);
+    const yDRL = yOf(dealingRange.low);
+    const yEQ  = yOf(eq);
+    if (yDRH !== null && yDRL !== null && yEQ !== null) {
+      const premiumTop  = Math.min(yDRH, yEQ);
+      const premiumH    = Math.abs(yEQ - yDRH);
+      const discountTop = Math.min(yDRL, yEQ);
+      const discountH   = Math.abs(yDRL - yEQ);
+
+      // Premium zone (above EQ — red tint)
+      ctx.fillStyle = "rgba(239,83,80,0.06)";
+      ctx.fillRect(0, premiumTop, W, premiumH);
+      ctx.strokeStyle = "rgba(239,83,80,0.18)";
+      ctx.lineWidth = 0.5;
+      ctx.setLineDash([2, 6]);
+      ctx.strokeRect(0, premiumTop, W, premiumH);
+
+      // Discount zone (below EQ — green tint)
+      ctx.fillStyle = "rgba(38,166,154,0.06)";
+      ctx.fillRect(0, discountTop, W, discountH);
+      ctx.strokeStyle = "rgba(38,166,154,0.18)";
+      ctx.strokeRect(0, discountTop, W, discountH);
+      ctx.setLineDash([]);
+
+      // Labels
+      const decs = priceDecimals(dealingRange.high, market);
+      ctx.font = "8.5px 'JetBrains Mono', monospace";
+      // Premium label
+      ctx.fillStyle = "rgba(239,83,80,0.55)";
+      ctx.fillText(`Premium (${currentBias === "premium" ? "← " : ""}${dealingRange.high.toFixed(decs)})`, 4, premiumTop + 12);
+      // Discount label
+      ctx.fillStyle = "rgba(38,166,154,0.55)";
+      ctx.fillText(`Discount (${dealingRange.low.toFixed(decs)}${currentBias === "discount" ? " →" : ""})`, 4, discountTop + discountH - 4);
+    }
+  }
+
   // ── FVG rectangles ───────────────────────────────────────────────────────────
   for (const fvg of rep.fvg.filter(g => g.fillFraction < 0.5)) {
     const x1 = xOf(fvg.time);
@@ -211,6 +250,35 @@ function drawOverlay(
       ctx.font = "9px monospace";
       const offset = b.direction === "bullish" ? 11 : -3;
       ctx.fillText("CHoCH", Math.max(0, xB) + 2, yB + offset);
+    }
+  }
+
+  // ── SMT divergence marker ──────────────────────────────────────────────────
+  if (rep.smt?.detected && rep.smt.time) {
+    const xS = xOf(rep.smt.time);
+    if (xS !== null && xS >= 0 && xS <= W) {
+      // Vertical dashed line at divergence time
+      ctx.strokeStyle = "rgba(168,85,247,0.5)";
+      ctx.lineWidth = 1.0;
+      ctx.setLineDash([5, 3]);
+      ctx.beginPath();
+      ctx.moveTo(xS, 0);
+      ctx.lineTo(xS, H);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      // Label with pair info
+      const pSym = rep.smt.primarySymbol ?? "?";
+      const cSym = rep.smt.correlatedSymbol ?? "?";
+      const smtType = rep.smt.type === "bullish_smt" ? "Bull SMT" : "Bear SMT";
+      const confPct = Math.round((rep.smt.confidence ?? 0) * 100);
+      const label = `${smtType}: ${pSym}/${cSym} (${confPct}%)`;
+      ctx.fillStyle = "rgba(168,85,247,0.85)";
+      ctx.font = "bold 9px 'JetBrains Mono', monospace";
+      const tw = ctx.measureText(label).width;
+      // Position near top, avoid clipping off right edge
+      const lx = Math.min(xS + 6, W - tw - 4);
+      ctx.fillText(label, lx, 16);
     }
   }
 
@@ -562,6 +630,8 @@ export function ChartView({ reports, market, initialTf, onClose, liveCandles }: 
           { color: "rgba(38,166,154,0.35)", stroke: "rgba(38,166,154,0.65)", label: "Bull OB" },
           { color: "rgba(239,83,80,0.35)",  stroke: "rgba(239,83,80,0.65)",  label: "Bear OB" },
           { color: "rgba(66,153,225,0.15)", stroke: "rgba(66,153,225,0.45)", label: "FVG" },
+          { color: "rgba(239,83,80,0.06)",  stroke: "rgba(239,83,80,0.18)",  label: "Premium" },
+          { color: "rgba(38,166,154,0.06)", stroke: "rgba(38,166,154,0.18)", label: "Discount" },
         ].map(({ color, stroke, label }) => (
           <div key={label} className="flex items-center gap-1.5 shrink-0">
             <div className="w-3 h-3 rounded-sm" style={{ background: color, border: `1px solid ${stroke}` }} />

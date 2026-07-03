@@ -35,7 +35,7 @@ The platform processes OHLCV market data through a pipeline of 8 specialised mod
 │          │                   │                                   │
 │  ┌───────▼────────┐   ┌──────▼─────────┐                        │
 │  │  SMC Engine    │   │  Fireworks AI  │                        │
-│  │  (8 modules)   │   │  Llama 3.3 70B │                        │
+│  │  (8 modules)   │   │ DeepSeek V4 Pro│                        │
 │  └───────┬────────┘   └────────────────┘                        │
 └──────────┼──────────────────────────────────────────────────────┘
            │
@@ -108,13 +108,14 @@ The `lib/db` package contains a Drizzle ORM setup but is not wired to any route 
 **Fireworks AI** was selected as the LLM inference provider because:
 - OpenAI-compatible API — no custom SDK needed
 - Sub-second first-token latency (< 500ms typical)
-- Llama 3.3 70B is the sweet spot of quality vs cost for this application
+- DeepSeek V4 Pro offers strong reasoning quality with fast token streaming via Fireworks AI
 - Generous rate limits on the free tier for development
 
-**Llama 3.3 70B Instruct** performs well on the SMC analyst task because:
+**DeepSeek V4 Pro** performs well on the SMC analyst task because:
 - 128K context window accommodates the full system prompt + conversation history
 - The model has strong financial reasoning capability from training data
 - Instruction-following is reliable enough to consistently produce structured 2–4 sentence outputs per agent
+- Tool-use (function calling) support enables the MCP-aware agent to call analysis tools on demand
 
 ### Prompt Design
 
