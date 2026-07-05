@@ -65,6 +65,6 @@ export const SMC_CONFIG = {
 
   smaPeriod: 20,
   obLookForward: 3,
-  maxCandles: 300,
-  maxDailyCandles: 60,
+  maxCandles: 500,
+  maxDailyCandles: 120,
 };
