@@ -1,7 +1,8 @@
 import type { FastMCP } from "fastmcp";
 
 export function registerSmcAnalysisPrompt(server: FastMCP): void {
-  (server as Record<string, unknown>).addPrompt?.({
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  (server as any).addPrompt?.({
     name: "smc-analysis",
     description:
       "Reusable prompt template for SMC market analysis. Instructs the AI to " +

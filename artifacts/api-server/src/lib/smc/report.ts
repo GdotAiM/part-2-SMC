@@ -1,4 +1,4 @@
-import type { Candle, SmcReport, DrawTarget, Market } from "./types.js";
+import type { Candle, SmcReport, DrawTarget, SmtDivergence, Market } from "./types.js";
 import { analyzeStructure } from "./structure.js";
 import { analyzeLiquidity } from "./liquidity.js";
 import { analyzeOrderBlocks } from "./order-blocks.js";
@@ -225,11 +225,11 @@ export function buildReport(
     }
   }
 
-  let smt = {
+  let smt: SmtDivergence = {
     detected: false,
-    type: null as null,
+    type: null,
     confidence: 0,
-    time: null as number | null,
+    time: null,
     primarySymbol: symbol,
     correlatedSymbol: options.correlatedSymbol ?? null,
   };

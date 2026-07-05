@@ -47,9 +47,9 @@ export function AgentChat({ report }: Props) {
       const localTools: ToolCallEvent[] = [];
       let accumulated = "";
       const mcpContext = {
-        symbol: (report as Record<string, unknown>)?.symbol as string | undefined,
-        timeframe: (report as Record<string, unknown>)?.timeframe as string | undefined,
-        currentPrice: (report as Record<string, unknown>)?.currentPrice as number | undefined,
+        symbol: (report as unknown as Record<string, unknown>)?.symbol as string | undefined,
+        timeframe: (report as unknown as Record<string, unknown>)?.timeframe as string | undefined,
+        currentPrice: (report as unknown as Record<string, unknown>)?.currentPrice as number | undefined,
       };
       try {
         await askAgentsMcp(question, history.filter(m => m.role !== "tool"), mcpContext, (event: McpStreamEvent) => {

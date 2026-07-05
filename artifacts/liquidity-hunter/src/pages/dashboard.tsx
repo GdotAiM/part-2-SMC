@@ -210,7 +210,7 @@ function TfAgentCard({
       <div className="space-y-1">
         <div className="flex items-center justify-between text-[10px] text-muted-foreground">
           <span>Conf {conf}%</span>
-          {report.smt.detected && <span className="text-primary font-semibold">SMT ⚡</span>}
+          {report.smt?.detected && <span className="text-primary font-semibold">SMT ⚡</span>}
         </div>
         <div className="w-full h-1 bg-muted rounded-full overflow-hidden">
           <div className={`h-full rounded-full ${confBar} transition-all`} style={{ width: `${conf}%` }} />
@@ -601,11 +601,11 @@ export default function Dashboard() {
                   <span className="font-mono text-muted-foreground">{fmtPrice(primaryReport.liquidity.nearestSSL.price, market)}</span>
                 </div>
               )}
-              {primaryReport.smt.detected && (
+              {primaryReport.smt?.detected && (
                 <div className="flex items-center gap-1.5">
                   <Zap className="w-3 h-3 text-primary" />
-                  <span className={primaryReport.smt.type === "bearish_smt" ? "text-destructive" : "text-[hsl(var(--bullish))]"}>
-                    {primaryReport.smt.type?.replace("_", " ").toUpperCase()}
+                  <span className={primaryReport.smt?.type === "bearish_smt" ? "text-destructive" : "text-[hsl(var(--bullish))]"}>
+                    {primaryReport.smt?.type?.replace("_", " ").toUpperCase()}
                   </span>
                 </div>
               )}

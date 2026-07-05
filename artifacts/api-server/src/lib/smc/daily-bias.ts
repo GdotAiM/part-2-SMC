@@ -99,7 +99,7 @@ export function analyzeDailyBias(dailyCandles: Candle[]): DailyBiasResult {
   const priceAboveSma = currentClose > currentSma;
   const smaSignal: "bullish" | "bearish" = priceAboveSma ? "bullish" : "bearish";
 
-  if (smaSignal === swingSignal && swingSignal !== "neutral") {
+  if (smaSignal === swingSignal) {
     evidence.push("✓ SMA confirms structure");
   } else if (swingSignal !== "neutral") {
     evidence.push("◐ SMA diverges from structure");
@@ -119,8 +119,8 @@ export function analyzeDailyBias(dailyCandles: Candle[]): DailyBiasResult {
     } else {
       strength = 0.55; // structure alone — still valid but lower conviction
     }
-  } else if (smaSignal !== "neutral") {
-    // SMA only — very weak signal
+  } else {
+    // SMA only — very weak signal (structure is neutral, fall back to SMA)
     bias     = smaSignal;
     strength = 0.20;
     evidence.push("◐ SMA-only signal (low conviction)");

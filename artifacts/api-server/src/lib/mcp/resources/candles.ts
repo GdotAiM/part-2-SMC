@@ -3,7 +3,8 @@ import { candleStore } from "../../realtime/candle-store.js";
 
 export function registerCandleResource(server: FastMCP): void {
   // Resource template: dynamic URI with market/symbol/timeframe params
-  (server as Record<string, unknown>).addResourceTemplate?.({
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  (server as any).addResourceTemplate?.({
     name: "Live Market Candles",
     uri: "smc://candles/{market}/{symbol}/{timeframe}",
     description:

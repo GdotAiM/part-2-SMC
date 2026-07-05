@@ -422,7 +422,7 @@ export function ChartView({ reports, market, initialTf, onClose, liveCandles }: 
       rightPriceScale: { borderColor: "#2a2a2a", textColor: "#777" },
       timeScale: {
         borderColor: "#2a2a2a",
-        textColor: "#777",
+        ...({ textColor: "#777" } as Record<string, unknown>),
         timeVisible: true,
         secondsVisible: false,
       },

@@ -350,17 +350,19 @@ class ForexWsManager {
       t?: number[];
     };
 
-    if (data.s !== "ok" || !data.t || !data.o) return [];
+    if (data.s !== "ok" || !data.t || !data.o || !data.c) return [];
 
     const candles: Candle[] = [];
     for (let i = 0; i < data.t.length; i++) {
-      if (data.o[i] == null || data.c[i] == null) continue;
+      const closeVal = data.c[i];
+      const openVal = data.o[i];
+      if (openVal == null || closeVal == null) continue;
       candles.push({
         time: data.t[i],
-        open: data.o[i],
-        high: data.h?.[i] ?? data.o[i],
-        low: data.l?.[i] ?? data.o[i],
-        close: data.c[i],
+        open: openVal,
+        high: data.h?.[i] ?? openVal,
+        low: data.l?.[i] ?? openVal,
+        close: closeVal,
         volume: data.v?.[i] ?? 0,
       });
     }
@@ -400,7 +402,7 @@ function restGet(url: string): Promise<unknown> {
         try { resolve(JSON.parse(body)); }
         catch (e) { reject(e); }
       });
-    }).on("error", reject).on("timeout", function(this: https.ClientRequest) { this.destroy(); reject(new Error("timeout")); });
+    }).on("error", reject).on("timeout", function(this: unknown) { (this as { destroy: () => void }).destroy(); reject(new Error("timeout")); });
   });
 }
 

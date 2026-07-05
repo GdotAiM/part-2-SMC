@@ -3,7 +3,8 @@ import { candleStore } from "../../realtime/candle-store.js";
 import { sseManager } from "../../realtime/sse-manager.js";
 
 export function registerStatusResource(server: FastMCP): void {
-  (server as Record<string, unknown>).addResource?.({
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  (server as any).addResource?.({
     uri: "smc://status",
     name: "System Status",
     description:

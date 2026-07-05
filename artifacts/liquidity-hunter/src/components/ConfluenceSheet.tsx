@@ -176,7 +176,7 @@ function deriveMultiTfSetup(
       ? entryReport.pdArray.currentBias === "premium"
       : false;
   const hasDraw = tp1 !== null;
-  const smtSupports = sortedReports.some(r => r.report.smt.detected);
+  const smtSupports = sortedReports.some(r => r.report.smt?.detected);
 
   const checklist = [
     { label: `HTF (${TF_LABELS[anchorItem.tf]}) trend aligned`,    pass: htfAligned },

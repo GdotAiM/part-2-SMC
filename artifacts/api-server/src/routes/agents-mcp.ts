@@ -339,11 +339,11 @@ router.post("/agents/ask-mcp", async (req: Request, res: Response): Promise<void
                   if (currentToolCall && currentToolCall.id !== tc.id) {
                     toolCalls.push({ ...currentToolCall });
                   }
-                  const fn = tc.function;
+                  const prevName: string = currentToolCall?.name ?? "";
                   currentToolCall = {
                     id: tc.id,
-                    name: fn?.name ?? currentToolCall?.name ?? "",
-                    arguments: fn?.arguments ?? "",
+                    name: tc.function?.name ?? prevName,
+                    arguments: tc.function?.arguments ?? "",
                   };
                 } else if (tc.function?.arguments && currentToolCall) {
                   currentToolCall.arguments += tc.function.arguments;
