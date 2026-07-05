@@ -15,11 +15,9 @@ import { Router, type IRouter } from "express";
 import type { Request, Response } from "express";
 import { toolRegistry } from "../lib/mcp/tool-registry.js";
 import { logger } from "../lib/logger.js";
+import { resolveLlmConfig } from "../lib/llm/provider.js";
 
 const router: IRouter = Router();
-
-const FIREWORKS_BASE = "https://api.fireworks.ai/inference/v1";
-const FIREWORKS_MODEL = "accounts/fireworks/models/deepseek-v4-pro";
 
 // ── System prompt builder (includes dashboard context when available) ────────
 
@@ -257,9 +255,9 @@ router.post("/agents/ask-mcp", async (req: Request, res: Response): Promise<void
     return;
   }
 
-  const apiKey = process.env.FIREWORKS_API_KEY;
-  if (!apiKey) {
-    res.status(500).json({ error: "AI not configured" });
+  const llmConfig = resolveLlmConfig();
+  if (!llmConfig.apiKey && llmConfig.provider !== "amd") {
+    res.status(500).json({ error: "AI not configured — set FIREWORKS_API_KEY or LLM_API_KEY" });
     return;
   }
 
@@ -280,14 +278,16 @@ router.post("/agents/ask-mcp", async (req: Request, res: Response): Promise<void
     let streamedContent = "";
 
     while (maxRounds-- > 0) {
-      const response = await fetch(`${FIREWORKS_BASE}/chat/completions`, {
+      const response = await fetch(`${llmConfig.baseUrl}/chat/completions`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${apiKey}`,
+          ...(llmConfig.apiKey && llmConfig.apiKey !== "not-needed"
+            ? { Authorization: `Bearer ${llmConfig.apiKey}` }
+            : {}),
         },
         body: JSON.stringify({
-          model: FIREWORKS_MODEL,
+          model: llmConfig.model,
           stream: true,
           max_tokens: 4096,
           messages: messages as Array<{ role: string; content: string }>,

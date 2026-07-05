@@ -1,0 +1,88 @@
+# ──────────────────────────────────────────────────────────────────────────────
+# SMC Pulse Predict — AMD Developer Cloud Deployment (MI300X)
+# ──────────────────────────────────────────────────────────────────────────────
+# Co-locates the vLLM inference server (ROCm/MI300X) with the SMC API server.
+#
+# Quick start (see README.md for full guide):
+#   1. ./setup.sh                               # one-time VM provisioning
+#   2. cp .env.amd .env                         # review & edit MODEL if desired
+#   3. docker compose up -d                     # start the stack
+#   4. curl http://<vm-ip>:3001/health          # verify API server
+#   5. curl http://<vm-ip>:8000/v1/models       # verify vLLM
+# ──────────────────────────────────────────────────────────────────────────────
+
+version: "3.9"
+
+services:
+  # ── vLLM Inference Server (ROCm on MI300X) ──────────────────────────────────
+  vllm:
+    image: rocm/vllm:latest
+    restart: unless-stopped
+    ports:
+      - "${VLLM_PORT:-8000}:8000"
+    environment:
+      - HSA_OVERRIDE_GFX_VERSION=${HSA_OVERRIDE_GFX_VERSION:-9.4.2}
+      - VLLM_USE_TRITON_FLASH_ATTN=0
+    devices:
+      - /dev/kfd
+      - /dev/dri:/dev/dri
+    volumes:
+      - vllm-cache:/root/.cache/vllm
+      - hf-cache:/root/.cache/huggingface
+    command: >
+      --model ${LLM_MODEL:-Qwen/Qwen2.5-VL-7B-Instruct}
+      --host 0.0.0.0
+      --port 8000
+      --max-model-len ${VLLM_MAX_MODEL_LEN:-8192}
+      --gpu-memory-utilization ${VLLM_GPU_MEM_UTIL:-0.92}
+      --tensor-parallel-size ${VLLM_TP_SIZE:-1}
+      --dtype ${VLLM_DTYPE:-auto}
+      --enforce-eager
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 120s
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: rocm
+              capabilities: [gpu]
+
+  # ── SMC API Server ──────────────────────────────────────────────────────────
+  api:
+    build:
+      context: ../../
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "${API_PORT:-3001}:3001"
+      - "${MCP_PORT:-3002}:3002"
+    environment:
+      - NODE_ENV=production
+      - PORT=${API_PORT:-3001}
+      - MCP_PORT=${MCP_PORT:-3002}
+      - LLM_PROVIDER=amd
+      - LLM_BASE_URL=${LLM_BASE_URL:-http://vllm:8000/v1}
+      - LLM_API_KEY=not-needed
+      - LLM_MODEL=${LLM_MODEL:-Qwen/Qwen2.5-VL-7B-Instruct}
+      - DATABASE_URL=${DATABASE_URL:-}
+      - COOKIE_SECRET=${COOKIE_SECRET:-}
+      - CORS_ORIGINS=${CORS_ORIGINS:-*}
+      - BINANCE_API_KEY=${BINANCE_API_KEY:-}
+      - FINNHUB_API_KEY=${FINNHUB_API_KEY:-}
+    depends_on:
+      vllm:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3001/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+volumes:
+  vllm-cache:
+  hf-cache:

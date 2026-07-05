@@ -4,6 +4,7 @@ import { binanceWs } from "./lib/realtime/binance-ws.js";
 import { forexWs } from "./lib/realtime/forex-ws.js";
 // Side-effect: wires candleClosed → SMC engine → cache → SSE broadcast
 import "./lib/realtime/analysis-bridge.js";
+import { createSmcMcpServer } from "./lib/mcp/index.js";
 
 const rawPort = process.env["PORT"];
 
@@ -34,12 +35,34 @@ const server = app.listen(port, (err) => {
   forexWs.subscribe("EURUSD=X", ["1m", "5m", "15m", "1h", "4h", "1d", "1w"]);
 });
 
+// ── MCP Server (external AI agent access) ────────────────────────────────────
+
+const mcpPort = Number(process.env.MCP_PORT || 3002);
+
+const mcpServer = createSmcMcpServer();
+mcpServer
+  .start({
+    transportType: "httpStream",
+    httpStream: {
+      port: mcpPort,
+      endpoint: "/mcp",
+      cors: true,
+    },
+  })
+  .then(() => {
+    logger.info({ port: mcpPort, endpoint: "/mcp" }, "MCP server listening — external AI agents can connect");
+  })
+  .catch((err) => {
+    logger.error({ err, port: mcpPort }, "MCP server failed to start — AI agent access unavailable");
+  });
+
 // ── Graceful shutdown ─────────────────────────────────────────────────────────
 
 function shutdown(signal: string) {
   logger.info({ signal }, "Shutting down");
   binanceWs.shutdown();
   forexWs.shutdown();
+  mcpServer.stop().catch(() => {});
   server.close(() => {
     logger.info("Server closed");
     process.exit(0);

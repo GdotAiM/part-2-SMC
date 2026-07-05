@@ -163,12 +163,13 @@ export function analyzeOrderBlocks(candles: Candle[], fvgs: FairValueGap[]): Ord
       const ob = candles[lastBullishIdx];
 
       /**
-       * Bearish OB zone: open (bottom of body) → high (distal wick)
-       * proximal = candle.close → kept as-is for bearish (close is lower than open for bullish candle? No.
-       * For a BULLISH candle: close > open. The OB proximal for bearish = candle.open (entry level on pullback).
-       * We maintain current bearish OB behaviour as instructed.
+       * ICT bearish OB zone: open (bottom of body) → high (distal wick)
+       * proximal = candle.open  (nearest level price reacts to on re-entry — the
+       *                         lower end of the bullish candle body, first touch
+       *                         when price pulls back up into the OB)
+       * distal   = candle.high  (invalidation if closed above)
        */
-      const proximal = ob.close;
+      const proximal = ob.open;
       const distal   = ob.high;
 
       const hasFvg = SMC_CONFIG.obRequireFvg ? hasFVGInWindow(fvgs, impulseIdx, lf) : true;
