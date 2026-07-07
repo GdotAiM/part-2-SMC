@@ -139,15 +139,13 @@ export function TradingViewChart({ symbol, onClose }: Props) {
       widgetRef.current = null;
     }
 
+    // ── helpers ──
     const tryCreate = () => {
-      if (widgetRef.current) return;
-      if (!el.isConnected) return;
+      if (widgetRef.current) return true; // already created
+      if (!el.isConnected) return false;
 
       const rect = el.getBoundingClientRect();
-      if (rect.width === 0 || rect.height === 0) {
-        log("tryCreate — still zero dimensions, waiting for ResizeObserver");
-        return;
-      }
+      if (rect.width === 0 || rect.height === 0) return false;
 
       creationAttemptedRef.current = true;
       const ok = createWidget(el);
@@ -155,6 +153,35 @@ export function TradingViewChart({ symbol, onClose }: Props) {
         setStatus("ready");
         statusRef.current = "ready";
       }
+      return ok;
+    };
+
+    // Active polling via rAF — ResizeObserver only fires on *changes*,
+    // but the container may already be 0×0 when observed and never
+    // change (absolute children inside flex-1 can collapse).  We poll
+    // every frame for up to 2 s after the script arrives.
+    let rafId = 0;
+    let pollStart = 0;
+    const MAX_POLL_MS = 2000;
+
+    const startPolling = () => {
+      if (tryCreate()) return; // success on first attempt
+      pollStart = performance.now();
+      log("starting rAF poll (dimensions are 0×0)");
+      const poll = () => {
+        if (!el.isConnected) return;
+        if (tryCreate()) return;          // created
+        if (performance.now() - pollStart < MAX_POLL_MS) {
+          rafId = requestAnimationFrame(poll);
+        } else {
+          log("rAF poll exhausted — dimensions never materialised");
+        }
+      };
+      rafId = requestAnimationFrame(poll);
+    };
+
+    const initWhenReady = () => {
+      if (!tryCreate()) startPolling();
     };
 
     // ── script loading ──
@@ -162,7 +189,7 @@ export function TradingViewChart({ symbol, onClose }: Props) {
 
     if ((window as any).TradingView) {
       log("TradingView global already present");
-      tryCreate();
+      initWhenReady();
     } else if (!existing) {
       log("appending tv.js script tag");
       const script = document.createElement("script");
@@ -171,7 +198,7 @@ export function TradingViewChart({ symbol, onClose }: Props) {
       script.async = true;
       script.onload = () => {
         log("tv.js onload fired");
-        tryCreate();
+        initWhenReady();
       };
       script.onerror = () => {
         log("tv.js onerror — network or blocker");
@@ -187,32 +214,19 @@ export function TradingViewChart({ symbol, onClose }: Props) {
       const prev = existing.onload;
       existing.onload = (e: Event) => {
         (prev as any)(e);
-        tryCreate();
+        initWhenReady();
       };
     } else {
       log("tv.js tag exists but onload is null — trying init");
-      tryCreate();
+      initWhenReady();
     }
 
-    // ── ResizeObserver (resize existing OR create deferred) ──
+    // ── ResizeObserver — keep widget sized to container ──
     const observer = new ResizeObserver(() => {
       if (!el.isConnected) return;
       const rect = el.getBoundingClientRect();
-
-      if (widgetRef.current) {
-        // Widget exists — keep it sized
-        if (rect.width > 0 && rect.height > 0) {
-          try { widgetRef.current.resize(rect.width, rect.height); } catch {}
-        }
-      } else if (!creationAttemptedRef.current && rect.width > 0 && rect.height > 0) {
-        // Widget was deferred because dimensions were 0 — create now
-        log("ResizeObserver — dimensions became non-zero, retrying creation");
-        creationAttemptedRef.current = true;
-        const ok = createWidget(el);
-        if (ok) {
-          setStatus("ready");
-          statusRef.current = "ready";
-        }
+      if (widgetRef.current && rect.width > 0 && rect.height > 0) {
+        try { widgetRef.current.resize(rect.width, rect.height); } catch {}
       }
     });
     observer.observe(el);
@@ -232,6 +246,7 @@ export function TradingViewChart({ symbol, onClose }: Props) {
     return () => {
       log("cleanup");
       clearTimeout(timeout);
+      cancelAnimationFrame(rafId);
       observer.disconnect();
       if (widgetRef.current) {
         try { widgetRef.current.remove(); } catch {}
@@ -287,11 +302,11 @@ export function TradingViewChart({ symbol, onClose }: Props) {
       </div>
 
       {/* ── Chart body ── */}
-      <div className="flex-1 relative">
+      <div className="flex-1 relative min-h-0">
         {tvSymbol ? (
           <>
             {/* The TradingView widget mounts into this div */}
-            <div ref={containerRef} className="absolute inset-0" />
+            <div ref={containerRef} className="absolute inset-0 w-full h-full" />
 
             {/* Loading overlay */}
             {status === "loading" && (
