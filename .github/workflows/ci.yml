@@ -1,0 +1,51 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  build-and-typecheck:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --no-frozen-lockfile
+
+      - name: Build workspace project references (lib/db, lib/api-zod, etc.)
+        run: npx tsc -b
+
+      - name: Typecheck api-server
+        run: pnpm --filter @workspace/api-server exec tsc --noEmit
+
+      - name: Typecheck liquidity-hunter (frontend)
+        run: pnpm --filter @workspace/liquidity-hunter exec tsc --noEmit
+
+      - name: Build api-server
+        run: pnpm --filter @workspace/api-server run build
+
+  docker-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Build image (validate only — no push)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: false
+          tags: smc-liquidity-hunter:ci
+          platforms: linux/amd64
