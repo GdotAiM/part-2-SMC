@@ -40,7 +40,7 @@ const FIREWORKS_MODEL = "accounts/fireworks/models/deepseek-v4-pro";
 
 // AMD Developer Cloud — vLLM on MI300X default
 const AMD_DEFAULT_BASE = "http://localhost:8000/v1";
-const AMD_DEFAULT_MODEL = "Qwen/Qwen2.5-VL-7B-Instruct";
+const AMD_DEFAULT_MODEL = "google/gemma-4-26B-A4B-it";
 
 // ── Resolve config from env ──────────────────────────────────────────────────
 

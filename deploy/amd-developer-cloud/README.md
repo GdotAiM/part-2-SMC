@@ -16,7 +16,7 @@ side with the API server, with all inference staying on your hardware.
 │  │ port 8000        │◄───►│ ports 3001 (REST),           │   │
 │  │                  │     │        3002 (MCP)             │   │
 │  │ GPU: MI300X      │     │                              │   │
-│  │ Model: Qwen2.5   │     │ LLM_PROVIDER=amd             │   │
+│  │ Model: Gemma 4    │     │ LLM_PROVIDER=amd             │   │
 │  │                  │     │ LLM_BASE_URL=vllm:8000/v1    │   │
 │  └──────────────────┘     └──────────┬───────────────────┘   │
 │                                      │                       │
@@ -32,17 +32,17 @@ side with the API server, with all inference staying on your hardware.
 - **Ubuntu 22.04 LTS** (ROCm 6.x is assumed; 6.2+ recommended)
 - **Docker** (will be installed by `setup.sh` if missing)
 
-Minimum sizing (single MI300X):
-| Component | Memory |
-|---|---|
-| vLLM + Qwen2.5-VL-7B (FP16) | ~16 GB |
-| vLLM overhead / KV cache | ~20 GB |
-| API server (Node.js) | ~256 MB |
-| OS + ROCm runtime | ~4 GB |
-| **Total** | **~40 GB** — single MI300X is plenty |
+Gemma 4 model sizing (single MI300X, FP16 weights only):
+| Variant | Weights | Min GPU | Notes |
+|---|---|---|---|
+| Gemma 4 E2B | ~18 GB | 1× MI300X | Lightweight, fast |
+| Gemma 4 12B | ~27 GB | 1× MI300X | Good balance |
+| **Gemma 4 26B A4B** | **~58 GB** | **1× MI300X** | **Default — strong MoE** |
+| Gemma 4 31B | ~70 GB | 1× MI300X | Largest single-GPU option |
 
-For larger models (Qwen2.5-VL-72B), provision 2-4 MI300X and set `VLLM_TP_SIZE`
-accordingly.
+Add ~20 GB overhead for KV cache + ROCm runtime.  The 26B A4B MoE fits
+comfortably on a single MI300X (192 GB HBM3).  Set `VLLM_TP_SIZE` to the GPU
+count for multi-GPU tensor parallelism.
 
 ## Quick Start
 
@@ -91,7 +91,7 @@ docker compose logs -f vllm
 curl http://localhost:8000/v1/models
 
 # API server is up
-curl http://localhost:3001/health
+curl http://localhost:3001/api/healthz
 
 # MCP endpoint is accepting connections (external AI agents)
 curl http://localhost:3002/mcp
@@ -106,7 +106,7 @@ curl -N http://localhost:3001/api/agents/ask-mcp \
 
 | Variable | Default | Notes |
 |---|---|---|
-| `LLM_MODEL` | `Qwen/Qwen2.5-VL-7B-Instruct` | Any HF model vLLM+ROCm can serve |
+| `LLM_MODEL` | `google/gemma-4-26B-A4B-it` | Any HF model vLLM+ROCm can serve |
 | `VLLM_PORT` | `8000` | vLLM API port (internal) |
 | `VLLM_MAX_MODEL_LEN` | `8192` | Max context length |
 | `VLLM_GPU_MEM_UTIL` | `0.92` | Fraction of GPU memory for vLLM |
