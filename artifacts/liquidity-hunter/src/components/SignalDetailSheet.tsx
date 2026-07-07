@@ -5,9 +5,11 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { Badge } from "@/components/ui/badge";
+import { useState } from "react";
 import { TrendingUp, TrendingDown, Target, Shield, Flag, Clock, Calendar, ExternalLink } from "lucide-react";
 import { fmtAssetPrice, formatTimestamp } from "@/lib/format";
-import { alpacaChartUrl } from "@/lib/alpaca-url";
+import { isChartable } from "@/lib/alpaca-url";
+import { TradingViewChart } from "./TradingViewChart";
 
 // ─── Types ───
 
@@ -87,6 +89,8 @@ function getGrade(confidence: number, confluence: number): { grade: string; colo
 // ─── Component ───
 
 export function SignalDetailSheet({ signal, open, onClose }: Props) {
+  const [showTvChart, setShowTvChart] = useState(false);
+
   if (!signal) return null;
 
   const direction = getDirection(signal);
@@ -134,17 +138,15 @@ export function SignalDetailSheet({ signal, open, onClose }: Props) {
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-2">
                 <span className="font-bold text-sm">{signal.symbol}</span>
-                {alpacaChartUrl(signal.symbol) && (
-                  <a
-                    href={alpacaChartUrl(signal.symbol)!}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    title="Open full chart in Alpaca TradingView (paper trading)"
+                {isChartable(signal.symbol) && (
+                  <button
+                    onClick={() => setShowTvChart(true)}
+                    title="Open professional TradingView chart with indicators and drawing tools"
                     className="inline-flex items-center gap-1 px-2 py-0.5 rounded-sm border border-border bg-muted text-[10px] text-muted-foreground hover:text-primary hover:border-primary/50 transition-colors font-bold uppercase tracking-wider"
                   >
                     <ExternalLink className="w-2.5 h-2.5" />
-                    Alpaca Chart
-                  </a>
+                    Pro Chart
+                  </button>
                 )}
               </div>
               <div className="flex gap-1.5">
@@ -357,6 +359,14 @@ export function SignalDetailSheet({ signal, open, onClose }: Props) {
           </div>
         </div>
       </SheetContent>
+
+      {/* ── TradingView chart modal ── */}
+      {showTvChart && (
+        <TradingViewChart
+          symbol={signal.symbol}
+          onClose={() => setShowTvChart(false)}
+        />
+      )}
     </Sheet>
   );
 }

@@ -10,7 +10,8 @@ import {
 import type { IChartApi, ISeriesApi, SeriesType } from "lightweight-charts";
 import type { SmcReport } from "@workspace/api-client-react";
 import { X, ExternalLink } from "lucide-react";
-import { alpacaChartUrl } from "@/lib/alpaca-url";
+import { isChartable } from "@/lib/alpaca-url";
+import { TradingViewChart } from "./TradingViewChart";
 
 type Market = "crypto" | "forex";
 type CandleSeries = ISeriesApi<SeriesType>;
@@ -312,6 +313,7 @@ const TF_LABEL: Record<string, string> = {
 };
 
 export function ChartView({ reports, market, initialTf, onClose, liveCandles }: Props) {
+  const [showTvChart, setShowTvChart] = useState(false);
   const [activeTf, setActiveTf] = useState<string>(
     initialTf ?? reports[0]?.tf ?? "4h",
   );
@@ -620,18 +622,16 @@ export function ChartView({ reports, market, initialTf, onClose, liveCandles }: 
           </span>
         )}
 
-        {/* Alpaca TradingView link */}
-        {alpacaChartUrl(activeReport.symbol) && (
-          <a
-            href={alpacaChartUrl(activeReport.symbol)!}
-            target="_blank"
-            rel="noopener noreferrer"
-            title="Open full chart in Alpaca TradingView (paper trading)"
+        {/* TradingView chart button */}
+        {isChartable(activeReport.symbol) && (
+          <button
+            onClick={() => setShowTvChart(true)}
+            title="Open professional TradingView chart with indicators and drawing tools"
             className="flex items-center gap-1.5 px-2.5 py-1 rounded-sm border border-[#2a2a2a] bg-[#181818] text-[#888] hover:text-primary hover:border-primary/50 transition-colors text-[10px] font-bold uppercase tracking-wider ml-auto"
           >
             <ExternalLink className="w-3 h-3" />
-            <span className="hidden sm:inline">Alpaca Chart</span>
-          </a>
+            <span className="hidden sm:inline">Pro Chart</span>
+          </button>
         )}
 
         <button onClick={onClose} className="p-1.5 hover:bg-[#1f1f1f] rounded-sm transition-colors">
@@ -675,6 +675,14 @@ export function ChartView({ reports, market, initialTf, onClose, liveCandles }: 
         <div ref={containerRef} className="w-full h-full" />
         <canvas ref={canvasRef} className="absolute inset-0 pointer-events-none" />
       </div>
+
+      {/* ── TradingView chart modal ── */}
+      {showTvChart && (
+        <TradingViewChart
+          symbol={activeReport.symbol}
+          onClose={() => setShowTvChart(false)}
+        />
+      )}
     </div>
   );
 }
