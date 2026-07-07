@@ -1,0 +1,15 @@
+node_modules
+**/node_modules
+**/dist
+**/.turbo
+**/*.log
+.git
+.gitignore
+.env
+.env.*
+deploy
+docs
+*.md
+.vscode
+.idea
+data/mock_broker
