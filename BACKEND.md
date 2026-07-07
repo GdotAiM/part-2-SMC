@@ -4,13 +4,15 @@
 
 The backend is a stateless Node.js/Express 5 server. Its responsibilities are:
 1. Fetching real-time OHLCV data via WebSocket (crypto: Binance US, forex: Finnhub or Yahoo polling)
-2. Fetching OHLCV market data from Binance REST or Yahoo Finance for initial/fallback data
+2. Fetching OHLCV market data from Yahoo Finance for initial/fallback data
 3. Running the ICT/SMC algorithmic engine over that data
 4. Caching results for 60 seconds
 5. Broadcasting real-time candle updates and rebuilt SMC reports to browsers via SSE
-6. Proxying requests to Fireworks AI and streaming the responses back to the browser
+6. Proxying requests to LLM providers (Fireworks, AMD/vLLM, OpenAI, custom) and streaming responses via SSE
+7. Serving an MCP (Model Context Protocol) server for external AI agent access
+8. Executing trades through broker adapters (MockBroker for development, AlpacaAdapter for paper trading)
 
-There is no database. Every request is fully recomputed from live market data (or served from cache).
+There is no hard dependency on a database. The server runs fully without PostgreSQL — the trade ledger and performance matrix endpoints return empty results when DATABASE_URL is unset.
 
 ---
 
@@ -20,7 +22,8 @@ There is no database. Every request is fully recomputed from live market data (o
 Process entry point. Reads `PORT` from environment, binds the Express app, starts HTTP server, and initialises real-time connections:
 - `binanceWs.subscribe("BTCUSDT", [...all 7 TFs])` — Binance US WebSocket for crypto
 - `forexWs.subscribe("EURUSD=X", [...all 7 TFs])` — Finnhub WS or Yahoo polling for forex
-- Graceful shutdown on SIGTERM/SIGINT: closes WebSockets, stops pollers, closes server
+- **MCP server** on `MCP_PORT` (default 3002) using HTTP streaming transport at `/mcp`
+- Graceful shutdown on SIGTERM/SIGINT: closes WebSockets, stops pollers, closes MCP server, closes Express
 
 ### `src/app.ts`
 Express app factory. Configures:
@@ -36,19 +39,23 @@ Express app factory. Configures:
 ### `routes/index.ts`
 Central router mount. Registers all sub-routers under the `/api` prefix:
 ```
-/api/health        → routes/health.ts
+/api/healthz       → routes/health.ts
 /api/symbols       → routes/symbols.ts
 /api/analysis/*    → routes/analysis.ts
-/api/agents/*      → routes/agents.ts
+/api/agents/*      → routes/agents.ts + agents-mcp.ts
 /api/stream/*      → routes/stream.ts
+/api/ledger/*      → routes/ledger.ts
+/api/signals/*     → routes/ledger.ts
+/api/broker/*      → routes/ledger.ts
+/api/account       → routes/ledger.ts
 ```
 
 ---
 
 ### `routes/health.ts`
-**GET /api/health**
+**GET /api/healthz**
 
-Returns `{ status: "ok", timestamp }`. Used by monitoring and uptime checks.
+Returns `{ status: "ok", timestamp }`. Used by monitoring, Docker healthchecks, and uptime checks.
 
 **Inputs**: none
 **Output**: `{ status: "ok", timestamp: number }`
@@ -537,10 +544,99 @@ The real-time pipeline eliminates the need for the 60s cache on live data — wh
 | Variable | Required | Description |
 |---|---|---|
 | `PORT` | Yes | HTTP server port |
+| `MCP_PORT` | No | MCP server port (default: 3002) |
 | `FIREWORKS_API_KEY` | Yes (AI) | Fireworks AI API key for the analyst agent |
+| `LLM_PROVIDER` | No | LLM provider: `fireworks` (default), `amd`, `openai`, `custom` |
+| `LLM_MODEL` | No | Override the model name per provider |
+| `LLM_BASE_URL` | No | Override the LLM base URL |
+| `LLM_API_KEY` | No | Override the LLM API key |
 | `FINNHUB_API_KEY` | No | Finnhub API key for forex real-time WebSocket. Without it, Yahoo polling is used as fallback (free, no key needed) |
+| `ALPACA_API_KEY_ID` | No | Alpaca Paper Trading API key ID. Sets both to enable AlpacaAdapter |
+| `ALPACA_API_SECRET_KEY` | No | Alpaca Paper Trading API secret key |
+| `CORS_ORIGINS` | No | Comma-separated allowed origins (default: `*`) |
+| `DATABASE_URL` | No | PostgreSQL connection for trade persistence (optional) |
 | `LOG_LEVEL` | No | Pino log level (default: `info`) |
 | `NODE_ENV` | No | `development` or `production` |
+
+---
+
+## Execution Engine (`lib/execution/`)
+
+### BrokerAdapter Interface (`BrokerAbstraction.ts`)
+
+Abstract broker interface defining `name`, `isReady`, `executeOrder(signal, mode)`, `getBalance()`, `getOpenOrders()`, `closeOrder(orderId)`, `getOrderStatus(orderId)`. Also exports `deriveSide(signal)` — a shared helper that determines BUY/SELL from take_profit relative to entry_price.
+
+### MockBrokerAdapter
+
+File-based mock broker for development. Stores orders in `data/mock_broker/` as JSONL files (pending_orders.jsonl, executed_orders.jsonl) with account_balance.json. Default balance: $100,000. No external API calls.
+
+### AlpacaAdapter (`AlpacaAdapter.ts`)
+
+Real paper trading via Alpaca Markets API (`paper-api.alpaca.markets` — hardcoded, never the live endpoint). Requires `ALPACA_API_KEY_ID` + `ALPACA_API_SECRET_KEY`.
+
+- **Symbol translation**: maps 8 Binance-style pairs (BTCUSDT→BTC/USD, ETHUSDT→ETH/USD, etc.) to Alpaca's format. Unmapped symbols and forex pairs return clean rejections.
+- **REVIEW mode**: returns a dry-run preview — never calls the Alpaca API.
+- **LIVE mode**: POSTs market orders to `/v2/orders`. Auth via `APCA-API-KEY-ID` and `APCA-API-SECRET-KEY` headers (not Bearer).
+- **Status mapping**: 14 Alpaca status strings mapped to the 4-status union (PENDING/FILLED/CANCELLED/REJECTED). Unrecognized statuses default to PENDING with a logged warning.
+- Constructor degrades gracefully — `isReady = false` when credentials are missing.
+
+### ExecutionManager
+
+Wraps a BrokerAdapter with a mode (REVIEW/LIVE). Mode switching requires `{ confirm: "LIVE" }` for LIVE, is immediate for REVIEW (kill-switch). Picked at module load: AlpacaAdapter if both API key env vars are set, otherwise MockBrokerAdapter.
+
+### Broker Routes
+
+| Route | Method | Purpose |
+|---|---|---|
+| `/api/broker/status` | GET | Returns `{ broker_name, is_ready, mode, is_paper }` |
+| `/api/broker/mode` | POST | Set execution mode. LIVE requires `{ confirm: "LIVE" }`. REVIEW is immediate. |
+| `/api/account` | GET | Returns `{ balance, open_orders }` from the active broker |
+| `/api/signals/execute` | POST | Execute signal at server's current mode (mode NOT accepted from body) |
+| `/api/signals/generate` | POST | Fetch candles, run SMC, generate signal, log to ledger |
+| `/api/ledger` | GET | Query signals with filters (asset, setup, symbol, mode, limit) |
+| `/api/ledger/pending` | GET | Signals awaiting outcome |
+| `/api/performance-matrix` | GET | Performance metrics by dimension combination |
+| `/api/performance-matrix/rebuild` | POST | Trigger full matrix rebuild |
+
+### Signal Generator (`lib/services/SignalGenerator.ts`)
+
+Converts SmcReport into a UnifiedTradeSignal (single-TF and multi-TF cascade modes). Entry from nearest aligned OB or FVG, SL from opposite liquidity pool, TP from top DOL target. Confidence = 30% structure + 40% confluence + 30% top OB.
+
+### Trade Ledger + Performance Matrix
+
+Drizzle ORM over PostgreSQL (`lib/db`). `trades` table (31 columns, jsonb for analysis_context, 5 indexes) and `performanceMatrix` table (19 columns, 7-dimension unique index). Lazy-init pool — no crash when DATABASE_URL is unset.
+
+---
+
+## MCP Server (`lib/mcp/`)
+
+A FastMCP v4.3.2 server runs alongside Express on port 3002 at `/mcp` (HTTP streaming transport). External AI agents (Claude Desktop, etc.) connect and use 11 SMC analysis tools, 2 resources, and 1 prompt template.
+
+### MCP Tools (11)
+
+| Tool | Parameters | Data Source |
+|---|---|---|
+| `analyze_structure` | symbol, timeframe | Live WebSocket candle store |
+| `analyze_liquidity` | symbol, timeframe | Live WebSocket candle store |
+| `analyze_order_blocks` | symbol, timeframe | Live WebSocket candle store |
+| `analyze_fvg` | symbol, timeframe | Live WebSocket candle store |
+| `analyze_pd_array` | symbol, timeframe | Live WebSocket candle store |
+| `get_daily_bias` | symbol | Binance/Yahoo REST daily candles |
+| `detect_smt` | primarySymbol, correlatedSymbol, timeframe | Live WebSocket candle store |
+| `get_draw_targets` | symbol, timeframe | Live WebSocket candle store |
+| `build_full_report` | symbol, timeframe | WebSocket + REST daily candles |
+| `get_live_candles` | symbol, timeframe, limit | Live WebSocket candle store |
+| `scan_all_timeframes` | symbol | Live WebSocket candle store |
+
+### MCP-Aware Agent (`routes/agents-mcp.ts`)
+
+`POST /api/agents/ask-mcp` — Uses the MCP tool registry for in-process tool execution (bypasses FastMCP internals). LLM receives OpenAI-style function definitions for all 11 tools, autonomously decides which to call, can chain up to 3 tool-calling rounds iteratively.
+
+---
+
+## LLM Provider Abstraction (`lib/llm/provider.ts`)
+
+Four providers via `LLM_PROVIDER` env var: `fireworks` (default, DeepSeek V4 Pro), `amd` (local vLLM/ROCm, Gemma 4 26B), `openai` (GPT-4o), `custom` (any OpenAI-compatible endpoint). All LLM calls go through the same `/chat/completions` OpenAI-compatible pattern. Streaming and non-streaming both supported.
 
 ---
 

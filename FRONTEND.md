@@ -27,6 +27,8 @@ The frontend is a React 18 SPA built with Vite and TypeScript. It connects to th
 
 ## Pages
 
+The app has four pages: **Dashboard** (`/`), **Analytics** (`/analytics`), **Broker** (`/broker`), and **Not Found** (`*`).
+
 ### `pages/dashboard.tsx`
 
 The only real page. Contains all application state and orchestrates all components.
@@ -375,11 +377,41 @@ User switches TF pill → setActiveTf → chart recreated with new report
 
 ## Routing
 
-`App.tsx` uses Wouter for client-side routing. Currently only one route exists:
+`App.tsx` uses Wouter for client-side routing with four routes:
 - `/` → `<Dashboard />`
+- `/analytics` → `<Analytics />`
+- `/broker` → `<Broker />`
 - `*` → `<NotFound />`
 
-The app is designed as a single-page application — routing is minimal and exists only as a scaffold for future multi-page features.
+The Broker and Analytics pages are navigated via header buttons in Dashboard, styled identically to the CHART button (border, bg-muted, hover:text-primary pattern).
+
+---
+
+### `pages/Broker.tsx`
+
+The broker management dashboard at `/broker`. Polls `/api/broker/status`, `/api/account`, and `/api/ledger` every 15 seconds.
+
+**Sections:**
+
+1. **Connection status card**: Broker name, connected Badge (green), PAPER Badge (blue), LIVE/REVIEW mode Badge — the most visually dominant element, with a pulsing `Radio` icon for LIVE mode matching the dashboard's live price indicator pattern.
+
+2. **Mode switch**: REVIEW/LIVE toggle using shadcn `Switch`. Flipping to LIVE opens an `AlertDialog` requiring the user to type "LIVE" into an `Input` before the confirm button enables — matches the backend's `{ confirm: "LIVE" }` requirement. Flipping to REVIEW requires no dialog (kill-switch behavior).
+
+3. **Account overview**: 4 `Card` components showing Total Value, Cash (emerald), Buying Power (blue), and Positions Value. Currency-formatted via `fmtDollar()`.
+
+4. **Open orders table**: Uses the same `Table`/`TableHeader`/`TableRow` patterns as `TradeLedgerDashboard`. Columns: Order ID (truncated), Symbol, Side (green BUY / red SELL Badge), Qty, Price, Status (color-coded: FILLED green, PENDING amber, REJECTED red, CANCELLED gray), Created time.
+
+5. **Execution log**: Recent entries from `/api/ledger` filtered to REVIEW/LIVE modes. LIVE entries show a `Radio` icon badge distinguishing them from REVIEW previews. Outcome column shows WIN/LOSS/PENDING badges.
+
+6. **Not-connected state**: When `is_ready: false`, shows a centered `Card` with `AlertTriangle` icon explaining that `ALPACA_API_KEY_ID` and `ALPACA_API_SECRET_KEY` need to be set on the server, plus a "Back to Dashboard" button.
+
+### `pages/Analytics.tsx`
+
+Trade ledger and performance analytics at `/analytics`. Three-tab layout using shadcn `Tabs`:
+
+- **Ledger tab**: `TradeLedgerDashboard` component — filterable signal table with asset/setup/symbol/mode selectors, metric cards (win rate, Sharpe, profit factor, trade count), clickable rows opening `SignalDetailSheet`
+- **Matrix tab**: `PerformanceMatrixHeatmap` — setup rankings by Sharpe ratio with colored bars
+- **Generate tab**: Signal generator UI — market toggle, symbol/timeframe selectors, generate button. Shows resulting signal with Entry/SL/TP prices, R:R ratio, confidence bar
 
 ---
 

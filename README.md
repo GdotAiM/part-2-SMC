@@ -25,7 +25,10 @@ Most retail traders lose because they see charts the wrong way. Institutions don
 | **SMT Divergence** | Correlated-pair divergence detection (BTC/ETH, EUR/GBP) with magnitude + timing scoring |
 | **Draw on Liquidity** | Confluence-boosted target scoring that ranks BSL/SSL/OB/FVG as next price objectives |
 | **Visual Chart Layer** | TradingView Lightweight Charts (v5) with session backgrounds, OB/FVG rectangles, BOS/CHoCH markers, KZO lines |
-| **AI Agent System** | Fireworks AI (DeepSeek V4 Pro) — streaming Q&A + 4-agent sequential analysis pipeline |
+| **AI Agent System** | Fireworks AI (DeepSeek V4 Pro) — streaming Q&A + 4-agent sequential analysis pipeline + MCP tool-calling agent (11 autonomous tools) |
+| **MCP Tier 3** | FastMCP v4.3.2 server on port 3002 — 11 SMC tools, 2 resources, 1 prompt for external AI agent access |
+| **Broker Execution** | Broker-agnostic trade execution with REVIEW/LIVE mode toggle, Alpaca Paper API adapter, file-based mock broker |
+| **Broker Dashboard** | `/broker` page — account overview, open orders table, mode switch with typed-LIVE confirmation, execution log |
 | **Market Narrative** | Auto-generated institutional narrative string per report |
 | **Session State** | Real-time ICT session inference: Asian Range / London Expansion / NY Open / PM Distribution |
 | **Real-Time Price Feed** | Binance US WebSocket (crypto) + Finnhub WS / Yahoo polling (forex) with SSE push to browser |
@@ -54,6 +57,8 @@ Run locally (see Installation below) then visit `http://localhost:5173`.
 - Tap any card → **Intelligence Sheet** for deep analysis
 - Tap **CHART** for the visual chart with SMC overlays
 - Tap **SMT** on any card → AI agent pipeline fires
+- Visit `/broker` for the broker dashboard — account balance, open orders, LIVE/REVIEW mode switch
+- Visit `/analytics` for trade ledger, performance matrix, and signal generation
 
 ---
 
@@ -72,6 +77,8 @@ Run locally (see Installation below) then visit `http://localhost:5173`.
 │                Express 5 API Server                       │
 │  /api/analysis/crypto|forex    /api/agents/ask|pipeline  │
 │  /api/stream/:symbol (SSE)     /api/stream/status        │
+│  /api/broker/mode|status       /api/account              │
+│  /api/ledger                   /api/signals/*            │
 │  60s in-memory TTL cache                                 │
 │  ┌──────────────────────────────────────────────────┐    │
 │  │ Real-Time Pipeline                               │    │
@@ -79,6 +86,11 @@ Run locally (see Installation below) then visit `http://localhost:5173`.
 │  │  forex-ws.ts   →     ↓          → analysis-bridge│    │
 │  │                → candleClosed  → buildReport     │    │
 │  │                                 → cache + SSE push│    │
+│  ├──────────────────────────────────────────────────┤    │
+│  │ Execution Layer                                   │    │
+│  │  ExecutionManager → MockBrokerAdapter (file)      │    │
+│  │                   → AlpacaAdapter (paper API)     │    │
+│  │  SignalGenerator → TradeLedgerService (PG)        │    │
 │  └──────────────────────────────────────────────────┘    │
 └──────┬──────────────────────────────┬────────────────────┘
        │                              │
@@ -99,9 +111,12 @@ Run locally (see Installation below) then visit `http://localhost:5173`.
 | Runtime | Node.js 20 + TypeScript 5 |
 | Framework | Express 5 |
 | Logger | Pino (JSON structured logging) |
-| Data (Crypto) | Binance REST API (no key required for OHLCV) |
-| Data (Forex) | Yahoo Finance REST API |
-| AI | Fireworks AI — DeepSeek V4 Pro (SSE streaming) |
+| Data (Crypto) | Binance REST + WebSocket (no key required) |
+| Data (Forex) | Yahoo Finance REST + Finnhub WebSocket (optional) |
+| AI | Fireworks AI — DeepSeek V4 Pro (SSE streaming) + multi-provider abstraction (AMD/vLLM, OpenAI, custom) |
+| MCP | FastMCP v4.3.2 on port 3002 — 11 tools, 2 resources, 1 prompt |
+| Execution | BrokerAdapter interface — MockBroker (file-based) + AlpacaAdapter (paper API) |
+| Database | PostgreSQL via Drizzle ORM (optional — server runs without it) |
 | Cache | In-process Map, 60s TTL |
 
 ### Frontend
@@ -123,7 +138,8 @@ Run locally (see Installation below) then visit `http://localhost:5173`.
 | `lib/api-client-react` | TanStack Query hooks (manually maintained) |
 | `lib/api-spec` | OpenAPI 3.1 spec |
 | `lib/api-zod` | Zod schemas |
-| `lib/db` | Drizzle ORM (scaffolded, server is stateless) |
+| `lib/db` | Drizzle ORM — trades + performance matrix tables |
+| `deploy/amd-developer-cloud` | AMD MI300X deployment (Docker Compose + vLLM + Gemma 4) |
 
 ---
 
@@ -201,23 +217,33 @@ workspace/
 │   │       │       ├── candle-store.ts
 │   │       │       ├── sse-manager.ts
 │   │       │       └── analysis-bridge.ts
+│   │       │   ├── execution/     # Broker execution layer
+│   │       │   │   ├── BrokerAbstraction.ts
+│   │       │   │   └── AlpacaAdapter.ts
+│   │       │   └── mcp/           # MCP server (FastMCP v4.3)
 │   │       └── routes/          # API endpoints
 │   │           ├── analysis.ts
 │   │           ├── agents.ts
+│   │           ├── agents-mcp.ts
 │   │           ├── stream.ts
+│   │           ├── ledger.ts     # Trading + broker
 │   │           ├── symbols.ts
 │   │           └── health.ts
 │   └── liquidity-hunter/        # React frontend
 │       └── src/
 │           ├── pages/
-│           │   └── dashboard.tsx
+│           │   ├── dashboard.tsx
+│           │   ├── Analytics.tsx
+│           │   └── Broker.tsx
 │           └── components/
 │               ├── IntelligenceSheet.tsx
 │               ├── ConfluenceCard.tsx
 │               ├── ConfluenceSheet.tsx
 │               ├── ChartView.tsx
 │               ├── AgentChat.tsx
-│               └── AgentPipeline.tsx
+│               ├── AgentPipeline.tsx
+│               ├── TradeLedgerDashboard.tsx
+│               └── SignalDetailSheet.tsx
 ├── lib/
 │   ├── api-spec/                # OpenAPI 3.1 definition
 │   ├── api-client-react/        # TanStack Query hooks
@@ -247,6 +273,9 @@ pnpm install
 |---|---|---|
 | `FIREWORKS_API_KEY` | Yes | Fireworks AI key for the analyst agent. Get one free at https://fireworks.ai |
 | `FINNHUB_API_KEY` | No | Finnhub API key for forex real-time WebSocket. Without it, Yahoo polling is used as fallback (free, no key). Get one free at https://finnhub.io |
+| `ALPACA_API_KEY_ID` | No | Alpaca Paper Trading API key ID. Set both this and the secret to enable live paper-trading execution through AlpacaAdapter. Without them, the server uses MockBrokerAdapter (file-based, no real orders) |
+| `ALPACA_API_SECRET_KEY` | No | Alpaca Paper Trading API secret key |
+| `DATABASE_URL` | No | PostgreSQL connection string for persistent trade ledger + performance matrix. Server runs without it (ledger and matrix endpoints return empty) |
 
 Set via your platform's secrets manager or `.env` at the repo root.
 
@@ -322,13 +351,20 @@ curl "http://localhost:3001/api/stream/status"
 
 ## Roadmap
 
-- [x] WebSocket live price feed for sub-minute updates (Binance US for crypto, Finnhub/Yahoo for forex)
+- [x] WebSocket live price feed (Binance US for crypto, Finnhub/Yahoo for forex)
 - [x] Real-time candle-close SMC report rebuild with SSE push to browser
-- [ ] Price alert notifications (browser push) when price enters OB zone or sweeps liquidity
+- [x] AI agent system — streaming Q&A + 4-agent pipeline + MCP tool-calling
+- [x] MCP Tier 3 server — 11 SMC tools, 2 resources, 1 prompt for external AI agents
+- [x] Broker abstraction — MockBroker + AlpacaAdapter with REVIEW/LIVE mode toggle
+- [x] Broker dashboard — `/broker` page with account overview, orders, mode switch
+- [x] Backtesting — sliding-window backtest runner using real SMC engine
+- [x] Trade journal — PostgreSQL-backed ledger + performance matrix per setup
+- [x] Docker + CI — multi-stage Dockerfile, AMD MI300X docker-compose, GitHub Actions
+- [x] TypeScript — zero errors across both packages
+- [ ] End-to-end MI300X deployment — run on real AMD Developer Cloud hardware
+- [ ] Price alert notifications when price enters OB zone or sweeps liquidity
 - [ ] Multi-panel chart view (two TFs side-by-side)
 - [ ] Candle tap to inspect — SMC context tooltip for selected bar
-- [ ] Backtesting mode — replay historical bars through the SMC engine
-- [ ] Trade journal integration — log setups directly from Intelligence Sheet
 - [ ] Mobile-native app (Expo React Native)
 - [ ] Public API with rate limiting
 
