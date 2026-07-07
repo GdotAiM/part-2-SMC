@@ -13,13 +13,17 @@
 
 version: "3.9"
 
-# ── Shared defaults ───────────────────────────────────────────────────────────
-# These are the canonical defaults for the AMD deployment.  .env.amd mirrors
-# these values — keep the two files in sync when changing the default model.
+# ── Canonical defaults ───────────────────────────────────────────────────────
+# .env.amd is the single source of truth for all configurable values.  Docker
+# Compose reads .env at startup, so the workflow is:
+#     cp .env.amd .env   →   edit .env   →   docker compose up -d
+#
+# The ${VAR:-fallback} expressions below are last-resort safety nets that only
+# activate when no .env file is present.  When changing the default model or
+# parser, update .env.amd first; the fallbacks here mirror it but must be kept
+# in sync manually (Compose cannot YAML-merge into string values or env-var
+# defaults, so there's no way to define these defaults once and reference them).
 # ──────────────────────────────────────────────────────────────────────────────
-x-defaults: &defaults
-  LLM_MODEL: "google/gemma-4-26B-A4B-it"
-  LLM_TOOL_PARSER: "gemma4"
 
 services:
   # ── vLLM Inference Server (ROCm on MI300X) ──────────────────────────────────
