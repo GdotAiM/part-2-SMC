@@ -153,6 +153,7 @@ export default function Broker() {
 
   const switchMode = async (mode: "REVIEW" | "LIVE", confirm?: string) => {
     setSwitchDisabled(true);
+    setError(null);
     try {
       const body: Record<string, string> = { mode };
       if (confirm) body.confirm = confirm;
@@ -163,9 +164,18 @@ export default function Broker() {
         body: JSON.stringify(body),
       });
 
-      if (!res.ok) {
-        const err = await res.json();
-        setError(err.error || "Failed to switch mode");
+      // Read body as text first to debug empty-response issues
+      const text = await res.text();
+      let data: { mode?: string; error?: string };
+      try {
+        data = JSON.parse(text);
+      } catch {
+        setError(`Broker mode switch returned invalid response (HTTP ${res.status}): "${text.slice(0, 100)}"`);
+        return;
+      }
+
+      if (!res.ok || data.error) {
+        setError(data.error || `Failed to switch mode (HTTP ${res.status})`);
         return;
       }
 
@@ -173,15 +183,15 @@ export default function Broker() {
       const statusRes = await fetch("/api/broker/status");
       if (statusRes.ok) setStatus(await statusRes.json());
     } catch (err: any) {
-      setError(err.message);
+      setError(err.message || "Network error switching broker mode");
     } finally {
       setSwitchDisabled(false);
     }
   };
 
-  const confirmLiveSwitch = () => {
+  const confirmLiveSwitch = async () => {
     setLiveDialogOpen(false);
-    switchMode("LIVE", liveConfirm);
+    await switchMode("LIVE", liveConfirm);
   };
 
   // ── Loading skeleton ─────────────────────────────────────────────────────
