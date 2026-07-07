@@ -2,6 +2,23 @@ import * as fs from "node:fs";
 import * as path from "node:path";
 import type { UnifiedTradeSignal } from "../services/SignalGenerator.js";
 
+// ─── Shared helpers ──────────────────────────────────────────────────────────
+
+/**
+ * Derive trade side (BUY/SELL) from a signal's price structure.
+ *
+ * UnifiedTradeSignal has no explicit `side` field — direction is encoded in
+ * the relationship between take_profit and entry_price:
+ *   - take_profit > entry_price  → BUY  (long — profit above entry)
+ *   - take_profit < entry_price  → SELL (short — profit below entry)
+ *
+ * This replaces the old MockBrokerAdapter heuristic `entry_price > 0` which
+ * was always true (prices are never negative) and always returned BUY.
+ */
+export function deriveSide(signal: UnifiedTradeSignal): "BUY" | "SELL" {
+  return signal.take_profit > signal.entry_price ? "BUY" : "SELL";
+}
+
 // ─── Interfaces ───
 
 export interface BrokerAdapter {
@@ -42,7 +59,7 @@ export interface BrokerOrder {
   side: "BUY" | "SELL";
   qty: number;
   price: number;
-  status: "PENDING" | "FILLED" | "CANCELLED";
+  status: "PENDING" | "FILLED" | "CANCELLED" | "REJECTED";
   created_at: Date;
 }
 
@@ -107,10 +124,7 @@ export class MockBrokerAdapter implements BrokerAdapter {
   ): Promise<ExecutionResult> {
     const orderId = `MOCK_${signal.id.substring(0, 8)}_${Date.now()}`;
 
-    const side =
-      signal.entry_price > 0
-        ? ("BUY" as const)
-        : ("SELL" as const);
+    const side = deriveSide(signal);
 
     const mockOrder = {
       trade_signal_id: signal.id,
@@ -163,7 +177,7 @@ export class MockBrokerAdapter implements BrokerAdapter {
         side: order.side,
         qty: order.qty,
         price: order.entry_price,
-        status: order.status as "PENDING" | "FILLED" | "CANCELLED",
+        status: order.status as BrokerOrder["status"],
         created_at: new Date(order.created_at),
       };
     });
@@ -182,7 +196,7 @@ export class MockBrokerAdapter implements BrokerAdapter {
 
     return {
       id: orderId,
-      status: order.status as "PENDING" | "FILLED" | "CANCELLED",
+      status: order.status as OrderStatus["status"],
       filled_price: order.price,
       filled_qty: order.qty,
     };

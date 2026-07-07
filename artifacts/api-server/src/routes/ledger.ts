@@ -5,6 +5,7 @@ import {
   ExecutionManager,
   MockBrokerAdapter,
 } from "../lib/execution/BrokerAbstraction.js";
+import { AlpacaAdapter } from "../lib/execution/AlpacaAdapter.js";
 import { SignalGenerator } from "../lib/services/SignalGenerator.js";
 import { fetchBinanceCandles } from "../lib/fetchers/binance.js";
 import { fetchYahooCandles } from "../lib/fetchers/yahoo.js";
@@ -13,7 +14,13 @@ import { buildReport } from "../lib/smc/report.js";
 const router: IRouter = Router();
 const ledgerService = new TradeLedgerService();
 const matrixService = new PerformanceMatrixService();
-const executionManager = new ExecutionManager(new MockBrokerAdapter(), "REVIEW");
+// Pick broker: Alpaca paper trading if credentials are set, otherwise mock.
+// This is evaluated once at module load — restart the server after setting keys.
+const brokerAdapter =
+  process.env.ALPACA_API_KEY_ID && process.env.ALPACA_API_SECRET_KEY
+    ? new AlpacaAdapter()
+    : new MockBrokerAdapter();
+const executionManager = new ExecutionManager(brokerAdapter, "REVIEW");
 const signalGenerator = new SignalGenerator();
 
 // ─── GET /api/ledger — Query signals ──────────────────────────────────────────
