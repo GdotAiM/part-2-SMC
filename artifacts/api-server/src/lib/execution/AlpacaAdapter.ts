@@ -134,7 +134,7 @@ export class AlpacaAdapter implements BrokerAdapter {
       );
     }
 
-    const side = deriveSide(signal);
+    const side = deriveSide(signal).toLowerCase(); // Alpaca expects "buy"/"sell"
     const qty = signal.suggested_qty ?? 1;
 
     const body: Record<string, unknown> = {
