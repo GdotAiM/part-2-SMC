@@ -117,18 +117,17 @@ router.post("/signals/generate", async (req, res) => {
 });
 
 // ─── POST /api/signals/execute — Execute signal through broker ─────────────────
+// Uses the server's current execution mode (set via POST /api/broker/mode).
+// The mode is NOT accepted from the request body — this prevents any caller
+// from silently flipping the server to LIVE mode.
 
 router.post("/signals/execute", async (req, res) => {
   try {
-    const { signal, mode } = req.body;
+    const { signal } = req.body;
 
     if (!signal) {
       res.status(400).json({ error: "signal is required" });
       return;
-    }
-
-    if (mode) {
-      executionManager.setMode(mode as "REVIEW" | "LIVE");
     }
 
     const result = await executionManager.executeSignal(signal);
@@ -146,7 +145,55 @@ router.post("/signals/execute", async (req, res) => {
   }
 });
 
-// ─── GET /api/account — Mock account status ───────────────────────────────────
+// ─── POST /api/broker/mode — Set execution mode ──────────────────────────────
+// Switching to LIVE requires { confirm: "LIVE" } as intentional friction.
+// Switching to REVIEW is always immediate (kill-switch path).
+
+router.post("/broker/mode", (req, res) => {
+  try {
+    const { mode, confirm } = req.body as {
+      mode?: string;
+      confirm?: string;
+    };
+
+    if (!mode || (mode !== "REVIEW" && mode !== "LIVE")) {
+      res.status(400).json({ error: "mode must be REVIEW or LIVE" });
+      return;
+    }
+
+    if (mode === "LIVE") {
+      if (confirm !== "LIVE") {
+        res.status(400).json({
+          error: "Switching to LIVE requires { confirm: \"LIVE\" } in the request body",
+        });
+        return;
+      }
+    }
+
+    executionManager.setMode(mode);
+    res.json({ mode: executionManager.getMode() });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ─── GET /api/broker/status — Broker connection + mode status ────────────────
+
+router.get("/broker/status", (_req, res) => {
+  try {
+    const broker = executionManager.getBroker();
+    res.json({
+      broker_name: broker.name,
+      is_ready: broker.isReady,
+      mode: executionManager.getMode(),
+      is_paper: true, // hardcoded — AlpacaAdapter is paper-only
+    });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ─── GET /api/account — Broker account status ────────────────────────────────
 
 router.get("/account", async (_req, res) => {
   try {

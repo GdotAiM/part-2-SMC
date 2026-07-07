@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useLocation } from "wouter";
-import { Activity, AlertCircle, BarChart2, BarChart3, ChevronDown, ChevronUp, Minus, Radio, RefreshCw, TrendingDown, TrendingUp, Zap } from "lucide-react";
+import { Activity, AlertCircle, BarChart2, BarChart3, ChevronDown, ChevronUp, Landmark, Minus, Radio, RefreshCw, TrendingDown, TrendingUp, Zap } from "lucide-react";
 import {
   getAnalyzeCryptoQueryKey,
   getAnalyzeForexQueryKey,
@@ -446,6 +446,16 @@ export default function Dashboard() {
           >
             <BarChart3 className="w-3.5 h-3.5" />
             <span className="hidden sm:inline">ANALYTICS</span>
+          </button>
+
+          {/* Broker button */}
+          <button
+            onClick={() => setLocation("/broker")}
+            title="Broker connection, account, and order management"
+            className="flex items-center gap-1.5 px-2.5 py-1 rounded-sm border border-border bg-muted text-muted-foreground hover:text-primary hover:border-primary/50 transition-colors text-xs font-bold"
+          >
+            <Landmark className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">BROKER</span>
           </button>
 
           {/* Auto-refresh ring */}
