@@ -28,7 +28,7 @@ version: "3.9"
 services:
   # ── vLLM Inference Server (ROCm on MI300X) ──────────────────────────────────
   vllm:
-    image: rocm/vllm:latest
+    image: vllm/vllm-openai-rocm:latest
     restart: unless-stopped
     ports:
       - "${VLLM_PORT:-8000}:8000"
@@ -38,6 +38,13 @@ services:
     devices:
       - /dev/kfd
       - /dev/dri:/dev/dri
+    group_add:
+      - video
+    cap_add:
+      - SYS_PTRACE
+    security_opt:
+      - seccomp=unconfined
+    ipc: host
     volumes:
       - vllm-cache:/root/.cache/vllm
       - hf-cache:/root/.cache/huggingface
@@ -64,12 +71,13 @@ services:
       timeout: 10s
       retries: 5
       start_period: 120s
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: rocm
-              capabilities: [gpu]
+    # No `deploy.resources.reservations.devices driver: rocm` block here —
+    # that reservation mechanism requires a registered Docker device driver
+    # plugin (the way nvidia-container-toolkit registers "nvidia"). AMD ROCm
+    # does not register one, so `driver: rocm` fails with "could not select
+    # device driver". The plain `devices: /dev/kfd, /dev/dri` passthrough
+    # above is the correct and sufficient way to expose the GPU to this
+    # container — it's what AMD's own official ROCm container recipes use.
 
   # ── SMC API Server ──────────────────────────────────────────────────────────
   api:
