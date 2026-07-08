@@ -101,21 +101,41 @@ services:
       - DATABASE_URL=${DATABASE_URL:-}
       - CORS_ORIGINS=${CORS_ORIGINS:-*}
       - FIREWORKS_API_KEY=${FIREWORKS_API_KEY:-}
+      - DATABASE_URL=postgresql://smc:smc-liquidity-hunter@db:5432/smc_liquidity
       - BINANCE_API_KEY=${BINANCE_API_KEY:-}
       - FINNHUB_API_KEY=${FINNHUB_API_KEY:-}
-    # depends_on is unconditional — vLLM will always start even if you set
-    # LLM_PROVIDER to a non-amd provider.  This is harmless; vLLM just idles
-    # on the GPU if nothing queries it.  If you need to avoid GPU allocation
-    # entirely (e.g. for a Fireworks-only test), comment out the vllm service
-    # and this depends_on block.
+    # depends_on is unconditional — vLLM + DB will always start even if you
+    # set LLM_PROVIDER to a non-amd provider.  This is harmless; vLLM just
+    # idles on the GPU if nothing queries it.  If you need to avoid GPU
+    # allocation entirely (e.g. for a Fireworks-only test), comment out the
+    # vllm service and its entry in this depends_on block.
     depends_on:
       vllm:
+        condition: service_healthy
+      db:
         condition: service_healthy
     healthcheck:
       test: ["CMD", "node", "-e", "require('http').get('http://localhost:3001/api/healthz', r => process.exit(r.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))"]
       interval: 30s
       timeout: 5s
       retries: 3
+      start_period: 10s
+
+  # ── PostgreSQL ───────────────────────────────────────────────────────────────
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      - POSTGRES_USER=smc
+      - POSTGRES_PASSWORD=smc-liquidity-hunter
+      - POSTGRES_DB=smc_liquidity
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "smc", "-d", "smc_liquidity"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
       start_period: 10s
 
   # ── Frontend (nginx SPA) ────────────────────────────────────────────────────
@@ -133,3 +153,4 @@ services:
 volumes:
   vllm-cache:
   hf-cache:
+  pgdata:
