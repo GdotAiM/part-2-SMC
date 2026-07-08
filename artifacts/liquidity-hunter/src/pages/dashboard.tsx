@@ -14,6 +14,7 @@ import { ConfluenceCard } from "@/components/ConfluenceCard";
 import { ConfluenceSheet } from "@/components/ConfluenceSheet";
 import { IntelligenceSheet } from "@/components/IntelligenceSheet";
 import { ChartView } from "@/components/ChartView";
+import { MarketBriefing } from "@/components/MarketBriefing";
 import { useRealtimeStream } from "@/lib/realtime";
 
 type Market = "crypto" | "forex";
@@ -555,6 +556,13 @@ export default function Dashboard() {
           </div>
         </div>
       </header>
+
+      {/* ─── AI Market Briefing ─── */}
+      {primaryReport && (
+        <div className="max-w-screen-xl mx-auto px-4 pt-4">
+          <MarketBriefing report={primaryReport} market={market} />
+        </div>
+      )}
 
       {/* ─── Main ─── */}
       <main className="max-w-screen-xl mx-auto px-4 py-5 space-y-5">
