@@ -254,7 +254,7 @@ function TfAgentCard({
       </p>
 
       {/* Background refetch error — show subtle warning without hiding valid data */}
-      {error && (
+      {Boolean(error) && (
         <div className="flex items-center gap-1.5 text-[10px] text-amber-400 border-t border-amber-500/15 pt-2">
           <AlertCircle className="w-3 h-3 shrink-0" />
           <span className="truncate">Update failed — showing last data</span>

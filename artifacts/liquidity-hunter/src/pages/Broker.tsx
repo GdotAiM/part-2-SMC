@@ -274,7 +274,7 @@ export default function Broker() {
           <Landmark className="w-4 h-4 text-primary" />
           <span className="font-bold text-sm text-primary tracking-tight">BROKER</span>
 
-          {error && (
+          {Boolean(error) && (
             <span className="text-[10px] text-destructive ml-2 truncate max-w-[300px]">{error}</span>
           )}
 

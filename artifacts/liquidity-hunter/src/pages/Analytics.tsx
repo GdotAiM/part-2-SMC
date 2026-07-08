@@ -202,7 +202,7 @@ function GenerateSignalTab() {
       )}
 
       {/* Error */}
-      {error && (
+      {Boolean(error) && (
         <Card className="border-destructive/30 bg-destructive/5">
           <CardContent className="pt-6">
             <p className="text-sm text-destructive">{error}</p>
