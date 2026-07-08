@@ -5,6 +5,7 @@ import { forexWs } from "./lib/realtime/forex-ws.js";
 // Side-effect: wires candleClosed → SMC engine → cache → SSE broadcast
 import "./lib/realtime/analysis-bridge.js";
 import { createSmcMcpServer } from "./lib/mcp/index.js";
+import { TradeSettlementService } from "./lib/services/TradeSettlementService.js";
 
 const rawPort = process.env["PORT"];
 
@@ -35,6 +36,11 @@ const server = app.listen(port, (err) => {
   forexWs.subscribe("EURUSD=X", ["1m", "5m", "15m", "1h", "4h", "1d", "1w"]);
 });
 
+// ── Trade Auto-Settlement ────────────────────────────────────────────────────
+
+const settlementService = new TradeSettlementService();
+settlementService.start();
+
 // ── MCP Server (external AI agent access) ────────────────────────────────────
 
 const mcpPort = Number(process.env.MCP_PORT || 3002);
@@ -61,6 +67,7 @@ mcpServer
 
 function shutdown(signal: string) {
   logger.info({ signal }, "Shutting down");
+  settlementService.stop();
   binanceWs.shutdown();
   forexWs.shutdown();
   mcpServer.stop().catch(() => {});
