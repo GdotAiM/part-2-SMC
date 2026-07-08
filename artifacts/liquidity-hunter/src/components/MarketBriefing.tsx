@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import {
-  X, Radio, AlertCircle, Loader2, BrainCircuit,
+  X, Radio, AlertCircle, Loader2, BrainCircuit, Send,
 } from "lucide-react";
-import { askAgents } from "@/lib/api";
+import { askAgents, type ChatMessage } from "@/lib/api";
 import type { SmcReport } from "@workspace/api-client-react";
 
 type Status = "idle" | "streaming" | "ready" | "error";
@@ -61,6 +61,19 @@ export function MarketBriefing({ report, market: _market }: Props) {
   const genRef = useRef(0);
   const startedRef = useRef(false);
 
+  // ── Conversation state ──
+  const [conversation, setConversation] = useState<ChatMessage[]>([]);
+  const [chatInput, setChatInput] = useState("");
+  const [chatStreaming, setChatStreaming] = useState(false);
+  const [chatText, setChatText] = useState("");
+  const chatGenRef = useRef(0);
+  const chatBottomRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    chatBottomRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [conversation, chatText]);
+
   const startBriefing = useCallback(async () => {
     if (!report) return;
     const gen = ++genRef.current;
@@ -69,6 +82,7 @@ export function MarketBriefing({ report, market: _market }: Props) {
     setStatus("streaming");
     setText("");
     setErrorMsg("");
+    setConversation([]);
 
     let accumulated = "";
     try {
@@ -103,7 +117,47 @@ export function MarketBriefing({ report, market: _market }: Props) {
     setStatus("idle");
     setErrorMsg("");
     setDismissed(false);
+    setConversation([]);
+    setChatInput("");
+    setChatText("");
   }, [report?.symbol, report?.timeframe]);
+
+  // ── Chat handler ──
+  const handleChatSend = useCallback(async (q?: string) => {
+    const question = (q ?? chatInput).trim();
+    if (!question || chatStreaming || !report) return;
+    setChatInput("");
+    const userMsg: ChatMessage = { role: "user", content: question };
+    const history: ChatMessage[] = [
+      { role: "assistant", content: text },
+      ...conversation,
+      userMsg,
+    ];
+    setConversation(prev => [...prev, userMsg]);
+    setChatStreaming(true);
+    setChatText("");
+
+    const gen = ++chatGenRef.current;
+    let accumulated = "";
+    try {
+      await askAgents(question, report as unknown as Record<string, unknown>, history, (chunk: string) => {
+        if (chatGenRef.current !== gen) return;
+        accumulated += chunk;
+        setChatText(accumulated);
+      });
+      if (chatGenRef.current !== gen) return;
+      setConversation(prev => [...prev, { role: "assistant", content: accumulated }]);
+    } catch {
+      if (chatGenRef.current !== gen) return;
+      setConversation(prev => [...prev, { role: "assistant", content: "⚠️ Unable to reach the AI agent. Please try again." }]);
+    } finally {
+      if (chatGenRef.current === gen) {
+        setChatStreaming(false);
+        setChatText("");
+        inputRef.current?.focus();
+      }
+    }
+  }, [chatInput, chatStreaming, report, text, conversation]);
 
   if (dismissed) return null;
 
@@ -199,8 +253,75 @@ export function MarketBriefing({ report, market: _market }: Props) {
         )}
       </div>
 
-      {/* Footer */}
-      {status === "ready" && report && (
+      {/* ── Conversation ── */}
+      {status === "ready" && (
+        <>
+          {/* Chat messages */}
+          {conversation.length > 0 && (
+            <div className="border-t border-border/40 px-4 py-3 space-y-3 max-h-72 overflow-y-auto">
+              {conversation.map((msg, i) => (
+                <div key={i} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
+                  <div className={`max-w-[85%] rounded-sm px-3 py-2 text-xs leading-relaxed ${
+                    msg.role === "user"
+                      ? "bg-primary/20 text-foreground border border-primary/30"
+                      : "bg-muted text-foreground border border-border"
+                  }`}>
+                    {msg.role === "assistant" && (
+                      <p className="text-[10px] text-primary font-semibold uppercase tracking-wider mb-1">Briefing Agent</p>
+                    )}
+                    <p className="whitespace-pre-wrap">{msg.content}</p>
+                  </div>
+                </div>
+              ))}
+
+              {/* Streaming response */}
+              {chatStreaming && (
+                <div className="flex justify-start">
+                  <div className="max-w-[85%] rounded-sm px-3 py-2 text-xs leading-relaxed bg-muted text-foreground border border-border">
+                    <p className="text-[10px] text-primary font-semibold uppercase tracking-wider mb-1">Briefing Agent</p>
+                    {chatText ? (
+                      <p className="whitespace-pre-wrap">{chatText}<span className="inline-block w-1.5 h-3.5 bg-primary/70 animate-pulse ml-0.5 align-middle" /></p>
+                    ) : (
+                      <div className="flex items-center gap-1.5 text-muted-foreground">
+                        <Loader2 className="w-3 h-3 animate-spin" />
+                        <span>Thinking&hellip;</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              <div ref={chatBottomRef} />
+            </div>
+          )}
+
+          {/* Chat input — always visible when ready */}
+          <div className="border-t border-border/40 px-4 py-2.5 bg-muted/10 flex items-center gap-2">
+            <input
+              ref={inputRef}
+              value={chatInput}
+              onChange={e => setChatInput(e.target.value)}
+              onKeyDown={e => e.key === "Enter" && !e.shiftKey && handleChatSend()}
+              placeholder="Ask a follow-up about this briefing…"
+              disabled={chatStreaming}
+              className="flex-1 bg-muted border border-border rounded-sm px-3 py-1.5 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary disabled:opacity-50 font-mono"
+            />
+            <button
+              onClick={() => handleChatSend()}
+              disabled={!chatInput.trim() || chatStreaming}
+              className="bg-primary text-primary-foreground rounded-sm px-3 py-1.5 disabled:opacity-40 hover:opacity-90 transition-opacity shrink-0"
+            >
+              <Send className="w-3.5 h-3.5" />
+            </button>
+            <span className="text-[10px] text-muted-foreground hidden sm:inline">
+              {report?.symbol} · {report?.timeframe?.toUpperCase()}
+            </span>
+          </div>
+        </>
+      )}
+
+      {/* Footer — only when streaming (briefing not yet done, no chat) */}
+      {status === "streaming" && report && (
         <div className="border-t border-border/40 px-4 py-2 bg-muted/10 flex items-center justify-between">
           <span className="text-[10px] text-muted-foreground">
             {report.symbol} · {report.timeframe.toUpperCase()} ·{" "}
@@ -211,7 +332,7 @@ export function MarketBriefing({ report, market: _market }: Props) {
             })}
           </span>
           <span className="text-[10px] text-primary/50 font-medium">
-            Generated by SMC Pulse Predict
+            Generating briefing&hellip;
           </span>
         </div>
       )}
