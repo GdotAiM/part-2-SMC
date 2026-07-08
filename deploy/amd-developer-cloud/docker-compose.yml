@@ -100,6 +100,7 @@ services:
       - LLM_MODEL=${LLM_MODEL:-google/gemma-4-26B-A4B-it}
       - DATABASE_URL=${DATABASE_URL:-}
       - CORS_ORIGINS=${CORS_ORIGINS:-*}
+      - FIREWORKS_API_KEY=${FIREWORKS_API_KEY:-}
       - BINANCE_API_KEY=${BINANCE_API_KEY:-}
       - FINNHUB_API_KEY=${FINNHUB_API_KEY:-}
     # depends_on is unconditional — vLLM will always start even if you set
