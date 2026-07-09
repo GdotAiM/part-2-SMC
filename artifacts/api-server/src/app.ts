@@ -1,10 +1,28 @@
 import express, { type Express } from "express";
+import compression from "compression";
 import cors from "cors";
 import pinoHttp from "pino-http";
 import router from "./routes";
 import { logger } from "./lib/logger";
 
 const app: Express = express();
+
+// gzip/brotli-compress all responses. Placed high in the stack (before the
+// router) so every JSON payload — analysis, ledger, performance matrix — is
+// compressed on the wire. Threshold keeps tiny responses (healthz, acks) from
+// paying the compression overhead. The filter skips Server-Sent Events
+// (text/event-stream) — compressing those buffers the response and breaks
+// real-time token deltas on the /agents and /stream SSE endpoints.
+app.use(
+  compression({
+    threshold: 1024,
+    filter: (req, res) => {
+      const contentType = String(res.getHeader("Content-Type") ?? "");
+      if (contentType.includes("text/event-stream")) return false;
+      return compression.filter(req, res);
+    },
+  }),
+);
 
 app.use(
   pinoHttp({
