@@ -1,27 +1,35 @@
 # How SMC Liquidity Hunter Uses AMD Developer Cloud
 
+> **Status (July 2026):** The vLLM-on-ROCm deployment described here is
+> **configured and ready** via `deploy/amd-developer-cloud/docker-compose.yml`.
+> The LLM provider layer routes agent inference to it (`LLM_PROVIDER=amd`).
+> Running it end-to-end on a live AMD Developer Cloud MI300X VM is the
+> remaining roadmap item (see the unchecked `End-to-end MI300X deployment`
+> box in `README.md`). The **vision-language chart analysis** described
+> below as "Planned" is **not yet implemented** — it is scoped future work,
+> not shipped code. Everything else in this document reflects code that
+> exists in the repo today.
+
 ## Architecture
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │                   React Frontend (Vite)                       │
 │  Dashboard · ChartView · IntelligenceSheet · Analytics        │
-│  ┌──────────────────────────────────────────────────────┐    │
-│  │  Chart Screenshot → base64 → POST /api/vision/analyze│    │
-│  └──────────────────────────────────────────────────────┘    │
-└──────────────────────────┬──────────────────────────────────┘
-                           │ HTTP REST
+│  AI Market Briefing (streams from /api/agents/ask)            │
+└──────────────────────────────────────────────────────────┬────┘
+                           │ HTTP REST + SSE
 ┌──────────────────────────▼──────────────────────────────────┐
-│              Express 5 API Server (Replit Autoscale)          │
-│  /api/analysis/*  /api/agents/*  /api/ledger/*               │
-│  /api/vision/analyze  ← NEW: chart screenshot → MI300X       │
+│              Express 5 API Server                             │
+│  /api/analysis/*  /api/agents/*  /api/agents/ask-mcp          │
+│  /api/ledger/*  /api/stream/:symbol (SSE)  /api/healthz       │
 │  ┌──────────────────────────────────────────────────────┐    │
-│  │              vLLM Client (vllm-client.ts)             │    │
-│  │  OpenAI-compatible /v1/chat/completions               │    │
-│  │  Model: Qwen2.5-VL-7B · Llama 3.1 70B                │    │
+│  │  LLM Provider Abstraction (lib/llm/provider.ts)      │    │
+│  │  OpenAI-compatible /v1/chat/completions              │    │
+│  │  resolveLlmConfig() → amd | fireworks | openai       │    │
 │  └──────────────────────┬───────────────────────────────┘    │
 └──────────────────────────│───────────────────────────────────┘
-                           │ HTTPS
+                           │ HTTP (OpenAI-compatible)
 ┌──────────────────────────▼──────────────────────────────────┐
 │              AMD Developer Cloud VM                           │
 │  ┌──────────────────────────────────────────────────────┐    │
@@ -30,137 +38,127 @@
 │  │  ┌─────────────────────────────────────┐              │    │
 │  │  │  vLLM Server (port 8000)            │              │    │
 │  │  │  ┌─────────────────────────────┐    │              │    │
-│  │  │  │  Qwen2.5-VL-7B-Instruct     │    │ ← Vision     │
-│  │  │  │  (Chart screenshot → SMC)   │    │   Model      │
-│  │  │  └─────────────────────────────┘    │              │    │
-│  │  │  ┌─────────────────────────────┐    │              │    │
-│  │  │  │  Llama 3.1 70B / Qwen 3.5   │    │ ← Agent      │    │
-│  │  │  │  (Trade analysis + Q&A)     │    │   Model      │    │
+│  │  │  │  google/gemma-4-26B-A4B-it  │    │  Agent       │    │
+│  │  │  │  (SMC analysis + Q&A,       │    │  model       │    │
+│  │  │  │   native tool-calling)      │    │              │    │
 │  │  │  └─────────────────────────────┘    │              │    │
 │  │  └─────────────────────────────────────┘              │    │
 │  │                                                       │    │
-│  │  ROCm 7.2 · PyTorch · HuggingFace Optimum-AMD          │    │
+│  │  ROCm · vLLM (vllm-openai-rocm)                        │    │
 │  └──────────────────────────────────────────────────────┘    │
 └─────────────────────────────────────────────────────────────┘
 ```
 
-## Three AMD Infrastructure Touchpoints
+## AMD Infrastructure Touchpoints
 
-### 1. Vision-Language Chart Analysis (Primary — Track 3)
+### 1. AI Agent Inference on MI300X (implemented)
 
-**What it does**: User clicks "AI Vision" on any chart → ChartView renders a high-res candlestick screenshot → base64-encoded → sent to Qwen2.5-VL-7B running on AMD MI300X → returns structured SMC analysis.
+**What it does:** The SMC analyst agents — the free-form Q&A endpoint
+(`/api/agents/ask`), the 4-stage analysis pipeline (`/api/agents/pipeline`),
+and the MCP tool-calling agent (`/api/agents/ask-mcp`) — route their LLM
+calls to a self-hosted vLLM instance running Gemma 4 26B (A4B) on the
+MI300X. This replaces per-token Fireworks API spend with local inference.
 
-**AMD hardware used**: 1× AMD Instinct™ MI300X (192 GB HBM3)
+**AMD hardware used:** 1× AMD Instinct™ MI300X (192 GB HBM3), ROCm,
+`vllm/vllm-openai-rocm`.
 
-**Model**: Qwen2.5-VL-7B-Instruct via vLLM on ROCm 7.2
+**Model:** `google/gemma-4-26B-A4B-it`, launched with
+`--tool-call-parser gemma4 --reasoning-parser gemma4 --enable-auto-tool-choice`
+so Gemma's native function-calling drives the MCP agent's tool selection.
 
-**Why MI300X**: The 192 GB HBM3 allows the vision model to process full-resolution chart screenshots (candlesticks + SMC overlays at 4K) without tiling or downscaling. Qwen2.5-VL-7B uses ~14 GB VRAM in BF16, leaving 178 GB headroom for concurrent workloads.
+**Why MI300X:** Gemma 4 26B is a Mixture-of-Experts model; the 192 GB HBM3
+gives ample headroom for weights + KV cache at high `--gpu-memory-utilization`,
+and lets a single card serve the model without tensor-parallel sharding.
 
-**MCP tool**: `analyze_chart_image` — registered alongside the 11 existing SMC analysis tools
-- Input: base64 PNG + user question (e.g., "Where is the nearest bearish OB?")
-- Output: structured JSON with detected patterns, price levels, confidence scores
-- Processing: `POST /api/vision/analyze` → Express → vLLM on MI300X → response
+**Relevant files (all exist):**
+- `artifacts/api-server/src/lib/llm/provider.ts` — multi-provider abstraction; `amd` case points at `http://vllm:8000/v1`
+- `artifacts/api-server/src/routes/agents.ts` — `/agents/ask` + `/agents/pipeline` call the resolved provider
+- `artifacts/api-server/src/routes/agents-mcp.ts` — MCP tool-calling agent via the same provider
+- `deploy/amd-developer-cloud/docker-compose.yml` — `vllm` service with ROCm device passthrough, Gemma 4 parsers, weight caching
 
-**Relevant files**:
-- `artifacts/api-server/src/lib/ml/vllm-client.ts` — vLLM OpenAI-compatible client
-- `artifacts/api-server/src/lib/ml/chart-vision.ts` — Screenshot → vision model pipeline
-- `artifacts/api-server/src/lib/mcp/tools/chart-vision.ts` — MCP tool registration
+### 2. Real-Time SMC Engine (no GPU required — runs on the API host)
 
-### 2. AI Agent Inference (Secondary — Track 1/2 spillover)
+The deterministic SMC engine (`artifacts/api-server/src/lib/smc/*`) and the
+real-time pipeline (Binance WebSocket → candle store → analysis bridge → SSE)
+run on the API server's CPU. They are the grounding layer the agents reason
+over — the GPU is used only for the LLM inference above, not for the engine.
+This separation keeps GPU utilization tied to actual agent queries.
 
-**What it does**: The existing 4-agent pipeline (Structure → Liquidity → FVG → Confluence) + free-form Q&A currently runs on Fireworks AI. On AMD Cloud, it runs on Llama 3.1 70B or Qwen 3.5 35B via the same vLLM instance.
+### 3. Vision-Language Chart Analysis (PLANNED — NOT YET IMPLEMENTED)
 
-**AMD hardware used**: Same MI300X — models share the GPU sequentially. vLLM unloads the vision model and loads the agent model on demand (~5s warm-up).
+> **Not built.** No `lib/ml/` directory, no `/api/vision/analyze` route, no
+> `analyze_chart_image` MCP tool, and no chart-screenshot pipeline exist in
+> the codebase today. This section documents the *scoped future work* for a
+> multimodal Track-3 extension; it is not part of the current submission.
 
-**Why MI300X**: The 192 GB HBM3 enables model swapping without sharding. Llama 3.1 70B in BF16 uses ~140 GB, fitting comfortably on a single card. The same model on an 80 GB H100 would require 2 GPUs with tensor parallelism.
+**What it would do:** A user clicks "AI Vision" on a chart → ChartView
+renders a high-res candlestick screenshot → base64-encoded → sent to a
+vision-language model (e.g. Qwen2.5-VL) on the MI300X → returns structured
+SMC analysis, which is compared against the deterministic engine for
+consensus.
 
-**Relevant files**:
-- `artifacts/api-server/src/routes/agents.ts` — Swapped to call vLLM instead of Fireworks
-- `artifacts/api-server/src/routes/agents-mcp.ts` — MCP tool-calling agent via vLLM
+**Why MI300X would matter here:** The 192 GB HBM3 could hold a vision model
+(~14 GB BF16) concurrently with the agent model, processing full-resolution
+chart screenshots without tiling, and leave headroom for both workloads at
+once.
 
-### 3. Backtest Signal Dataset (Training Data)
+**What would need to be built:** a `lib/ml/vllm-client.ts`, a
+`lib/ml/chart-vision.ts` screenshot pipeline, an `analyze_chart_image` MCP
+tool, a `POST /api/vision/analyze` route, a ChartView screenshot capture
+path, and an export/training-data script. None of these exist yet.
 
-**What it does**: The 254 backtest signals stored in PostgreSQL (with full analysis_context jsonb) are exported as a training dataset for potential LoRA fine-tuning of the vision model on SMC-specific chart patterns.
+## ROCm / vLLM deployment (configured)
 
-**AMD hardware used**: MI300X (inference) + ROCm PyTorch (training)
-
-**Why MI300X**: Fine-tuning Qwen2.5-VL-7B with LoRA on a single MI300X takes ~1 hour for 254 samples — the 192 GB HBM3 handles the full model + optimizer states without gradient checkpointing.
-
-**Relevant files**:
-- `artifacts/api-server/src/scripts/export-training-data.ts` — PostgreSQL → JSONL
-- `artifacts/api-server/src/lib/ml/fine-tune/train.py` — LoRA fine-tuning script
-
-## ROCm Environment
+The canonical deployment is Docker Compose (`deploy/amd-developer-cloud/`),
+not the bare `docker run` below — but the flags are equivalent and useful
+for understanding what the compose file sets up:
 
 ```bash
-# AMD Developer Cloud VM setup (run once)
-docker pull rocm/vllm-dev:nightly_main_20260506
-
-# Launch vLLM with both vision and language models
+# Equivalent to the `vllm` service in deploy/amd-developer-cloud/docker-compose.yml
 docker run --rm -d \
     --device=/dev/kfd --device=/dev/dri \
-    --group-add video --cap-add=SYS_PTRACE \
-    --name vllm-server \
+    --group-add video --cap-add=SYS_PTRACE --ipc=host \
+    --security-opt seccomp=unconfined \
+    -e HSA_OVERRIDE_GFX_VERSION=9.4.2 \
+    -v vllm-cache:/root/.cache/vllm \
+    -v hf-cache:/root/.cache/huggingface \
     -p 8000:8000 \
-    -v $HOME/models:/models \
-    rocm/vllm-dev:nightly_main_20260506 \
-    vllm serve Qwen/Qwen2.5-VL-7B-Instruct \
-        --host 0.0.0.0 --port 8000 \
-        --dtype float16 --max-model-len 4096 \
-        --gpu-memory-utilization 0.85
-
-# ROCm performance flags (set inside container):
-# PYTORCH_HIP_ALLOC_CONF=expandable_segments:True
-# TORCH_BLAS_PREFER_HIPBLASLT=1
-# MIOPEN_FIND_MODE=FAST
-# GPU_MAX_HW_QUEUES=2
-# HIP_FORCE_DEV_KERNARG=1
-# HSA_ENABLE_SDMA=0
+    vllm/vllm-openai-rocm:latest \
+    --model google/gemma-4-26B-A4B-it \
+    --host 0.0.0.0 --port 8000 \
+    --max-model-len 8192 \
+    --gpu-memory-utilization 0.92 \
+    --dtype auto \
+    --tool-call-parser gemma4 --reasoning-parser gemma4 \
+    --enable-auto-tool-choice --trust-remote-code --enforce-eager
 ```
 
-## Infrastructure Flow
-
-```
-1. User opens ChartView (BTCUSDT 1h)
-2. Clicks "AI Vision Analyze"
-3. ChartView.toDataURL() → base64 PNG (candlesticks + FVG rectangles + OB boxes + session bands)
-4. POST /api/vision/analyze { image: "data:image/png;base64,...", question: "Find the nearest bearish OB and FVG" }
-5. Express → vllmClient.chat({
-     model: "Qwen2.5-VL-7B-Instruct",
-     messages: [{
-       role: "user",
-       content: [
-         { type: "image_url", image_url: { url: "data:image/png;base64,..." } },
-         { type: "text", text: "Find the nearest bearish OB and FVG on this BTCUSDT 1h chart..." }
-       ]
-     }]
-   })
-6. vLLM on MI300X processes image through Qwen2.5-VL vision encoder
-7. Returns: { ob: { type: "bearish", proximal: 63200, distal: 62800 }, fvg: { top: 63150, bottom: 62850 } }
-8. Compare vision model output with deterministic SMC engine
-9. Consensus signal → UnifiedTradeSignal → Trade Ledger
-```
+Notes:
+- `--enforce-eager` is used for ROCm compatibility (no CUDA graphs).
+- `--trust-remote-code` is required because Gemma 4 ships custom modeling
+  code; this is a supply-chain consideration documented in the compose file.
+- `vllm-cache` + `hf-cache` volumes persist the Gemma 4 weights across
+  restarts so the model does not re-download (~30 s cold-start avoided).
 
 ## Model Memory Budget (Single MI300X — 192 GB HBM3)
 
-| Model | Precision | VRAM | Use Case |
-|---|---|---|---|
-| Qwen2.5-VL-7B-Instruct | BF16 | ~14 GB | Chart screenshot → SMC analysis |
-| Llama 3.1 70B | BF16 | ~140 GB | AI agent pipeline (4 agents sequential) |
-| Qwen 3.5 35B | BF16 | ~70 GB | Lighter agent model (faster, fits with vision model) |
-| vLLM overhead | — | ~8 GB | KV cache, scheduler |
+| Model | Precision | VRAM (approx) | Use Case | Status |
+|---|---|---|---|---|
+| `google/gemma-4-26B-A4B-it` | auto/BF16 | headroom well within 192 GB | AI agent pipeline + Q&A | **Configured** |
+| Vision-language model (e.g. Qwen2.5-VL-7B) | BF16 | ~14 GB | Chart screenshot → SMC analysis | **Planned, not built** |
 
-**Recommended config**: Run Qwen2.5-VL-7B (14 GB) + Qwen 3.5 35B (70 GB) concurrently = ~92 GB total, well within 192 GB. No model swapping needed — both models available simultaneously for seamless chart vision + agent Q&A.
+## Comparison: Fireworks vs. AMD self-hosted
 
-## Comparison: Before vs After AMD
-
-| Dimension | Before (Fireworks AI) | After (AMD Developer Cloud) |
+| Dimension | Fireworks (fallback) | AMD Developer Cloud (default, `LLM_PROVIDER=amd`) |
 |---|---|---|
-| **Inference provider** | Fireworks hosted API | Self-hosted vLLM on MI300X |
-| **Vision capability** | None (text-only agents) | Chart screenshot → structured SMC |
-| **Model control** | Fixed models, no fine-tuning | Full control, LoRA fine-tuning possible |
-| **Latency** | ~2-5s (network round-trip) | ~0.5-1s (same-region cloud VM) |
-| **Cost** | Pay-per-token | $100 AMD credits (included) |
-| **Model size limit** | Provider-defined | Up to 192 GB — any open-source model |
-| **Multimodal** | Not available | Qwen2.5-VL, Llama 3.2 Vision |
-| **ROCm optimization** | N/A | ParaAttention FBCache (2× speedup), hipBLASLt, torch.compile |
+| **Inference provider** | Hosted API | Self-hosted vLLM on MI300X |
+| **Cost** | Pay-per-token | AMD credits (included) — no per-token bill |
+| **Model control** | Fixed catalog | Full control; any OpenAI-compatible model |
+| **Tool-calling** | Provider-dependent | Gemma 4 native tool-calling via vLLM parsers |
+| **Multimodal / vision** | N/A today | Scoped (see §3, not yet built) |
+| **Latency** | Network round-trip | Same-region cloud VM |
+| **Switching** | One env var (`LLM_PROVIDER`) | Same abstraction, same code path |
+
+The `FIREWORKS_API_KEY` is still threaded through the compose file as an
+opt-in fallback (`LLM_PROVIDER=fireworks`) for testing without GPU access;
+the default path is local inference on the MI300X.
