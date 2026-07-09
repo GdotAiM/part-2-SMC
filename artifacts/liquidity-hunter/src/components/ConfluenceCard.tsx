@@ -1,13 +1,7 @@
 import { ArrowRight, ChevronRight, Minus, TrendingDown, TrendingUp } from "lucide-react";
 import type { SmcReport } from "@workspace/api-client-react";
+import { getBias, getConfidence, fmtPrice, TF_LABEL_MAP, TF_WEIGHT } from "@/lib/smc-display";
 
-const TF_LABELS: Record<string, string> = {
-  "1m": "M1", "5m": "M5", "15m": "M15",
-  "1h": "H1", "4h": "H4", "1d": "D1", "1w": "W1",
-};
-const TF_WEIGHT: Record<string, number> = {
-  "1m": 1, "5m": 2, "15m": 3, "1h": 4, "4h": 5, "1d": 6, "1w": 7,
-};
 const ROLE_LABELS: Record<string, string> = {
   "BIAS SETTER":    "Bias",
   "CONFIRMATION":   "Confirms",
@@ -27,18 +21,6 @@ type Props = {
   onOpenConfluence: () => void;
 };
 
-function getBias(report: SmcReport): string {
-  return report.structure.bias !== "neutral" ? report.structure.bias : report.dailyBias.bias;
-}
-function getConfidence(report: SmcReport): number {
-  return Math.round(((report.structure.confidence + report.dailyBias.strength) / 2) * 100);
-}
-function fmtP(price: number): string {
-  if (price >= 10000) return price.toLocaleString("en-US", { maximumFractionDigits: 2 });
-  if (price >= 1) return price.toFixed(4);
-  return price.toFixed(6);
-}
-
 export function ConfluenceCard({ reports, cascade, onSelect, onOpenConfluence }: Props) {
   if (reports.length === 0) return null;
 
@@ -48,6 +30,7 @@ export function ConfluenceCard({ reports, cascade, onSelect, onOpenConfluence }:
   );
 
   const { anchorTf, anchorBias } = cascade;
+  const market = (sortedReports[0]?.report.market ?? "crypto") as "crypto" | "forex";
 
   /* Overall confluence: count aligned vs counter */
   let aligned = 0, counter = 0;
@@ -103,7 +86,7 @@ export function ConfluenceCard({ reports, cascade, onSelect, onOpenConfluence }:
                   ? "bg-yellow-500/15 border-yellow-500/30 text-yellow-400"
                   : "bg-muted border-border text-muted-foreground"
             }`}>
-              {fullyAligned ? "FULL CASCADE ✓" : breakAtTf ? `BREAK AT ${TF_LABELS[breakAtTf]}` : "LOADING…"}
+              {fullyAligned ? "FULL CASCADE ✓" : breakAtTf ? `BREAK AT ${TF_LABEL_MAP[breakAtTf]}` : "LOADING…"}
             </span>
             <span className="text-[10px] text-primary/50 group-hover:text-primary transition-colors">
               Intelligence Sheet →
@@ -119,7 +102,7 @@ export function ConfluenceCard({ reports, cascade, onSelect, onOpenConfluence }:
                anchorBias === "bearish" ? "BEARISH DRAW" : "MIXED CONDITIONS"}
             </p>
             <p className="text-xs text-muted-foreground">
-              {aligned} aligned · {counter} counter-trend · anchor {TF_LABELS[anchorTf]}
+              {aligned} aligned · {counter} counter-trend · anchor {TF_LABEL_MAP[anchorTf]}
             </p>
           </div>
         </div>
@@ -129,7 +112,7 @@ export function ConfluenceCard({ reports, cascade, onSelect, onOpenConfluence }:
       {sortedReports.length > 1 && (
         <div className="px-4 pb-3">
           <p className="text-[9px] text-muted-foreground uppercase tracking-widest mb-2">
-            Top-Down Cascade  ·  {TF_LABELS[anchorTf]} sets the direction
+            Top-Down Cascade  ·  {TF_LABEL_MAP[anchorTf]} sets the direction
           </p>
           <div className="flex items-center gap-1 flex-wrap">
             {sortedReports.map(({ tf, report }, i) => {
@@ -155,7 +138,7 @@ export function ConfluenceCard({ reports, cascade, onSelect, onOpenConfluence }:
                     <div className="flex items-center gap-1">
                       {isAnchor && <span className="text-[8px] font-bold opacity-70">⚓</span>}
                       <span className="text-[10px] font-bold">
-                        {TF_LABELS[tf] ?? tf.toUpperCase()}
+                        {TF_LABEL_MAP[tf] ?? tf.toUpperCase()}
                       </span>
                     </div>
                     <div className="flex items-center gap-1 mt-0.5">
@@ -184,7 +167,7 @@ export function ConfluenceCard({ reports, cascade, onSelect, onOpenConfluence }:
             )}
             {!fullyAligned && breakAtTf && (
               <span className="text-[10px] text-yellow-400 font-bold ml-1">
-                ⚠ Breaks at {TF_LABELS[breakAtTf]}
+                ⚠ Breaks at {TF_LABEL_MAP[breakAtTf]}
               </span>
             )}
           </div>
@@ -225,7 +208,7 @@ export function ConfluenceCard({ reports, cascade, onSelect, onOpenConfluence }:
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-1">
                   <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
-                    {TF_LABELS[tf] ?? tf.toUpperCase()}
+                    {TF_LABEL_MAP[tf] ?? tf.toUpperCase()}
                   </span>
                   {tf === anchorTf && (
                     <span className="text-[8px] text-primary">⚓</span>
@@ -241,7 +224,7 @@ export function ConfluenceCard({ reports, cascade, onSelect, onOpenConfluence }:
 
               {draw ? (
                 <p className={`text-sm font-bold font-mono leading-none ${priceColor}`}>
-                  {draw.direction === "long" ? "▲" : "▼"} {fmtP(draw.price)}
+                  {draw.direction === "long" ? "▲" : "▼"} {fmtPrice(draw.price, market)}
                 </p>
               ) : (
                 <p className="text-xs text-muted-foreground italic">—</p>

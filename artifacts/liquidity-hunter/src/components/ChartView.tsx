@@ -12,8 +12,7 @@ import type { SmcReport } from "@workspace/api-client-react";
 import { X, ExternalLink } from "lucide-react";
 import { isChartable } from "@/lib/alpaca-url";
 import { TradingViewChart } from "./TradingViewChart";
-
-type Market = "crypto" | "forex";
+import { fmtPrice, priceDecimals, TF_LABEL_MAP, type Market } from "@/lib/smc-display";
 type CandleSeries = ISeriesApi<SeriesType>;
 
 // ── Session colour config ──────────────────────────────────────────────────────
@@ -50,20 +49,7 @@ function buildSessionBlocks(candles: SmcReport["candles"]) {
 }
 
 // ── Price format ───────────────────────────────────────────────────────────────
-
-function fmtPrice(p: number, market: Market): string {
-  if (market === "forex") return p.toFixed(5);
-  if (p >= 10000) return p.toLocaleString("en-US", { maximumFractionDigits: 2 });
-  if (p >= 1)     return p.toFixed(4);
-  return p.toFixed(6);
-}
-
-function priceDecimals(price: number, market: Market): number {
-  if (market === "forex") return 5;
-  if (price >= 1000) return 2;
-  if (price >= 1)    return 4;
-  return 6;
-}
+// (fmtPrice and priceDecimals imported from @/lib/smc-display)
 
 // ── Overlay canvas drawing ─────────────────────────────────────────────────────
 
@@ -306,11 +292,6 @@ interface Props {
   /** Per-timeframe live candles from the real-time stream */
   liveCandles?: Record<string, CandleData[]>;
 }
-
-const TF_LABEL: Record<string, string> = {
-  "1m": "M1", "5m": "M5", "15m": "M15",
-  "1h": "H1", "4h": "H4", "1d": "D1", "1w": "W1",
-};
 
 export function ChartView({ reports, market, initialTf, onClose, liveCandles }: Props) {
   const [showTvChart, setShowTvChart] = useState(false);
@@ -610,7 +591,7 @@ export function ChartView({ reports, market, initialTf, onClose, liveCandles }: 
                   : "bg-[#181818] text-[#666] hover:text-[#aaa]"
               }`}
             >
-              {TF_LABEL[tf] ?? tf.toUpperCase()}
+              {TF_LABEL_MAP[tf] ?? tf.toUpperCase()}
             </button>
           ))}
         </div>

@@ -4,16 +4,9 @@ import {
   Target, Check, AlertTriangle, Copy, ClipboardCheck, Layers, Activity, BarChart2, Zap,
 } from "lucide-react";
 import type { SmcReport } from "@workspace/api-client-react";
-
-type Market = "crypto" | "forex";
-
-const TF_LABELS: Record<string, string> = {
-  "1m": "M1", "5m": "M5", "15m": "M15",
-  "1h": "H1", "4h": "H4", "1d": "D1", "1w": "W1",
-};
-const TF_WEIGHT: Record<string, number> = {
-  "1m": 1, "5m": 2, "15m": 3, "1h": 4, "4h": 5, "1d": 6, "1w": 7,
-};
+import { BiasChip } from "@/components/ui/bias-chip";
+import { ConfBar } from "@/components/ui/conf-bar";
+import { fmtPrice, getBias, getConfidence, TF_LABEL_MAP, TF_WEIGHT, type Market } from "@/lib/smc-display";
 
 type CascadeInfo = {
   roles: Record<string, string>;
@@ -28,38 +21,6 @@ type Props = {
   onClose: () => void;
 };
 
-function fmtPrice(p: number, market: Market): string {
-  if (market === "forex") return p.toFixed(5);
-  if (p >= 10000) return p.toLocaleString("en-US", { maximumFractionDigits: 2 });
-  if (p >= 1) return p.toFixed(4);
-  return p.toFixed(6);
-}
-
-function getBias(report: SmcReport): "bullish" | "bearish" | "neutral" {
-  const sb = report.structure.bias;
-  const db = report.dailyBias.bias;
-  if (sb !== "neutral") return sb as "bullish" | "bearish";
-  if (db !== "neutral") return db as "bullish" | "bearish";
-  return "neutral";
-}
-
-function getConfidence(report: SmcReport): number {
-  return Math.round(((report.structure.confidence + report.dailyBias.strength) / 2) * 100);
-}
-
-function BiasChip({ bias }: { bias: string }) {
-  const style =
-    bias === "bullish" ? "text-[hsl(var(--bullish))] bg-[hsl(var(--bullish))]/15 border-[hsl(var(--bullish))]/30" :
-    bias === "bearish" ? "text-destructive bg-destructive/15 border-destructive/30" :
-    "text-primary bg-primary/15 border-primary/30";
-  const Icon = bias === "bullish" ? TrendingUp : bias === "bearish" ? TrendingDown : Minus;
-  return (
-    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-sm border text-[10px] font-bold uppercase tracking-wider ${style}`}>
-      <Icon className="w-2.5 h-2.5" />{bias}
-    </span>
-  );
-}
-
 function Section({ title, icon: Icon, children }: { title: string; icon: React.ElementType; children: React.ReactNode }) {
   return (
     <div className="space-y-3">
@@ -68,19 +29,6 @@ function Section({ title, icon: Icon, children }: { title: string; icon: React.E
         <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{title}</span>
       </div>
       {children}
-    </div>
-  );
-}
-
-function ConfBar({ value, label }: { value: number; label?: string }) {
-  const color = value > 65 ? "bg-[hsl(var(--bullish))]" : value > 40 ? "bg-primary" : "bg-destructive";
-  return (
-    <div className="flex items-center gap-2">
-      {label && <span className="text-[10px] text-muted-foreground w-20 shrink-0">{label}</span>}
-      <div className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden">
-        <div className={`h-full rounded-full ${color}`} style={{ width: `${value}%` }} />
-      </div>
-      <span className="text-[10px] text-muted-foreground w-8 text-right">{value}%</span>
     </div>
   );
 }
@@ -119,10 +67,10 @@ function deriveMultiTfSetup(
     if (ob) {
       entryLow = Math.min(ob.proximal, ob.distal);
       entryHigh = Math.max(ob.proximal, ob.distal);
-      entrySource = ob.hasFvg ? "OB + FVG (entry TF)" : `Order Block (${TF_LABELS[entryItem.tf]})`;
+      entrySource = ob.hasFvg ? "OB + FVG (entry TF)" : `Order Block (${TF_LABEL_MAP[entryItem.tf]})`;
     } else if (fvg) {
       entryLow = fvg.bottom; entryHigh = fvg.top;
-      entrySource = `FVG (${TF_LABELS[entryItem.tf]})`;
+      entrySource = `FVG (${TF_LABEL_MAP[entryItem.tf]})`;
     }
   } else {
     const ob = liveOBs.filter(ob => ob.type === "bearish" && ob.proximal > currentPrice)
@@ -132,10 +80,10 @@ function deriveMultiTfSetup(
     if (ob) {
       entryLow = Math.min(ob.proximal, ob.distal);
       entryHigh = Math.max(ob.proximal, ob.distal);
-      entrySource = ob.hasFvg ? "OB + FVG (entry TF)" : `Order Block (${TF_LABELS[entryItem.tf]})`;
+      entrySource = ob.hasFvg ? "OB + FVG (entry TF)" : `Order Block (${TF_LABEL_MAP[entryItem.tf]})`;
     } else if (fvg) {
       entryLow = fvg.bottom; entryHigh = fvg.top;
-      entrySource = `FVG (${TF_LABELS[entryItem.tf]})`;
+      entrySource = `FVG (${TF_LABEL_MAP[entryItem.tf]})`;
     }
   }
 
@@ -144,11 +92,11 @@ function deriveMultiTfSetup(
   let slSource = "";
   if (direction === "long") {
     const ssl = entryReport.liquidity.nearestSSL?.price;
-    if (ssl && ssl < currentPrice) { stopLoss = ssl * 0.9995; slSource = `Below SSL (${TF_LABELS[entryItem.tf]})`; }
+    if (ssl && ssl < currentPrice) { stopLoss = ssl * 0.9995; slSource = `Below SSL (${TF_LABEL_MAP[entryItem.tf]})`; }
     else if (entryLow !== null)     { stopLoss = entryLow * 0.9985; slSource = "Below entry zone"; }
   } else {
     const bsl = entryReport.liquidity.nearestBSL?.price;
-    if (bsl && bsl > currentPrice) { stopLoss = bsl * 1.0005; slSource = `Above BSL (${TF_LABELS[entryItem.tf]})`; }
+    if (bsl && bsl > currentPrice) { stopLoss = bsl * 1.0005; slSource = `Above BSL (${TF_LABEL_MAP[entryItem.tf]})`; }
     else if (entryHigh !== null)    { stopLoss = entryHigh * 1.0015; slSource = "Above entry zone"; }
   }
 
@@ -179,9 +127,9 @@ function deriveMultiTfSetup(
   const smtSupports = sortedReports.some(r => r.report.smt?.detected);
 
   const checklist = [
-    { label: `HTF (${TF_LABELS[anchorItem.tf]}) trend aligned`,    pass: htfAligned },
-    { label: `MTF (${TF_LABELS[confirmItem.tf]}) confirms direction`, pass: mtfAligned },
-    { label: `LTF (${TF_LABELS[entryItem.tf]}) shows entry POI`,   pass: ltfAligned && hasEntryPoi },
+    { label: `HTF (${TF_LABEL_MAP[anchorItem.tf]}) trend aligned`,    pass: htfAligned },
+    { label: `MTF (${TF_LABEL_MAP[confirmItem.tf]}) confirms direction`, pass: mtfAligned },
+    { label: `LTF (${TF_LABEL_MAP[entryItem.tf]}) shows entry POI`,   pass: ltfAligned && hasEntryPoi },
     { label: `Price in ${direction === "long" ? "discount" : "premium"} zone`, pass: correctPdZone },
     { label: "Clear HTF liquidity draw",                             pass: hasDraw },
     { label: "SMT divergence supports trade",                        pass: smtSupports },
@@ -243,9 +191,9 @@ export function ConfluenceSheet({ reports, cascade, market, onClose }: Props) {
       `  Grade     : ${setup.grade === "wait" ? "WAIT FOR SETUP" : `GRADE ${setup.grade}`}`,
       `  Confluence: ${setup.passCount}/6 checks passed`,
       "",
-      `  Anchor (${TF_LABELS[setup.anchorTf]}) Bias : ${anchorBias.toUpperCase()}`,
-      `  Confirm (${TF_LABELS[setup.confirmTf]}) Bias: ${getBias(sortedReports.find(r => r.tf === setup.confirmTf)!.report).toUpperCase()}`,
-      `  Entry   (${TF_LABELS[setup.entryTf]})  Bias: ${getBias(sortedReports.find(r => r.tf === setup.entryTf)!.report).toUpperCase()}`,
+      `  Anchor (${TF_LABEL_MAP[setup.anchorTf]}) Bias : ${anchorBias.toUpperCase()}`,
+      `  Confirm (${TF_LABEL_MAP[setup.confirmTf]}) Bias: ${getBias(sortedReports.find(r => r.tf === setup.confirmTf)!.report).toUpperCase()}`,
+      `  Entry   (${TF_LABEL_MAP[setup.entryTf]})  Bias: ${getBias(sortedReports.find(r => r.tf === setup.entryTf)!.report).toUpperCase()}`,
       "",
       "  ENTRY ZONE",
       `  Source: ${setup.entrySource}`,
@@ -335,7 +283,7 @@ export function ConfluenceSheet({ reports, cascade, market, onClose }: Props) {
                     <div className={`rounded-sm border px-3 py-2 ${boxStyle}`}>
                       <div className="flex items-center gap-1.5 mb-1">
                         {isAnchor && <span className="text-[9px] opacity-70">⚓</span>}
-                        <span className="text-xs font-bold">{TF_LABELS[tf] ?? tf.toUpperCase()}</span>
+                        <span className="text-xs font-bold">{TF_LABEL_MAP[tf] ?? tf.toUpperCase()}</span>
                         <span className="text-[9px] opacity-60 font-medium uppercase">{role.replace("BIAS SETTER", "BIAS").replace("ENTRY TRIGGER", "ENTRY").replace("CONFIRMATION", "CONF")}</span>
                       </div>
                       <BiasChip bias={bias} />
@@ -379,7 +327,7 @@ export function ConfluenceSheet({ reports, cascade, market, onClose }: Props) {
                     <div className={`px-3 py-2 flex items-center justify-between border-b ${headerBg}`}>
                       <div className="flex items-center gap-2">
                         {isAnchor && <span className="text-[10px] text-primary">⚓</span>}
-                        <span className="text-xs font-bold">{TF_LABELS[tf] ?? tf.toUpperCase()}</span>
+                        <span className="text-xs font-bold">{TF_LABEL_MAP[tf] ?? tf.toUpperCase()}</span>
                         <span className="text-[10px] text-muted-foreground uppercase tracking-wider">{role}</span>
                         {!isAligned && tf !== anchorTf && (
                           <span className="text-[10px] text-yellow-400 font-bold">⚠ Counter-trend</span>
@@ -440,7 +388,7 @@ export function ConfluenceSheet({ reports, cascade, market, onClose }: Props) {
                       )}
                     </div>
                     <div className="px-3 pb-2">
-                      <ConfBar value={conf} />
+                      <ConfBar fraction={conf / 100} />
                     </div>
                   </div>
                 );
@@ -503,7 +451,7 @@ export function ConfluenceSheet({ reports, cascade, market, onClose }: Props) {
                   </div>
                   <div>
                     <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-0.5">
-                      TP1 · {setup.tp1 ? TF_LABELS[setup.confirmTf] : "—"}
+                      TP1 · {setup.tp1 ? TF_LABEL_MAP[setup.confirmTf] : "—"}
                     </p>
                     <p className="text-xs font-bold text-[hsl(var(--bullish))]">
                       {setup.tp1 ? fmtPrice(setup.tp1.price, market) : "—"}
@@ -512,7 +460,7 @@ export function ConfluenceSheet({ reports, cascade, market, onClose }: Props) {
                   </div>
                   <div>
                     <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-0.5">
-                      TP2 · {setup.tp2 ? TF_LABELS[setup.anchorTf] : "—"}
+                      TP2 · {setup.tp2 ? TF_LABEL_MAP[setup.anchorTf] : "—"}
                     </p>
                     <p className="text-xs font-bold text-[hsl(var(--bullish))]">
                       {setup.tp2 ? fmtPrice(setup.tp2.price, market) : "—"}
@@ -583,7 +531,7 @@ export function ConfluenceSheet({ reports, cascade, market, onClose }: Props) {
         {/* ── Footer ── */}
         <div className="px-5 py-3 border-t border-border bg-card/60 flex items-center justify-between gap-3">
           <p className="text-[10px] text-muted-foreground">
-            Synthesized from {sortedReports.length} timeframes · anchor {TF_LABELS[anchorTf] ?? anchorTf}
+            Synthesized from {sortedReports.length} timeframes · anchor {TF_LABEL_MAP[anchorTf] ?? anchorTf}
           </p>
           {setup && (
             <button

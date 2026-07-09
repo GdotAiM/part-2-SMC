@@ -5,13 +5,9 @@ import { TradingViewChart } from "./TradingViewChart";
 import type { SmcReport } from "@workspace/api-client-react";
 import { AgentPipeline } from "./AgentPipeline";
 import { AgentChat } from "./AgentChat";
-
-type Market = "crypto" | "forex";
-
-const TF_LABEL_MAP: Record<string, string> = {
-  "1m": "M1", "5m": "M5", "15m": "M15",
-  "1h": "H1", "4h": "H4", "1d": "D1", "1w": "W1",
-};
+import { BiasChip } from "@/components/ui/bias-chip";
+import { ConfBar } from "@/components/ui/conf-bar";
+import { fmtPrice, getBias, TF_LABEL_MAP, type Market } from "@/lib/smc-display";
 
 type Props = {
   report: SmcReport;
@@ -22,28 +18,8 @@ type Props = {
   role?: string;
 };
 
-function fmtPrice(p: number, market: Market): string {
-  if (market === "forex") return p.toFixed(5);
-  if (p >= 10000) return p.toLocaleString("en-US", { maximumFractionDigits: 2 });
-  if (p >= 1) return p.toFixed(4);
-  return p.toFixed(6);
-}
-
 function fmtRR(n: number): string {
   return `1 : ${n.toFixed(2)}`;
-}
-
-function BiasChip({ bias }: { bias: string }) {
-  const [color, bg] =
-    bias === "bullish" ? ["text-[hsl(var(--bullish))]", "bg-[hsl(var(--bullish))]/15 border-[hsl(var(--bullish))]/30"] :
-    bias === "bearish" ? ["text-destructive", "bg-destructive/15 border-destructive/30"] :
-    ["text-primary", "bg-primary/15 border-primary/30"];
-  return (
-    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-sm border text-[10px] font-bold uppercase tracking-wider ${color} ${bg}`}>
-      {bias === "bullish" ? <TrendingUp className="w-2.5 h-2.5" /> : bias === "bearish" ? <TrendingDown className="w-2.5 h-2.5" /> : <Minus className="w-2.5 h-2.5" />}
-      {bias}
-    </span>
-  );
 }
 
 function Section({ title, icon: Icon, children }: { title: string; icon: React.ElementType; children: React.ReactNode }) {
@@ -54,20 +30,6 @@ function Section({ title, icon: Icon, children }: { title: string; icon: React.E
         <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{title}</span>
       </div>
       {children}
-    </div>
-  );
-}
-
-function ConfBar({ value, label }: { value: number; label?: string }) {
-  const pct = Math.round(value * 100);
-  const color = pct > 65 ? "bg-[hsl(var(--bullish))]" : pct > 40 ? "bg-primary" : "bg-destructive";
-  return (
-    <div className="flex items-center gap-2">
-      {label && <span className="text-[10px] text-muted-foreground w-16 shrink-0">{label}</span>}
-      <div className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden">
-        <div className={`h-full rounded-full ${color}`} style={{ width: `${pct}%` }} />
-      </div>
-      <span className="text-[10px] text-muted-foreground w-7 text-right">{pct}%</span>
     </div>
   );
 }
@@ -168,7 +130,7 @@ function deriveSetup(report: SmcReport) {
 }
 
 export function IntelligenceSheet({ report, market, onClose, anchorTf, anchorBias, role }: Props) {
-  const bias      = report.structure.bias !== "neutral" ? report.structure.bias : report.dailyBias.bias;
+  const bias      = getBias(report);
   const lastBreak = report.structure.breaks.slice(-1)[0];
   const liveOBs   = report.orderBlocks.filter(ob => ob.valid && !ob.isMitigated);
   const unfilledFVGs = report.fvg.filter(g => g.fillFraction < 0.5);
@@ -519,7 +481,7 @@ export function IntelligenceSheet({ report, market, onClose, anchorTf, anchorBia
                   </div>
                 </div>
               )}
-              <ConfBar value={report.structure.confidence} label="Confidence" />
+              <ConfBar fraction={report.structure.confidence} label="Confidence" />
               {report.structure.evidence && report.structure.evidence.length > 0 && (
                 <div className="mt-1 space-y-0.5">
                   {report.structure.evidence.map((ev, i) => (
@@ -645,9 +607,9 @@ export function IntelligenceSheet({ report, market, onClose, anchorTf, anchorBia
                 ))}
               </div>
               <div className="mt-3 space-y-1.5">
-                <ConfBar value={report.structure.confidence} label="Structure" />
-                <ConfBar value={report.dailyBias.strength} label="Daily Bias" />
-                {report.smt?.detected && <ConfBar value={report.smt.confidence} label="SMT" />}
+                <ConfBar fraction={report.structure.confidence} label="Structure" />
+                <ConfBar fraction={report.dailyBias.strength} label="Daily Bias" />
+                {report.smt?.detected && <ConfBar fraction={report.smt.confidence} label="SMT" />}
               </div>
               <div className="mt-3 space-y-1">
                 <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Draw on Liquidity</p>

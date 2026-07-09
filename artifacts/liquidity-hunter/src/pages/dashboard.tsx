@@ -16,16 +16,10 @@ import { IntelligenceSheet } from "@/components/IntelligenceSheet";
 import { ChartView } from "@/components/ChartView";
 import { MarketBriefing } from "@/components/MarketBriefing";
 import { useRealtimeStream } from "@/lib/realtime";
-
-type Market = "crypto" | "forex";
+import { fmtPrice, getBias, getConfidence, TF_LABEL_MAP, TF_WEIGHT, type Market } from "@/lib/smc-display";
 
 const ALL_TFS = ["1m", "5m", "15m", "1h", "4h", "1d", "1w"] as const;
 type Tf = (typeof ALL_TFS)[number];
-
-/* Higher number = higher timeframe */
-const TF_WEIGHT: Record<Tf, number> = {
-  "1m": 1, "5m": 2, "15m": 3, "1h": 4, "4h": 5, "1d": 6, "1w": 7,
-};
 
 const TF_ROLE_LABELS = ["BIAS SETTER", "CONFIRMATION", "ENTRY TRIGGER"] as const;
 
@@ -36,34 +30,12 @@ const TRADING_STYLES: Array<{ label: string; desc: string; timeframes: Tf[] }> =
   { label: "All",      desc: "Full TF stack",  timeframes: ["1m", "5m", "15m", "1h", "4h", "1d", "1w"] },
 ];
 
-function fmtPrice(p: number, market: Market): string {
-  if (market === "forex") return p.toFixed(5);
-  if (p >= 10000) return p.toLocaleString("en-US", { maximumFractionDigits: 2 });
-  if (p >= 1) return p.toFixed(4);
-  return p.toFixed(6);
-}
-
-function getConfidence(r: SmcReport): number {
-  return Math.round(((r.structure.confidence + r.dailyBias.strength) / 2) * 100);
-}
-
-function getBias(r: SmcReport): "bullish" | "bearish" | "neutral" {
-  const sb = r.structure.bias;
-  const db = r.dailyBias.bias;
-  if (sb !== "neutral") return sb as "bullish" | "bearish";
-  if (db !== "neutral") return db as "bullish" | "bearish";
-  return "neutral";
-}
-
 function BiasIcon({ bias, className = "" }: { bias: string; className?: string }) {
   if (bias === "bullish") return <TrendingUp className={`text-[hsl(var(--bullish))] ${className}`} />;
   if (bias === "bearish") return <TrendingDown className={`text-destructive ${className}`} />;
   return <Minus className={`text-muted-foreground ${className}`} />;
 }
 
-const TF_LABEL_MAP: Record<string, string> = {
-  "1m": "M1", "5m": "M5", "15m": "M15", "1h": "H1", "4h": "H4", "1d": "D1", "1w": "W1",
-};
 function TfLabel({ tf }: { tf: string }) {
   return <>{TF_LABEL_MAP[tf] ?? tf.toUpperCase()}</>;
 }
