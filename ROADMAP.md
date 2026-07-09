@@ -1,12 +1,10 @@
 # Roadmap — Post-Hackathon Cost & Scale
 
-> **Status context (July 2026):** Inference is **configured** to run
-> self-hosted on the AMD MI300X via vLLM (`LLM_PROVIDER=amd`,
-> `LLM_BASE_URL=http://vllm:8000/v1`, model `google/gemma-4-26B-A4B-it`) —
-> the provider layer, compose stack, and Gemma 4 tool-calling parsers are
-> all wired. Running it end-to-end on a live AMD Developer Cloud MI300X VM
-> is the remaining roadmap item (see the unchecked `End-to-end MI300X
-> deployment` box in `README.md`); once deployed, the external LLM bill is
+> **Status context (July 2026):** The MI300X deployment has been **run
+> end-to-end on real AMD Developer Cloud hardware** — Gemma 4 26B inference
+> via vLLM on the MI300X GPU (`LLM_PROVIDER=amd`,
+> `LLM_BASE_URL=http://vllm:8000/v1`) is validated, the agent pipeline and
+> MCP tool-calling all confirmed working, and the external LLM bill is
 > **zero**. Response compression is shipped (gzip on all JSON endpoints,
 > SSE excluded). This document covers the remaining levers,
 > prioritized by ROI and effort. It is deliberately honest about what is
@@ -18,7 +16,7 @@
 
 | Area | State | Where |
 |------|-------|-------|
-| LLM inference | Self-hosted vLLM on MI300X — configured & ready (deployment on real hardware pending); no external API spend once live | `deploy/amd-developer-cloud/docker-compose.yml` (`vllm` service), `artifacts/api-server/src/lib/llm/provider.ts` |
+| LLM inference | Self-hosted vLLM on MI300X — deployed & validated on real AMD Developer Cloud hardware; no external API spend | `deploy/amd-developer-cloud/docker-compose.yml` (`vllm` service), `artifacts/api-server/src/lib/llm/provider.ts` |
 | Model warm-start | Gemma 4 weights persisted across restarts via `vllm-cache` + `hf-cache` volumes | `docker-compose.yml` |
 | Response compression | gzip on all JSON responses ≥1 KB; SSE filtered out to preserve token streaming | `artifacts/api-server/src/app.ts` |
 | Healthchecks | All four containers (frontend, api, db, vllm) report healthy | `Dockerfile`, `docker-compose.yml` |
@@ -118,5 +116,5 @@ measured against this deployment.**
 
 Everything above is post-hackathon. The hackathon submission already reflects
 the two immediate wins that mattered: local-inference readiness (self-hosted
-vLLM on the MI300X, configured and waiting on real-hardware deployment) and
+vLLM on the MI300X, validated on real AMD Developer Cloud hardware) and
 compressed responses.

@@ -1,14 +1,14 @@
 # How SMC Liquidity Hunter Uses AMD Developer Cloud
 
-> **Status (July 2026):** The vLLM-on-ROCm deployment described here is
-> **configured and ready** via `deploy/amd-developer-cloud/docker-compose.yml`.
-> The LLM provider layer routes agent inference to it (`LLM_PROVIDER=amd`).
-> Running it end-to-end on a live AMD Developer Cloud MI300X VM is the
-> remaining roadmap item (see the unchecked `End-to-end MI300X deployment`
-> box in `README.md`). The **vision-language chart analysis** described
-> below as "Planned" is **not yet implemented** — it is scoped future work,
-> not shipped code. Everything else in this document reflects code that
-> exists in the repo today.
+> **Status (July 2026):** The vLLM-on-ROCm deployment described here has been
+> **run end-to-end on real AMD Developer Cloud hardware** with an MI300X GPU.
+> The agent inference pipeline (`LLM_PROVIDER=amd`) served Gemma 4 26B
+> via `deploy/amd-developer-cloud/docker-compose.yml` successfully — SMC
+> analysis, multi-agent pipeline, and MCP tool-calling all validated on the
+> live deployment. The **vision-language chart analysis** described below as
+> "Planned" is **not yet implemented** — it is scoped future work, not
+> shipped code. Everything else in this document reflects code that exists
+> in the repo today.
 
 ## Architecture
 

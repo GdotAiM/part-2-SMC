@@ -368,7 +368,7 @@ curl "http://localhost:3001/api/stream/status"
 - [x] Trade journal — PostgreSQL-backed ledger + performance matrix per setup
 - [x] Docker + CI — multi-stage Dockerfile, AMD MI300X docker-compose, GitHub Actions
 - [x] TypeScript — zero errors across both packages
-- [ ] End-to-end MI300X deployment — run on real AMD Developer Cloud hardware
+- [x] End-to-end MI300X deployment — run on real AMD Developer Cloud hardware
 - [ ] Price alert notifications when price enters OB zone or sweeps liquidity
 - [ ] Multi-panel chart view (two TFs side-by-side)
 - [ ] Candle tap to inspect — SMC context tooltip for selected bar
