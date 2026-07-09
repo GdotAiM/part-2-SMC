@@ -53,5 +53,6 @@ Thumbs.db
 .local/
 graphify-out/
 
-# Environment secrets
-.env
+# Dev artifacts
+attached_assets/
+docs-backup/
