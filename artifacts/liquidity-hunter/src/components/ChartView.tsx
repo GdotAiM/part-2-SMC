@@ -9,7 +9,7 @@ import {
 } from "lightweight-charts";
 import type { IChartApi, ISeriesApi, SeriesType } from "lightweight-charts";
 import type { SmcReport } from "@workspace/api-client-react";
-import { X, ExternalLink } from "lucide-react";
+import { X, ExternalLink, Loader2, AlertTriangle } from "lucide-react";
 import { isChartable } from "@/lib/alpaca-url";
 import { TradingViewChart } from "./TradingViewChart";
 import { fmtPrice, priceDecimals, TF_LABEL_MAP, type Market } from "@/lib/smc-display";
@@ -291,9 +291,15 @@ interface Props {
   onClose: () => void;
   /** Per-timeframe live candles from the real-time stream */
   liveCandles?: Record<string, CandleData[]>;
+  /** Whether the parent is loading data. Shows a skeleton. */
+  loading?: boolean;
+  /** Error message when data failed to load. Shows error state with retry. */
+  error?: string | null;
+  /** Called to retry loading on error. */
+  onRetry?: () => void;
 }
 
-export function ChartView({ reports, market, initialTf, onClose, liveCandles }: Props) {
+export function ChartView({ reports, market, initialTf, onClose, liveCandles, loading = false, error = null, onRetry }: Props) {
   const [showTvChart, setShowTvChart] = useState(false);
   const [activeTf, setActiveTf] = useState<string>(
     initialTf ?? reports[0]?.tf ?? "4h",
@@ -546,6 +552,51 @@ export function ChartView({ reports, market, initialTf, onClose, liveCandles }: 
   }, [activeReport, market, redraw]);
 
   // ── Render ─────────────────────────────────────────────────────────────────
+
+  // Loading state
+  if (loading) {
+    return (
+      <div className="fixed inset-0 z-50 bg-[#0d0d0d] flex flex-col">
+        <div className="flex items-center gap-3 px-4 py-2 border-b border-[#1f1f1f] bg-[#111]/95 shrink-0">
+          <span className="text-sm font-bold text-foreground">Loading Chart…</span>
+          <button onClick={onClose} className="ml-auto p-1.5 hover:bg-[#1f1f1f] rounded-sm transition-colors">
+            <X className="w-4 h-4 text-[#555]" />
+          </button>
+        </div>
+        <div className="flex-1 flex flex-col items-center justify-center gap-3">
+          <Loader2 className="w-6 h-6 text-primary animate-spin" />
+          <span className="text-sm text-muted-foreground">Loading chart data…</span>
+        </div>
+      </div>
+    );
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <div className="fixed inset-0 z-50 bg-[#0d0d0d] flex flex-col">
+        <div className="flex items-center gap-3 px-4 py-2 border-b border-[#1f1f1f] bg-[#111]/95 shrink-0">
+          <span className="text-sm font-bold text-foreground">Chart Error</span>
+          <button onClick={onClose} className="ml-auto p-1.5 hover:bg-[#1f1f1f] rounded-sm transition-colors">
+            <X className="w-4 h-4 text-[#555]" />
+          </button>
+        </div>
+        <div className="flex-1 flex flex-col items-center justify-center gap-4 px-6">
+          <AlertTriangle className="w-8 h-8 text-amber-500" />
+          <p className="text-sm text-muted-foreground text-center max-w-sm leading-relaxed">{error}</p>
+          {onRetry && (
+            <button
+              onClick={onRetry}
+              className="flex items-center gap-2 px-4 py-2 rounded-sm border border-[#2a2a2a] bg-[#181818] text-[#888] hover:text-primary hover:border-primary/50 transition-colors text-xs font-bold uppercase tracking-wider"
+            >
+              <Loader2 className="w-3.5 h-3.5" />
+              Retry
+            </button>
+          )}
+        </div>
+      </div>
+    );
+  }
 
   if (!activeReport) {
     return (
