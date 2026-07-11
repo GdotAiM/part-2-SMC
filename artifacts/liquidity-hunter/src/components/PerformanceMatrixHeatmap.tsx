@@ -79,8 +79,29 @@ export function PerformanceMatrixHeatmap() {
             <SelectItem value="CRYPTO">Crypto</SelectItem>
           </SelectContent>
         </Select>
+          {!showBacktest ? (
+            <button
+              onClick={() => setShowBacktest(true)}
+              className="flex items-center gap-1 text-[10px] text-primary hover:text-primary/80 border border-primary/30 rounded-sm px-2 py-1 font-semibold"
+            >
+              <Play className="w-3 h-3" />
+              Backtest
+            </button>
+          ) : (
+            <button
+              onClick={() => setShowBacktest(false)}
+              className="text-[10px] text-muted-foreground hover:text-foreground"
+            >
+              Cancel
+            </button>
+          )}
       </CardHeader>
       <CardContent>
+        {showBacktest && (
+          <div className="mb-4">
+            <BacktestRunnerUI onComplete={() => setShowBacktest(false)} />
+          </div>
+        )}
         {loading ? (
           <div className="space-y-2">
             {[1, 2, 3, 4, 5].map((i) => (
@@ -88,10 +109,25 @@ export function PerformanceMatrixHeatmap() {
             ))}
           </div>
         ) : matrix.length === 0 ? (
-          <p className="text-sm text-muted-foreground text-center py-8">
-            No performance matrix data yet. Run a backtest with at least 5
-            trades per combination to populate this view.
-          </p>
+          <div className="space-y-4">
+            {!showBacktest ? (
+              <div className="text-center py-8 space-y-3">
+                <Target className="w-8 h-8 text-muted-foreground/40 mx-auto" />
+                <p className="text-sm text-muted-foreground">
+                  No performance matrix data yet. Run a backtest to populate this view.
+                </p>
+                <button
+                  onClick={() => setShowBacktest(true)}
+                  className="inline-flex items-center gap-1.5 bg-primary/15 hover:bg-primary/25 text-primary border border-primary/30 rounded-sm px-4 py-2 text-xs font-bold transition-colors"
+                >
+                  <Play className="w-3.5 h-3.5" />
+                  Run Backtest
+                </button>
+              </div>
+            ) : (
+              <BacktestRunnerUI onComplete={() => { setShowBacktest(false); }} />
+            )}
+          </div>
         ) : (
           <div className="overflow-x-auto">
             <Table>
