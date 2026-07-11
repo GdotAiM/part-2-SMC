@@ -20,6 +20,7 @@ import { LoopTracer } from "../harness/LoopTracer.js";
 import { LoopEvaluator } from "../harness/LoopEvaluator.js";
 import { MemoryService } from "../memory/MemoryService.js";
 import { DEFAULT_LOOP_CONFIG } from "./types.js";
+import { langfuse } from "../observability/langfuse.js";
 
 import type {
   LoopConfig,
@@ -101,9 +102,24 @@ export class AgentLoop extends EventEmitter {
     const config = { ...DEFAULT_LOOP_CONFIG, ...this.context.config };
 
     try {
-      // ── Start trace ──
+      // ── Start traces ──
       this.context.status = "running";
       const runId = await this.tracer.startRun(config, trigger);
+
+      // Create Langfuse trace for observability
+      const langfuseTraceId = langfuse.createTrace({
+        name: `agent_loop:${report.symbol}_${report.timeframe}`,
+        sessionId: runId,
+        metadata: {
+          symbol: report.symbol,
+          timeframe: report.timeframe,
+          market: report.market,
+          trigger,
+          price: report.currentPrice,
+        },
+        tags: ["agent_loop", report.market, trigger],
+      });
+      const langfuseSpanIds: string[] = [];
 
       // 1. OBSERVE
       const observeStep = this.context.addStep("observe", { report: { symbol: report.symbol, timeframe: report.timeframe, price: report.currentPrice } });
@@ -112,18 +128,24 @@ export class AgentLoop extends EventEmitter {
       await this.tracer.traceStep(runId, this.context.iterations.length, observeStep);
       this.emit("step", observeStep);
 
+      // Langfuse: observe span
+      let currentSpanId = langfuse.createSpan({ traceId: langfuseTraceId, name: "observe", input: { symbol: report.symbol, timeframe: report.timeframe, candles: report.candles.length, price: report.currentPrice } });
+
       // Check guardrails
       const preCheck = this.guardrails.checkPreConditions(report);
       if (!preCheck.passed) {
         const result: LoopResult = { action: "no_action", confidence: 0, narrative: preCheck.reason ?? "Guardrail check failed" };
         this.context.completeIteration(result);
         await this.tracer.completeRun(runId, result, "completed");
+        langfuse.endSpan(currentSpanId, langfuseTraceId, { passed: false, reason: preCheck.reason });
         this.emit("complete", result);
         this.context.status = "completed";
         return result;
       }
+      langfuse.endSpan(currentSpanId, langfuseTraceId, { passed: true });
 
       // 2. INTERPRET — call SMC tools
+      currentSpanId = langfuse.createSpan({ traceId: langfuseTraceId, name: "interpret", input: { symbol: report.symbol, timeframe: report.timeframe } });
       const interpretStep = this.context.addStep("interpret", { tools: [] });
       const toolResults = await this.callAnalysisTools(report.symbol, report.timeframe);
       interpretStep.output = toolResults;
@@ -134,9 +156,14 @@ export class AgentLoop extends EventEmitter {
       }));
       this.context.completeStep("interpret", toolResults);
       await this.tracer.traceStep(runId, this.context.iterations.length, interpretStep);
+      langfuse.endSpan(currentSpanId, langfuseTraceId, {
+        toolsCalled: Object.keys(toolResults),
+        results: Object.fromEntries(Object.entries(toolResults).map(([k, v]) => [k, (v as any)?.bias || (v as any)?.trend || "ok"])),
+      });
       this.emit("step", interpretStep);
 
       // 3. REASON — use LLM to decide what to do
+      currentSpanId = langfuse.createSpan({ traceId: langfuseTraceId, name: "reason", input: { toolResults: Object.keys(toolResults) } });
       const reasonStep = this.context.addStep("reason", { toolResults });
       const marketRegime = report.structure.phase;
       const decision = await this.reason(report, toolResults, marketRegime);
@@ -145,6 +172,11 @@ export class AgentLoop extends EventEmitter {
       await this.tracer.traceStep(runId, this.context.iterations.length, reasonStep);
       this.emit("step", reasonStep);
       this.emit("decision", decision);
+      langfuse.endSpan(currentSpanId, langfuseTraceId, {
+        action: decision.action,
+        confidence: decision.confidence,
+        reasoning: decision.reasoning.slice(0, 200),
+      });
 
       // 4. DECIDE — validate through guardrails
       const validated = this.guardrails.validateDecision(decision, report);
@@ -184,6 +216,19 @@ export class AgentLoop extends EventEmitter {
       // Complete the iteration
       this.context.completeIteration(result);
       this.context.status = "completed";
+
+      // Update Langfuse trace with final result
+      langfuse.updateTrace(langfuseTraceId, {
+        action: result.action,
+        confidence: result.confidence,
+        iterations: this.context.iterations.length,
+      });
+      langfuse.score({
+        traceId: langfuseTraceId,
+        name: "loop_quality",
+        value: result.action === "signal_generated" ? 1 : result.action === "analysis_complete" ? 0.7 : 0.3,
+        comment: result.narrative?.slice(0, 200),
+      });
       this.emit("complete", result);
       this.runInProgress = false;
 
@@ -343,8 +388,8 @@ export class AgentLoop extends EventEmitter {
         { config: llmConfig, maxTokens: 1024, temperature: 0.1 },
       );
 
-      logger.info({ response: response.slice(0, 200) }, "LLM reason response");
-      return this.parseDecision(response, report);
+      logger.info({ response: response.content.slice(0, 200), usage: response.usage }, "LLM reason response");
+      return this.parseDecision(response.content, report);
     } catch (err: any) {
       logger.error({ err }, "LLM reasoning failed");
       return {

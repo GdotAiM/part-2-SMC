@@ -27,6 +27,8 @@ import { LoopEvaluator } from "../lib/harness/LoopEvaluator.js";
 import { candleStore } from "../lib/realtime/candle-store.js";
 import { buildReport } from "../lib/smc/report.js";
 import { logger } from "../lib/logger.js";
+import { langfuse } from "../lib/observability/langfuse.js";
+import { PromptOptimizer } from "../lib/optimization/prompt-optimizer.js";
 
 const router: IRouter = Router();
 const memoryService = new MemoryService();
@@ -288,6 +290,61 @@ router.delete("/agent-loop/memory/:id", async (req: Request, res: Response): Pro
   } catch (err: any) {
     res.status(500).json({ error: err.message });
   }
+});
+
+// ─── POST /api/agent-loop/optimize — Optimize an agent prompt ────────────
+
+router.post("/agent-loop/optimize", async (req: Request, res: Response): Promise<void> => {
+  const { agentName, currentPrompt } = req.body as {
+    agentName?: string;
+    currentPrompt?: string;
+  };
+
+  if (!agentName || !currentPrompt) {
+    res.status(400).json({ error: "agentName and currentPrompt are required" });
+    return;
+  }
+
+  try {
+    const optimizer = new PromptOptimizer();
+    const result = await optimizer.optimize(agentName, currentPrompt);
+    res.json(result);
+  } catch (err: any) {
+    logger.error({ err }, "Prompt optimization failed");
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ─── GET /api/agent-loop/optimize/variants — List prompt variants ─────────
+
+router.get("/agent-loop/optimize/variants", async (req: Request, res: Response): Promise<void> => {
+  const { agentName } = req.query as { agentName?: string };
+
+  if (!agentName) {
+    res.status(400).json({ error: "agentName query param is required" });
+    return;
+  }
+
+  try {
+    const optimizer = new PromptOptimizer();
+    const variants = await optimizer.getVariants(agentName);
+    res.json({ variants });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ─── GET /api/agent-loop/langfuse-status — Langfuse configuration status ──
+
+router.get("/agent-loop/langfuse-status", (_req: Request, res: Response): void => {
+  const publicKey = !!process.env.LANGFUSE_PUBLIC_KEY;
+  const secretKey = !!process.env.LANGFUSE_SECRET_KEY;
+  res.json({
+    configured: publicKey && secretKey,
+    hasPublicKey: publicKey,
+    hasSecretKey: secretKey,
+    host: process.env.LANGFUSE_HOST || "https://us.cloud.langfuse.com",
+  });
 });
 
 export default router;
