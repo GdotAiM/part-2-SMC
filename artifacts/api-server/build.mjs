@@ -100,6 +100,8 @@ async function buildAll() {
       "puppeteer",
       "puppeteer-core",
       "electron",
+      // langfuse — uses dynamic imports internally, must be loaded at runtime
+      "langfuse",
       // fastmcp → xsschema optional deps (only zod is needed)
       "effect",
       "sury",
