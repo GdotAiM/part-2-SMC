@@ -284,12 +284,20 @@ function SimilarSetupsPanel({ symbol, setupType }: { symbol: string; setupType?:
     <div className="space-y-2">
       {/* Setup type filter */}
       <div className="flex gap-2">
-        <input
+        <select
           value={searchSetup}
           onChange={(e) => setSearchSetup(e.target.value)}
-          placeholder="Setup type (e.g., FVG, OB, MSS)..."
           className="flex-1 bg-muted border border-border rounded-sm px-2 py-1.5 text-[11px] text-foreground"
-        />
+        >
+          <option value="">All setup types</option>
+          <option value="OB">Order Block</option>
+          <option value="FVG">Fair Value Gap</option>
+          <option value="MSS">Market Structure Shift</option>
+          <option value="CHoCH">Change of Character</option>
+          <option value="BOS">Break of Structure</option>
+          <option value="LIQUIDITY_SWEEP">Liquidity Sweep</option>
+          <option value="SESSION_BREAKOUT">Session Breakout</option>
+        </select>
         <button
           onClick={handleSearch}
           disabled={loading}
