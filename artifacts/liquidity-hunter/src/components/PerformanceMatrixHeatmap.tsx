@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   Table,
   TableBody,
@@ -9,6 +9,7 @@ import {
 } from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Target, Play } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -17,6 +18,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
+import { BacktestRunnerUI } from "./BacktestRunnerUI";
 
 interface MatrixRow {
   id: string;
@@ -49,6 +51,7 @@ function winRateColor(rate: number): string {
 }
 
 export function PerformanceMatrixHeatmap() {
+  const [showBacktest, setShowBacktest] = useState(false);
   const [asset, setAsset] = useState("STOCK");
   const [matrix, setMatrix] = useState<MatrixRow[]>([]);
   const [loading, setLoading] = useState(true);

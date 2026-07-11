@@ -12,6 +12,7 @@ import { fetchYahooCandles } from "../lib/fetchers/yahoo.js";
 import { buildReport } from "../lib/smc/report.js";
 import { candleStore } from "../lib/realtime/candle-store.js";
 import { logger } from "../lib/logger.js";
+import { BacktestRunner } from "../lib/backtest/BacktestRunner.js";
 
 const router: IRouter = Router();
 const ledgerService = new TradeLedgerService();
@@ -250,6 +251,50 @@ router.post("/performance-matrix/rebuild", async (_req, res) => {
     const count = await matrixService.rebuildFullMatrix();
     res.json({ message: `Performance matrix rebuilt`, combinations: count });
   } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+
+// ─── POST /api/backtest/run — Run backtest ──────────────────────────────
+
+router.post("/backtest/run", async (req, res) => {
+  try {
+    const { assetClass, symbol, displaySymbol, timeframe } = req.body;
+    if (!symbol || !assetClass || !timeframe) {
+      res.status(400).json({ error: "symbol, assetClass, and timeframe are required" });
+      return;
+    }
+    const runner = new BacktestRunner();
+    const result = await runner.runBacktest({
+      assetClass,
+      symbol,
+      displaySymbol: displaySymbol || symbol,
+      timeframe,
+    });
+    // Rebuild the performance matrix after backtest
+    try { await matrixService.rebuildFullMatrix(); } catch { /* non-critical */ }
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ─── POST /api/backtest/run-multi — Multi-asset backtest ────────────────
+
+router.post("/backtest/run-multi", async (req, res) => {
+  try {
+    const { testCases } = req.body;
+    if (!testCases || !Array.isArray(testCases) || testCases.length === 0) {
+      res.status(400).json({ error: "testCases array is required" });
+      return;
+    }
+    const runner = new BacktestRunner();
+    const results = await runner.runMultiAssetBacktest(testCases);
+    // Rebuild performance matrix
+    try { await matrixService.rebuildFullMatrix(); } catch { /* non-critical */ }
+    res.json({ results: Object.fromEntries(results) });
+  } catch (error) {
     res.status(500).json({ error: error.message });
   }
 });

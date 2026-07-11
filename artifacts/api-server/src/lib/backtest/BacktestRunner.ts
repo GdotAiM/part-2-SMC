@@ -7,6 +7,7 @@ import { analyzePdArray } from "../smc/pd-array.js";
 import { analyzeDailyBias } from "../smc/daily-bias.js";
 import { buildReport } from "../smc/report.js";
 import { fetchYahooCandles } from "../fetchers/yahoo.js";
+import { fetchBinanceCandlesDirect } from "../fetchers/binance.js";
 import {
   SignalGenerator,
   type UnifiedTradeSignal,
@@ -85,9 +86,21 @@ export class BacktestRunner {
     timeframe: string
   ): Promise<Candle[]> {
     const yahooSymbol = toYahooSymbol(symbol, assetClass);
-    console.log(`   Fetching ${yahooSymbol} ${timeframe} from Yahoo Finance...`);
-    const candles = await fetchYahooCandles(yahooSymbol, timeframe);
-    console.log(`   Got ${candles.length} candles`);
+    console.log(`   Fetching ${yahooSymbol} ${timeframe}...`);
+    let candles;
+    try {
+      if (assetClass === AssetClass.CRYPTO) {
+        const bs = symbol.replace(/USDT$/i, '') + 'USDT';
+        candles = await fetchBinanceCandlesDirect(bs, timeframe, 500);
+        console.log(`   Got ${candles.length} candles from Binance Direct`);
+      } else {
+        candles = await fetchYahooCandles(yahooSymbol, timeframe);
+        console.log(`   Got ${candles.length} candles from Yahoo`);
+      }
+    } catch {
+      console.log(`Direct failed, Yahoo fallback...`);
+      candles = await fetchYahooCandles(yahooSymbol, timeframe);
+    }
     return candles;
   }
 
