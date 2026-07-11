@@ -7,7 +7,7 @@ import {
 import {
   runAgentLoop, startLoopMonitor, stopLoopMonitor,
   getLoopStatus, getLoopRuns, getLoopRunDetail, getSemanticMemory,
-  type LoopStepEvent,
+  fetchSymbols, type LoopStepEvent, type SymbolsData, type SymbolInfo,
 } from "@/lib/api";
 import { MarketIntelligence } from "./MarketIntelligence";
 
@@ -39,6 +39,58 @@ const STEP_META: Record<string, { icon: string; label: string; color: string }> 
   evaluate:   { icon: "★", label: "Evaluate",   color: "bg-cyan-400" },
   update_memory: { icon: "●", label: "Update",  color: "bg-sky-400" },
 };
+
+// ── Symbol Dropdown ─────────────────────────────────────────────────────────
+
+function SymbolDropdown({ value, onChange, disabled }: {
+  value: string; onChange: (symbol: string, market: "crypto" | "forex") => void; disabled?: boolean;
+}) {
+  const [symbols, setSymbols] = useState<SymbolsData | null>(null);
+  const [loadingSymbols, setLoadingSymbols] = useState(true);
+
+  useEffect(() => {
+    fetchSymbols()
+      .then(setSymbols)
+      .catch(() => {})
+      .finally(() => setLoadingSymbols(false));
+  }, []);
+
+  const groups: Array<{ label: string; items: SymbolInfo[] }> = [];
+  if (symbols) {
+    if (symbols.crypto.length) groups.push({ label: "CRYPTO", items: symbols.crypto });
+    if (symbols.forex.length) groups.push({ label: "FOREX", items: symbols.forex });
+  }
+
+  // Determine current value from the symbols list
+  const currentVal = symbols
+    ? [...symbols.crypto, ...symbols.forex].find(s => s.symbol === value)
+    : null;
+  const selectVal = currentVal ? `${currentVal.symbol}|${currentVal.market}` : "";
+
+  return (
+    <select
+      value={selectVal}
+      onChange={(e) => {
+        const parts = e.target.value.split("|");
+        if (parts.length === 2) onChange(parts[0], parts[1] as "crypto" | "forex");
+      }}
+      disabled={disabled || loadingSymbols}
+      className="w-full bg-muted border border-border rounded-sm px-2.5 py-1.5 text-xs text-foreground disabled:opacity-50"
+    >
+      {loadingSymbols && <option value="">Loading symbols...</option>}
+      {!loadingSymbols && groups.length === 0 && <option value="">No symbols</option>}
+      {groups.map((g) => (
+        <optgroup key={g.label} label={g.label}>
+          {g.items.map((s) => (
+            <option key={s.symbol} value={`${s.symbol}|${s.market}`}>
+              {s.label}
+            </option>
+          ))}
+        </optgroup>
+      ))}
+    </select>
+  );
+}
 
 // ── Main Dashboard ──────────────────────────────────────────────────────────
 
@@ -87,6 +139,7 @@ export function AgentLoopDashboard({ presetSymbol, presetTimeframe, presetMarket
 
 function LoopRunner({ presetSymbol, presetTimeframe, presetMarket }: Props) {
   const [symbol, setSymbol] = useState(presetSymbol || "BTCUSDT");
+  const [market, setMarket] = useState<"crypto" | "forex">(presetMarket || "crypto");
   const [timeframe, setTimeframe] = useState(presetTimeframe || "4h");
   const [running, setRunning] = useState(false);
   const [events, setEvents] = useState<LoopStepEvent[]>([]);
@@ -99,6 +152,11 @@ function LoopRunner({ presetSymbol, presetTimeframe, presetMarket }: Props) {
     eventsEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [events]);
 
+  function handleSymbolChange(sym: string, mkt: "crypto" | "forex") {
+    setSymbol(sym);
+    setMarket(mkt);
+  }
+
   async function handleRun() {
     setRunning(true);
     setEvents([]);
@@ -106,8 +164,7 @@ function LoopRunner({ presetSymbol, presetTimeframe, presetMarket }: Props) {
     setError(null);
 
     try {
-      const mkt = presetMarket || (symbol.includes("=X") ? "forex" : "crypto");
-      await runAgentLoop({ symbol, timeframe, market: mkt }, (event) => {
+      await runAgentLoop({ symbol, timeframe, market }, (event) => {
         setEvents((prev) => [...prev, event]);
         if (event.type === "loop_complete") {
           setResult(event.result);
@@ -130,13 +187,7 @@ function LoopRunner({ presetSymbol, presetTimeframe, presetMarket }: Props) {
       <div className="flex gap-2 items-end">
         <div className="flex-1 space-y-1">
           <label className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">Symbol</label>
-          <input
-            value={symbol}
-            onChange={(e) => setSymbol(e.target.value.toUpperCase())}
-            disabled={running}
-            className="w-full bg-muted border border-border rounded-sm px-2.5 py-1.5 text-xs text-foreground disabled:opacity-50"
-            placeholder="BTCUSDT"
-          />
+          <SymbolDropdown value={symbol} onChange={handleSymbolChange} disabled={running} />
         </div>
         <div className="w-24 space-y-1">
           <label className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">Timeframe</label>
@@ -270,7 +321,13 @@ function MonitorManager() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [symbol, setSymbol] = useState("BTCUSDT");
+  const [market, setMarket] = useState<"crypto" | "forex">("crypto");
   const [timeframe, setTimeframe] = useState("1h");
+
+  function handleSymbolChange(sym: string, mkt: "crypto" | "forex") {
+    setSymbol(sym);
+    setMarket(mkt);
+  }
 
   async function refresh() {
     setLoading(true);
@@ -289,7 +346,7 @@ function MonitorManager() {
 
   async function handleStart() {
     try {
-      await startLoopMonitor({ symbol, timeframe, market: symbol.includes("=X") ? "forex" : "crypto" });
+      await startLoopMonitor({ symbol, timeframe, market });
       await refresh();
     } catch { /* ignore */ }
   }
@@ -307,12 +364,7 @@ function MonitorManager() {
       <div className="flex gap-2 items-end">
         <div className="flex-1 space-y-1">
           <label className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">Symbol</label>
-          <input
-            value={symbol}
-            onChange={(e) => setSymbol(e.target.value.toUpperCase())}
-            className="w-full bg-muted border border-border rounded-sm px-2.5 py-1.5 text-xs text-foreground"
-            placeholder="BTCUSDT"
-          />
+          <SymbolDropdown value={symbol} onChange={handleSymbolChange} />
         </div>
         <div className="w-24 space-y-1">
           <label className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">TF</label>
@@ -551,7 +603,6 @@ function RunHistory() {
               className="text-[10px] text-muted-foreground hover:text-foreground">Close</button>
           </div>
           <div className="p-3 space-y-2">
-            {/* Step timeline */}
             {runDetail.steps.length === 0 && (
               <p className="text-[11px] text-muted-foreground italic">No step data recorded for this run.</p>
             )}
@@ -569,7 +620,6 @@ function RunHistory() {
               );
             })}
 
-            {/* Run config summary */}
             {runDetail.run?.config_snapshot && (
               <div className="mt-3 pt-2 border-t border-border/60">
                 <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1">Config</p>
@@ -578,7 +628,6 @@ function RunHistory() {
                   <span className="px-1.5 py-0.5 rounded-sm bg-muted">Conf floor: {runDetail.run.config_snapshot.confidenceFloor}</span>
                   <span className="px-1.5 py-0.5 rounded-sm bg-muted">Max risk: {(runDetail.run.config_snapshot.maxRiskPerTrade * 100).toFixed(0)}%</span>
                 </div>
-                {/* Evaluation */}
                 {runDetail.run.evaluation && (
                   <div className="mt-2">
                     <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1">Evaluation</p>
@@ -598,7 +647,6 @@ function RunHistory() {
         </div>
       )}
 
-      {/* Detail loading */}
       {detailLoading && (
         <div className="border border-border rounded-sm p-4 space-y-2">
           <Skeleton className="h-3 w-24" />
@@ -641,7 +689,6 @@ function MemoryViewer() {
         </button>
       </div>
 
-      {/* Loading skeleton */}
       {loading && (
         <div className="space-y-1.5">
           {[1, 2, 3].map((i) => (
@@ -657,7 +704,6 @@ function MemoryViewer() {
         </div>
       )}
 
-      {/* Error */}
       {error && (
         <div className="flex items-center gap-2 bg-destructive/10 border border-destructive/30 rounded-sm p-2.5 text-xs text-destructive">
           <AlertCircle className="w-3 h-3 shrink-0" />
@@ -666,7 +712,6 @@ function MemoryViewer() {
         </div>
       )}
 
-      {/* Empty */}
       {!loading && !error && entries.length === 0 && (
         <div className="text-center py-8 space-y-2">
           <Database className="w-6 h-6 text-muted-foreground/40 mx-auto" />
@@ -675,7 +720,6 @@ function MemoryViewer() {
         </div>
       )}
 
-      {/* Entries */}
       {!loading && entries.length > 0 && (
         <div className="space-y-1.5 max-h-96 overflow-y-auto">
           {entries.map((e) => (

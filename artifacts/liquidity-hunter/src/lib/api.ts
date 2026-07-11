@@ -4,6 +4,25 @@ export function apiUrl(path: string): string {
   return `${BASE}/api${path}`;
 }
 
+
+
+export interface SymbolInfo {
+  symbol: string;
+  label: string;
+  market: "crypto" | "forex";
+  correlatedSymbol?: string;
+}
+
+export interface SymbolsData {
+  crypto: SymbolInfo[];
+  forex: SymbolInfo[];
+}
+
+export async function fetchSymbols(): Promise<SymbolsData> {
+  const res = await fetch(apiUrl("/symbols"));
+  return res.json();
+}
+
 export type ChatMessage = { role: "user" | "assistant" | "tool"; content: string; tool_call_id?: string };
 
 // ── Classic endpoint ──────────────────────────────────────────────────────────
