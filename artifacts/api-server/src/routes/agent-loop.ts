@@ -1,0 +1,293 @@
+/**
+ * Agent Loop Routes
+ *
+ * REST + SSE endpoints for the AI Agent Loop system.
+ *
+ * Endpoints:
+ *   POST   /api/agent-loop/run              — Execute one loop cycle (SSE)
+ *   POST   /api/agent-loop/start-monitoring  — Start background monitor
+ *   POST   /api/agent-loop/stop-monitoring   — Stop background monitor
+ *   GET    /api/agent-loop/status            — All active monitors
+ *   GET    /api/agent-loop/runs              — Historical runs
+ *   GET    /api/agent-loop/runs/:id          — Detailed trace
+ *   POST   /api/agent-loop/runs/:id/evaluate — Trigger evaluation
+ *   GET    /api/agent-loop/memory            — Query semantic memory
+ *   POST   /api/agent-loop/memory            — Store manual entry
+ *   DELETE /api/agent-loop/memory/:id        — Delete memory entry
+ */
+
+import { Router, type IRouter } from "express";
+import type { Request, Response } from "express";
+import { AgentLoop } from "../lib/loop/AgentLoop.js";
+import { DEFAULT_LOOP_CONFIG } from "../lib/loop/types.js";
+import { monitoringManager } from "../lib/loop/MonitoringManager.js";
+import { LoopTracer } from "../lib/harness/LoopTracer.js";
+import { MemoryService } from "../lib/memory/MemoryService.js";
+import { LoopEvaluator } from "../lib/harness/LoopEvaluator.js";
+import { candleStore } from "../lib/realtime/candle-store.js";
+import { buildReport } from "../lib/smc/report.js";
+import { logger } from "../lib/logger.js";
+
+const router: IRouter = Router();
+const memoryService = new MemoryService();
+const tracer = new LoopTracer();
+
+// ── Helper: detect market from symbol ─────────────────────────────
+
+function detectMarket(symbol: string): "crypto" | "forex" {
+  return symbol.includes("=X") ? "forex" : "crypto";
+}
+
+// ── POST /api/agent-loop/run — SSE: one loop cycle ────────────────
+
+router.post("/agent-loop/run", async (req: Request, res: Response): Promise<void> => {
+  const { symbol, timeframe, market } = req.body as {
+    symbol?: string;
+    timeframe?: string;
+    market?: string;
+  };
+
+  if (!symbol || !timeframe) {
+    res.status(400).json({ error: "symbol and timeframe are required" });
+    return;
+  }
+
+  const mkt = market || detectMarket(symbol);
+  const tf = timeframe;
+  const sym = symbol.toUpperCase();
+
+  // Merge provided config with defaults
+  const config = {
+    ...DEFAULT_LOOP_CONFIG,
+    symbol: sym,
+    timeframe: tf,
+    market: mkt as "crypto" | "forex",
+  };
+
+  // Get candles
+  const candles = candleStore.getCandles(sym, tf);
+  if (candles.length < 10) {
+    res.status(400).json({ error: `Only ${candles.length} candles available for ${sym} ${tf}. Need at least 10.` });
+    return;
+  }
+
+  const report = buildReport(candles, sym, mkt as "crypto" | "forex", tf);
+
+  // Setup SSE
+  res.setHeader("Content-Type", "text/event-stream");
+  res.setHeader("Cache-Control", "no-cache");
+  res.setHeader("Connection", "keep-alive");
+  res.setHeader("X-Accel-Buffering", "no");
+  res.flushHeaders();
+
+  // Create loop instance
+  const loop = new AgentLoop(config);
+
+  // Wire SSE events
+  loop.on("step", (step) => {
+    try {
+      res.write(`data: ${JSON.stringify({ type: "loop_step", step })}\n\n`);
+    } catch { /* client may have disconnected */ }
+  });
+
+  loop.on("decision", (decision) => {
+    try {
+      res.write(`data: ${JSON.stringify({ type: "loop_decision", decision })}\n\n`);
+    } catch { /* ignore */ }
+  });
+
+  loop.on("signal", (signal) => {
+    try {
+      res.write(`data: ${JSON.stringify({ type: "loop_signal", signal: { symbol: signal.symbol, confidence: signal.confidence_score, entry_price: signal.entry_price, stop_loss: signal.stop_loss, take_profit: signal.take_profit } })}\n\n`);
+    } catch { /* ignore */ }
+  });
+
+  loop.on("error", (err) => {
+    try {
+      res.write(`data: ${JSON.stringify({ type: "loop_error", error: err.message })}\n\n`);
+      res.write(`data: ${JSON.stringify({ type: "loop_complete", result: { action: "error" } })}\n\n`);
+      res.end();
+    } catch { /* ignore */ }
+  });
+
+  loop.on("complete", (result) => {
+    try {
+      res.write(`data: ${JSON.stringify({ type: "loop_complete", result })}\n\n`);
+      res.write(`data: ${JSON.stringify({ type: "done" })}\n\n`);
+      res.end();
+    } catch { /* ignore */ }
+  });
+
+  try {
+    await loop.run(report, "api");
+  } catch (err: any) {
+    logger.error({ err }, "Agent loop run failed");
+    try {
+      res.write(`data: ${JSON.stringify({ type: "loop_error", error: err.message })}\n\n`);
+      res.write(`data: ${JSON.stringify({ type: "done" })}\n\n`);
+      res.end();
+    } catch { /* ignore */ }
+  }
+});
+
+// ── POST /api/agent-loop/start-monitoring ─────────────────────────
+
+router.post("/agent-loop/start-monitoring", async (req: Request, res: Response): Promise<void> => {
+  const { symbol, timeframe, market } = req.body as {
+    symbol?: string;
+    timeframe?: string;
+    market?: string;
+  };
+
+  if (!symbol || !timeframe) {
+    res.status(400).json({ error: "symbol and timeframe are required" });
+    return;
+  }
+
+  const config = {
+    ...DEFAULT_LOOP_CONFIG,
+    symbol: symbol.toUpperCase(),
+    timeframe,
+    market: (market || detectMarket(symbol)) as "crypto" | "forex",
+  };
+
+  try {
+    const monitorId = await monitoringManager.add(config);
+    res.json({ monitorId, status: "started", symbol: config.symbol, timeframe: config.timeframe });
+  } catch (err: any) {
+    res.status(500).json({ error: `Failed to start monitor: ${err.message}` });
+  }
+});
+
+// ── POST /api/agent-loop/stop-monitoring ─────────────────────────
+
+router.post("/agent-loop/stop-monitoring", (req: Request, res: Response): void => {
+  const { monitorId } = req.body as { monitorId?: string };
+
+  if (!monitorId) {
+    res.status(400).json({ error: "monitorId is required" });
+    return;
+  }
+
+  const removed = monitoringManager.remove(monitorId);
+  if (removed) {
+    res.json({ status: "stopped", monitorId });
+  } else {
+    res.status(404).json({ error: `Monitor "${monitorId}" not found` });
+  }
+});
+
+// ── GET /api/agent-loop/status ──────────────────────────────────
+
+router.get("/agent-loop/status", (_req: Request, res: Response): void => {
+  const monitors = monitoringManager.getAll();
+  res.json({ monitors, count: monitors.length });
+});
+
+// ── GET /api/agent-loop/runs — historical runs ──────────────────
+
+router.get("/agent-loop/runs", async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { symbol, status, limit } = req.query;
+    const runs = await tracer.queryRuns({
+      symbol: symbol as string | undefined,
+      status: status as string | undefined,
+      limit: limit ? parseInt(limit as string) : undefined,
+    });
+    res.json({ runs });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ── GET /api/agent-loop/runs/:id — detailed trace ───────────────
+
+router.get("/agent-loop/runs/:id", async (req: Request, res: Response): Promise<void> => {
+  try {
+    const trace = await tracer.getRunTrace(req.params.id);
+    if (!trace.run) {
+      res.status(404).json({ error: `Run "${req.params.id}" not found` });
+      return;
+    }
+    res.json(trace);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ── POST /api/agent-loop/runs/:id/evaluate ──────────────────────
+
+router.post("/agent-loop/runs/:id/evaluate", async (req: Request, res: Response): Promise<void> => {
+  try {
+    const trace = await tracer.getRunTrace(req.params.id);
+    if (!trace.run) {
+      res.status(404).json({ error: `Run "${req.params.id}" not found` });
+      return;
+    }
+
+    const evaluator = new LoopEvaluator(memoryService.semantic);
+    const evaluation = evaluator.scoreRun(trace.steps, trace.run.result || { action: "no_action", confidence: 0, narrative: "" });
+    await evaluator.persistEvaluation(evaluation, req.params.id);
+
+    res.json({ evaluation });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ── GET /api/agent-loop/memory — query semantic memory ──────────
+
+router.get("/agent-loop/memory", async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { tags, key, limit } = req.query;
+    const tagsArr = tags ? (tags as string).split(",").map((t) => t.trim()).filter(Boolean) : undefined;
+    const entries = await memoryService.semantic.query(tagsArr, key as string | undefined);
+    res.json({ entries: limit ? entries.slice(0, parseInt(limit as string)) : entries });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ── POST /api/agent-loop/memory — store manual entry ────────────
+
+router.post("/agent-loop/memory", async (req: Request, res: Response): Promise<void> => {
+  const { key, content, source, score, tags } = req.body as {
+    key?: string;
+    content?: string;
+    source?: string;
+    score?: number;
+    tags?: string[];
+  };
+
+  if (!key || !content) {
+    res.status(400).json({ error: "key and content are required" });
+    return;
+  }
+
+  try {
+    await memoryService.semantic.storeEntry({
+      key,
+      content,
+      source: (source as any) || "manual",
+      score: score ?? 0,
+      tags: tags || [],
+      isDurable: true,
+    });
+    res.json({ status: "stored", key });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ── DELETE /api/agent-loop/memory/:id ─────────────────────────────
+
+router.delete("/agent-loop/memory/:id", async (req: Request, res: Response): Promise<void> => {
+  try {
+    await memoryService.semantic.deleteEntry(req.params.id);
+    res.json({ status: "deleted" });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+export default router;

@@ -10,6 +10,7 @@ node_modules
 deploy
 !deploy/amd-developer-cloud
 !deploy/amd-developer-cloud/nginx
+!deploy/local/nginx
 docs
 *.md
 .vscode

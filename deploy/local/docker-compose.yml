@@ -26,6 +26,9 @@ services:
       dockerfile: Dockerfile
       target: runner
     restart: unless-stopped
+    # Docker Desktop on Windows has flaky DNS for some CDN domains
+    # (stream.binance.us / stream.binance.com).  Use Google DNS explicitly.
+    dns: 8.8.8.8
     ports:
       - "${API_PORT:-3001}:3001"
       - "${MCP_PORT:-3002}:3002"

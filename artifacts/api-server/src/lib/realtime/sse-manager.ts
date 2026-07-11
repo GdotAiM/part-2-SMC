@@ -14,7 +14,8 @@ interface SseClient {
 }
 
 interface SseEvent {
-  type: "candle_update" | "candle_closed" | "report_update" | "connected" | "error";
+  type: "candle_update" | "candle_closed" | "report_update" | "connected" | "error"
+    | "loop_step" | "loop_decision" | "loop_signal" | "loop_complete" | "loop_error";
   symbol: string;
   timeframe?: string;
   data?: unknown;

@@ -268,9 +268,17 @@ class BinanceWsManager {
       const msg = err instanceof Error ? err.message : String(err);
       logger.error({ err: msg, endpoint: base }, "Binance WS error");
 
-      if (msg.includes("451") && this.endpointIndex + 1 < WS_ENDPOINTS.length) {
+      // Rotate endpoints on DNS resolution failures (common from Docker
+      // on Windows) as well as geo-restrictions (HTTP 451).
+      const isDnsError = /ENOTFOUND|EAI_AGAIN|getaddrinfo/i.test(msg);
+      const needsSwitch = msg.includes("451") || isDnsError;
+
+      if (needsSwitch && this.endpointIndex + 1 < WS_ENDPOINTS.length) {
         this.endpointIndex++;
-        logger.info({ nextEndpoint: WS_ENDPOINTS[this.endpointIndex] }, "Switching Binance endpoint due to 451");
+        logger.info(
+          { nextEndpoint: WS_ENDPOINTS[this.endpointIndex], reason: isDnsError ? "dns" : "451" },
+          "Switching Binance WS endpoint",
+        );
         this.reconnectDelay = 100;
         this.scheduleReconnect();
         return;

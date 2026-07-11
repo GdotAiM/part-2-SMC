@@ -7,6 +7,7 @@ import {
   boolean,
   jsonb,
   timestamp,
+  text,
   index,
   uniqueIndex,
 } from "drizzle-orm/pg-core";
@@ -168,3 +169,116 @@ export const insertPerformanceMatrixSchema = createInsertSchema(
 ).omit({ id: true, last_calculated: true });
 export type InsertPerformanceMatrix = typeof performanceMatrix.$inferInsert;
 export type PerformanceMatrixRow = typeof performanceMatrix.$inferSelect;
+
+// ═══════════════════════════════════════════════════════════
+// Agent Loop Runs Table
+// ═══════════════════════════════════════════════════════════
+
+export const agentLoopRuns = pgTable(
+  "agent_loop_runs",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+
+    // What was configured
+    symbol: varchar("symbol", { length: 20 }).notNull(),
+    timeframe: varchar("timeframe", { length: 5 }).notNull(),
+    market: varchar("market", { length: 10 }).notNull(),
+
+    // Config snapshot (store the full JSON config)
+    config_snapshot: jsonb("config_snapshot").notNull(),
+
+    // Status
+    status: varchar("status", { length: 20 }).notNull().default("running"), // running | completed | error | stopped
+
+    // Trigger
+    triggered_by: varchar("triggered_by", { length: 20 }).notNull(), // candle_close | api | scheduled | manual
+
+    // Iterations
+    total_iterations: integer("total_iterations").default(0),
+    total_tokens: integer("total_tokens").default(0),
+
+    // Result
+    result: jsonb("result"),
+    error: varchar("error", { length: 500 }),
+
+    // Evaluation scores (filled when evaluation runs)
+    evaluation_score: integer("evaluation_score"), // 0-100
+    evaluation: jsonb("evaluation"),
+
+    // Timestamps
+    started_at: timestamp("started_at").notNull().defaultNow(),
+    completed_at: timestamp("completed_at"),
+  },
+  (table) => ({
+    idxLoopSymbol: index("idx_loop_symbol").on(table.symbol),
+    idxLoopStatus: index("idx_loop_status").on(table.status),
+    idxLoopStarted: index("idx_loop_started").on(table.started_at),
+    idxLoopTrigger: index("idx_loop_trigger").on(table.triggered_by),
+  })
+);
+
+// ═══════════════════════════════════════════════════════════
+// Agent Loop Steps Table (trace data)
+// ═══════════════════════════════════════════════════════════
+
+export const agentLoopSteps = pgTable(
+  "agent_loop_steps",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    run_id: uuid("run_id").notNull().references(() => agentLoopRuns.id, { onDelete: "cascade" }),
+
+    // Hierarchy
+    iteration_sequence: integer("iteration_sequence").notNull(),
+    step_type: varchar("step_type", { length: 30 }).notNull(), // observe | interpret | reason | decide | act | evaluate | update_memory
+
+    // Timing
+    started_at: timestamp("started_at").notNull(),
+    completed_at: timestamp("completed_at"),
+    duration_ms: integer("duration_ms"),
+
+    // Payload
+    input_snapshot: jsonb("input_snapshot"), // what went in
+    output_snapshot: jsonb("output_snapshot"), // what came out
+    tool_calls: jsonb("tool_calls"),
+
+    // Errors
+    error: varchar("error", { length: 500 }),
+  },
+  (table) => ({
+    idxStepRun: index("idx_step_run").on(table.run_id),
+    idxStepType: index("idx_step_type").on(table.step_type),
+  })
+);
+
+// ═══════════════════════════════════════════════════════════
+// Agent Memory Table (semantic/procedural knowledge)
+// ═══════════════════════════════════════════════════════════
+
+export const agentMemory = pgTable(
+  "agent_memory",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+
+    // Key-value with tags
+    memory_key: varchar("memory_key", { length: 200 }).notNull(),
+    content: text("content").notNull(),
+    source: varchar("source", { length: 30 }).notNull().default("episode"), // matrix | episode | manual | evaluation
+
+    // Relevance scoring
+    score: decimal("score", { precision: 5, scale: 4 }).notNull().default("0"),
+    tags: varchar("tags", { length: 50 }).array().notNull().default([]),
+
+    // Ephemeral/session-bound or durable
+    is_durable: boolean("is_durable").notNull().default(true),
+
+    // Meta
+    source_run_id: varchar("source_run_id", { length: 100 }),
+    created_at: timestamp("created_at").notNull().defaultNow(),
+    last_accessed_at: timestamp("last_accessed_at"),
+  },
+  (table) => ({
+    idxMemoryKey: uniqueIndex("idx_memory_key").on(table.memory_key),
+    idxMemoryTags: index("idx_memory_tags").on(table.tags),
+    idxMemoryScore: index("idx_memory_score").on(table.score),
+  })
+);

@@ -97,7 +97,106 @@ export async function askAgentsMcp(
   }
 }
 
-// ── Pipeline endpoint ────────────────────────────────────────────────────────
+// ── Agent Loop endpoints ─────────────────────────────────────────────────
+
+export type LoopStepEvent = {
+  type: "loop_step" | "loop_decision" | "loop_signal" | "loop_complete" | "loop_error" | "done";
+  step?: any;
+  decision?: any;
+  signal?: any;
+  result?: any;
+  error?: string;
+};
+
+export async function runAgentLoop(
+  params: { symbol: string; timeframe: string; market: string; config?: any },
+  onEvent: (event: LoopStepEvent) => void,
+): Promise<void> {
+  const res = await fetch(apiUrl("/agent-loop/run"), {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(params),
+  });
+
+  if (!res.ok || !res.body) throw new Error(`HTTP ${res.status}`);
+
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+    const lines = buffer.split("\n");
+    buffer = lines.pop() ?? "";
+    for (const line of lines) {
+      const t = line.trim();
+      if (!t.startsWith("data: ")) continue;
+      try {
+        const json = JSON.parse(t.slice(6));
+        onEvent(json as LoopStepEvent);
+        if (json.type === "done") return;
+      } catch { /* skip */ }
+    }
+  }
+}
+
+export async function startLoopMonitor(params: {
+  symbol: string;
+  timeframe: string;
+  market: string;
+}): Promise<{ monitorId: string; status: string }> {
+  const res = await fetch(apiUrl("/agent-loop/start-monitoring"), {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(params),
+  });
+  return res.json();
+}
+
+export async function stopLoopMonitor(monitorId: string): Promise<{ status: string }> {
+  const res = await fetch(apiUrl("/agent-loop/stop-monitoring"), {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ monitorId }),
+  });
+  return res.json();
+}
+
+export async function getLoopStatus(): Promise<{ monitors: any[]; count: number }> {
+  const res = await fetch(apiUrl("/agent-loop/status"));
+  return res.json();
+}
+
+export async function getLoopRuns(params?: {
+  symbol?: string;
+  status?: string;
+  limit?: number;
+}): Promise<{ runs: any[] }> {
+  const qs = new URLSearchParams();
+  if (params?.symbol) qs.set("symbol", params.symbol);
+  if (params?.status) qs.set("status", params.status);
+  if (params?.limit) qs.set("limit", String(params.limit));
+  const res = await fetch(apiUrl(`/agent-loop/runs?${qs}`));
+  return res.json();
+}
+
+export async function getLoopRunDetail(runId: string): Promise<{ run: any; steps: any[] }> {
+  const res = await fetch(apiUrl(`/agent-loop/runs/${runId}`));
+  return res.json();
+}
+
+export async function getSemanticMemory(params?: {
+  tags?: string;
+  limit?: number;
+}): Promise<{ entries: any[] }> {
+  const qs = new URLSearchParams();
+  if (params?.tags) qs.set("tags", params.tags);
+  if (params?.limit) qs.set("limit", String(params.limit));
+  const res = await fetch(apiUrl(`/agent-loop/memory?${qs}`));
+  return res.json();
+}
 
 export type PipelineEvent =
   | { agent: string; type: "start" }

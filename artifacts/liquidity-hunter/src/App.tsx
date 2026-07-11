@@ -6,6 +6,7 @@ import NotFound from "@/pages/not-found";
 import Dashboard from "@/pages/dashboard";
 import Analytics from "@/pages/Analytics";
 import Broker from "@/pages/Broker";
+import AgentLoop from "@/pages/AgentLoop";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -22,6 +23,7 @@ function Router() {
       <Route path="/" component={Dashboard} />
       <Route path="/analytics" component={Analytics} />
       <Route path="/broker" component={Broker} />
+      <Route path="/agent-loop" component={AgentLoop} />
       <Route component={NotFound} />
     </Switch>
   );
