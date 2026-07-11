@@ -21,6 +21,8 @@ import { LoopEvaluator } from "../harness/LoopEvaluator.js";
 import { MemoryService } from "../memory/MemoryService.js";
 import { DEFAULT_LOOP_CONFIG } from "./types.js";
 import { langfuse } from "../observability/langfuse.js";
+import { buildNewsContext } from "../news/index.js";
+import { AgentEvaluator } from "../evaluation/index.js";
 
 import type {
   LoopConfig,
@@ -370,8 +372,9 @@ export class AgentLoop extends EventEmitter {
     const contextSummary = this.context.summarizeContext();
     const episodicStr = await this.memory.episodic.formatForPrompt(report.symbol);
     const semanticStr = await this.memory.semantic.formatForPrompt(report.symbol, marketRegime);
+    const newsStr = await buildNewsContext(report.symbol);
 
-    const prompt = this.buildDecisionPrompt(contextSummary, episodicStr, semanticStr, toolResults);
+    const prompt = this.buildDecisionPrompt(contextSummary, episodicStr, semanticStr, newsStr, toolResults);
 
     const llmConfig = resolveLlmConfig();
     if (!llmConfig.apiKey && llmConfig.provider !== "amd") {
@@ -407,6 +410,7 @@ export class AgentLoop extends EventEmitter {
     contextSummary: string,
     episodicStr: string,
     semanticStr: string,
+    newsStr: string,
     toolResults: Record<string, unknown>,
   ): string {
     const structure = toolResults["analyze_structure"] as any || {};
