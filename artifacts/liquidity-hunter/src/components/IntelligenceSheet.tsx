@@ -6,6 +6,7 @@ import type { SmcReport } from "@workspace/api-client-react";
 import { AgentPipeline } from "./AgentPipeline";
 import { AgentChat } from "./AgentChat";
 import { AgentLoopSection } from "./AgentLoopSection";
+import { TradeActions } from "./TradeActions";
 import { BiasChip } from "@/components/ui/bias-chip";
 import { ConfBar } from "@/components/ui/conf-bar";
 import { fmtPrice, getBias, TF_LABEL_MAP, type Market } from "@/lib/smc-display";
@@ -446,6 +447,24 @@ export function IntelligenceSheet({ report, market, onClose, anchorTf, anchorBia
                   <span>Fewer than 3 confluence factors present. Wait for clearer alignment before entering.</span>
                 </div>
               )}
+
+              {/* ══ Trade Actions: Execute + Monitor ══ */}
+              <TradeActions
+                setup={{
+                  symbol: report.symbol,
+                  timeframe: report.timeframe,
+                  market,
+                  direction: setup.direction,
+                  entryLow: setup.entryLow,
+                  entryHigh: setup.entryHigh,
+                  stopLoss: setup.stopLoss,
+                  takeProfit: setup.tp1?.price ?? null,
+                  confidence: report.structure.confidence > 0
+                    ? Math.round(report.structure.confidence * 100)
+                    : setup.direction ? 50 : 0,
+                  grade: setup.grade,
+                }}
+              />
             </Section>
 
             {/* ══ 1. Structure ══ */}

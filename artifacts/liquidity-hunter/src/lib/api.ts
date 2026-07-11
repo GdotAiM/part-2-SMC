@@ -187,6 +187,56 @@ export async function getLoopRunDetail(runId: string): Promise<{ run: any; steps
   return res.json();
 }
 
+// ── Broker / Execution endpoints ──────────────────────────────────────────
+
+export async function getBrokerStatus(): Promise<{
+  broker_name: string;
+  is_ready: boolean;
+  mode: "REVIEW" | "LIVE";
+  is_paper: boolean;
+}> {
+  const res = await fetch(apiUrl("/broker/status"));
+  return res.json();
+}
+
+export async function setBrokerMode(mode: "REVIEW" | "LIVE", confirm?: string): Promise<{ mode: string }> {
+  const res = await fetch(apiUrl("/broker/mode"), {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ mode, confirm }),
+  });
+  if (!res.ok) throw new Error((await res.json()).error);
+  return res.json();
+}
+
+export async function executeSignal(signal: Record<string, unknown>): Promise<{
+  success: boolean;
+  order_id?: string;
+  message?: string;
+  error?: string;
+}> {
+  const res = await fetch(apiUrl("/signals/execute"), {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ signal }),
+  });
+  if (!res.ok) throw new Error((await res.json()).error);
+  return res.json();
+}
+
+export async function generateSignal(params: {
+  symbol: string;
+  market: string;
+  timeframe: string;
+}): Promise<{ signals: any[]; message?: string }> {
+  const res = await fetch(apiUrl("/signals/generate"), {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(params),
+  });
+  return res.json();
+}
+
 export async function getSemanticMemory(params?: {
   tags?: string;
   limit?: number;

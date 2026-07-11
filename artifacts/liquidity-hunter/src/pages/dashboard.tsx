@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useLocation } from "wouter";
-import { Activity, AlertCircle, BarChart2, BarChart3, ChevronDown, ChevronUp, Landmark, Minus, Radio, RefreshCw, TrendingDown, TrendingUp, Zap } from "lucide-react";
+import { Activity, AlertCircle, BarChart2, BarChart3, ChevronDown, ChevronUp, Landmark, Minus, Radio, RefreshCw, TrendingDown, TrendingUp, Zap, Bell } from "lucide-react";
+import { getLoopStatus } from "@/lib/api";
 import {
   getAnalyzeCryptoQueryKey,
   getAnalyzeForexQueryKey,
@@ -348,6 +349,21 @@ export default function Dashboard() {
 
   const primaryReport = r4h.data ?? r1h.data ?? r1d.data ?? r15m.data;
 
+  // ── Active monitors poll ──────────────────────────────────────────────
+  const [monitorCount, setMonitorCount] = useState(0);
+  useEffect(() => {
+    let mounted = true;
+    async function poll() {
+      try {
+        const status = await getLoopStatus();
+        if (mounted && status.count !== undefined) setMonitorCount(status.count);
+      } catch { /* ignore */ }
+    }
+    poll();
+    const id = setInterval(poll, 15000);
+    return () => { mounted = false; clearInterval(id); };
+  }, []);
+
   // ── Real-time WebSocket stream ──────────────────────────────────────────
   const {
     liveData,
@@ -468,10 +484,15 @@ export default function Dashboard() {
           <button
             onClick={() => setLocation("/agent-loop")}
             title="AI Agent Loop — monitor, history, one-shot analysis"
-            className="flex items-center gap-1.5 px-2.5 py-1 rounded-sm border border-amber-500/30 bg-amber-500/10 text-amber-400 hover:bg-amber-500/20 hover:border-amber-500/50 transition-colors text-xs font-bold"
+            className="flex items-center gap-1.5 px-2.5 py-1 rounded-sm border border-amber-500/30 bg-amber-500/10 text-amber-400 hover:bg-amber-500/20 hover:border-amber-500/50 transition-colors text-xs font-bold relative"
           >
             <Zap className="w-3.5 h-3.5" />
             <span className="hidden sm:inline">AGENT</span>
+            {monitorCount > 0 && (
+              <span className="absolute -top-1.5 -right-1.5 flex items-center justify-center w-4 h-4 rounded-full bg-amber-500 text-[9px] font-bold text-amber-950 leading-none shadow-sm">
+                {monitorCount}
+              </span>
+            )}
           </button>
 
           {/* Auto-refresh ring */}
