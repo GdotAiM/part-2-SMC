@@ -260,7 +260,7 @@ router.post("/performance-matrix/rebuild", async (_req, res) => {
 
 router.post("/backtest/run", async (req, res) => {
   try {
-    const { assetClass, symbol, displaySymbol, timeframe } = req.body;
+    const { assetClass, symbol, displaySymbol, timeframe, windowSize, futureBarsNeeded, stepSize } = req.body;
     if (!symbol || !assetClass || !timeframe) {
       res.status(400).json({ error: "symbol, assetClass, and timeframe are required" });
       return;
@@ -271,6 +271,9 @@ router.post("/backtest/run", async (req, res) => {
       symbol,
       displaySymbol: displaySymbol || symbol,
       timeframe,
+      windowSize: windowSize ? parseInt(windowSize) : undefined,
+      futureBarsNeeded: futureBarsNeeded ? parseInt(futureBarsNeeded) : undefined,
+      stepSize: stepSize ? parseInt(stepSize) : undefined,
     });
     // Rebuild the performance matrix after backtest
     try { await matrixService.rebuildFullMatrix(); } catch { /* non-critical */ }

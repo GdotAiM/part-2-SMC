@@ -24,7 +24,13 @@ export interface BacktestConfig {
   assetClass: AssetClass;
   symbol: string;         // Yahoo symbol (e.g. "AAPL", "EURUSD=X", "BTC-USD")
   displaySymbol: string;  // Display symbol (e.g. "AAPL", "EURUSD", "BTCUSDT")
-  timeframe: string;      // "1h", "4h", "1d" etc.
+  timeframe: string;      // "1m","5m","15m","1h","4h","1d","1w"
+  /** Optional: candles per SMC analysis window (default 200) */
+  windowSize?: number;
+  /** Optional: bars after window to simulate outcome (default 20) */
+  futureBarsNeeded?: number;
+  /** Optional: advance window by this many candles each step (default 20) */
+  stepSize?: number;
 }
 
 export interface BacktestResult {
@@ -132,9 +138,9 @@ export class BacktestRunner {
     }
 
     const signals: UnifiedTradeSignal[] = [];
-    const windowSize = 200; // candles per SMC analysis window
-    const futureBarsNeeded = 20; // bars needed after setup for outcome
-    const stepSize = 20; // advance window by this many candles each step
+    const windowSize = config.windowSize ?? 200;
+    const futureBarsNeeded = config.futureBarsNeeded ?? 20;
+    const stepSize = config.stepSize ?? 20;
 
     const market = toMarket(config.assetClass);
     const totalWindows = Math.floor((candles.length - windowSize - futureBarsNeeded) / stepSize);
