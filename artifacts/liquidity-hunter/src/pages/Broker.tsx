@@ -20,6 +20,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { fmtAssetPrice, formatTimestamp } from "@/lib/format";
+import { SignalDetailSheet, type SignalDetail } from "@/components/SignalDetailSheet";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -107,6 +108,8 @@ export default function Broker() {
   const [liveDialogOpen, setLiveDialogOpen] = useState(false);
   const [switchDisabled, setSwitchDisabled] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [selectedSignal, setSelectedSignal] = useState<SignalDetail | null>(null);
+  const [sheetOpen, setSheetOpen] = useState(false);
 
   // ── Polling — 15s interval matching dashboard pattern ─────────────────────
   const fetchData = useCallback(async () => {
@@ -497,7 +500,7 @@ export default function Broker() {
                     </TableRow>
                   ) : (
                     ledgerEntries.map((entry) => (
-                      <TableRow key={entry.id}>
+                      <TableRow key={entry.id} className="cursor-pointer hover:bg-muted/30 transition-colors" onClick={() => { setSelectedSignal(entry as unknown as SignalDetail); setSheetOpen(true); }}>
                         <TableCell>
                           <span className="font-mono text-[10px] sm:text-xs text-muted-foreground">
                             {entry.id.slice(0, 8)}…
