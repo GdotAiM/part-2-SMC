@@ -324,6 +324,48 @@ Reads the raw SSE stream using `ReadableStream` + `TextDecoder`. Parses each `da
 
 ---
 
+### `TradeActions.tsx`
+
+**Purpose**: Execute Now and Monitor with Agent buttons in the IntelligenceSheet.
+
+- **Execute Now**: Calls POST /api/signals/execute with derived entry/SL/TP levels
+- **Monitor with Agent**: Calls startLoopMonitor() for symbol/timeframe
+- **Broker status bar**: Inline mode switcher with typed-LIVE confirmation
+
+---
+
+### `AgentLoopSection.tsx`
+
+**Purpose**: Embedded Agent Loop trigger inside IntelligenceSheet.
+
+- "Run Full Agent Loop" button triggers 7-step cycle via SSE
+- Streaming timeline with step durations
+- Decision/signal/result cards
+
+---
+
+### `MarketIntelligence.tsx`
+
+**Purpose**: News, Similar Setups, RAG context panel.
+
+- **News**: Headlines with impact badges, macro events calendar
+- **Similar**: Vector search past setups with setup type dropdown
+- **RAG**: Formatted news context for LLM injection
+- Graceful degradation when NEWS_ENABLED=false or Qdrant not running
+
+---
+
+### `BacktestRunnerUI.tsx`
+
+**Purpose**: Backtest runner integrated into Performance Matrix tab.
+
+- Asset class toggle, symbol dropdown, all 7 TFs
+- 4 lookback presets: Aggressive / Normal / Cautious / Deep dive
+- Results: Win Rate, Sharpe, PF, Max DD, Avg Win/Loss
+- "Refresh Matrix" button after completion
+
+---
+
 ### `AgentChat.tsx`
 
 **Purpose**: Freeform Q&A with the AI analyst, scoped to the current timeframe's report.

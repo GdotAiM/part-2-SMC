@@ -27,6 +27,11 @@ Most retail traders lose because they see charts the wrong way. Institutions don
 | **Visual Chart Layer** | TradingView Lightweight Charts (v5) with session backgrounds, OB/FVG rectangles, BOS/CHoCH markers, KZO lines |
 | **AI Agent System** | Fireworks AI (DeepSeek V4 Pro) — streaming Q&A + 4-agent sequential analysis pipeline + MCP tool-calling agent (11 autonomous tools) |
 | **Agent Loop Engine** | Autonomous Observe → Interpret → Reason → Decide → Act → Evaluate → Update cycle with background monitoring, memory tiers, guardrails, and run evaluation |
+| **Langfuse Observability** | LLM call tracing, cost tracking, and run scoring via Langfuse (configurable via env vars, graceful fallback) |
+| **Prompt Optimization** | LLM-as-judge evaluation and improvement of agent prompts (DSPy-equivalent) for ongoing performance gains |
+| **RAG / News / Vector Memory** | News fetching (RSS + CoinMarketCap), text chunking, PDF parsing, and Qdrant vector database for long-term setup memory with "find similar past setups" |
+| **Structured Outputs** | Zod-powered structured output extraction with retry (Instructor pattern) — eliminates JSON parsing errors from pipeline |
+| **Backtest Runner** | Sliding-window SMC backtest engine with configurable lookback, timeframe, and asset selection — results populate the Performance Matrix |
 | **MCP Tier 3** | FastMCP v4.3.2 server on port 3002 — 11 SMC tools, 2 resources, 1 prompt for external AI agent access |
 | **Broker Execution** | Broker-agnostic trade execution with REVIEW/LIVE mode toggle, Alpaca Paper API adapter, file-based mock broker |
 | **Broker Dashboard** | `/broker` page — account overview, open orders table, mode switch with typed-LIVE confirmation, execution log |

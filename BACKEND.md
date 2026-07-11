@@ -171,6 +171,13 @@ Agent Loop Engine — autonomous market analysis cycle with memory, guardrails, 
 | GET | `/api/agent-loop/memory` | Query semantic memory entries by tags/key |
 | POST | `/api/agent-loop/memory` | Store a manual semantic memory entry |
 | DELETE | `/api/agent-loop/memory/:id` | Delete a memory entry |
+| GET | `/api/agent-loop/news?symbol=` | Fetch news articles |
+| GET | `/api/agent-loop/news/macro` | Fetch upcoming macro events |
+| POST | `/api/agent-loop/similar-setups` | Find similar past setups via Qdrant |
+| GET | `/api/agent-loop/news-context?symbol=` | Formatted news for LLM |
+| GET | `/api/agent-loop/qdrant-status` | Qdrant health check |
+| POST | `/api/agent-loop/optimize` | Optimize an agent prompt |
+| GET | `/api/agent-loop/langfuse-status` | Langfuse config status |
 
 **Architecture**:
 - `lib/loop/AgentLoop.ts` — Central orchestrator (extends EventEmitter). Runs the Observe→Interpret→Reason→Decide→Act→Evaluate→Update cycle
@@ -669,6 +676,12 @@ The real-time pipeline eliminates the need for the 60s cache on live data — wh
 | `ALPACA_API_KEY_ID` | No | Alpaca Paper Trading API key ID. Sets both to enable AlpacaAdapter |
 | `ALPACA_API_SECRET_KEY` | No | Alpaca Paper Trading API secret key |
 | `CORS_ORIGINS` | No | Comma-separated allowed origins (default: `*`) |
+| `LANGFUSE_PUBLIC_KEY` | No | Langfuse project public key (LLM tracing) |
+| `LANGFUSE_SECRET_KEY` | No | Langfuse project secret key |
+| `LANGFUSE_HOST` | No | Langfuse server URL (default: https://us.cloud.langfuse.com) |
+| `NEWS_ENABLED` | No | Enable news fetching for agent reasoning (default: false) |
+| `COINMARKETCAP_API_KEY` | No | CoinMarketCap API key for crypto news |
+| `QDRANT_URL` | No | Qdrant vector database URL (default: http://localhost:6333) |
 | `DATABASE_URL` | No | PostgreSQL connection for trade persistence (optional) |
 | `LOG_LEVEL` | No | Pino log level (default: `info`) |
 | `NODE_ENV` | No | `development` or `production` |
@@ -712,6 +725,8 @@ Wraps a BrokerAdapter with a mode (REVIEW/LIVE). Mode switching requires `{ conf
 | `/api/ledger/pending` | GET | Signals awaiting outcome |
 | `/api/performance-matrix` | GET | Performance metrics by dimension combination |
 | `/api/performance-matrix/rebuild` | POST | Trigger full matrix rebuild |
+| `/api/backtest/run` | POST | Run sliding-window SMC backtest |
+| `/api/backtest/run-multi` | POST | Run multi-asset cascade backtest |
 
 ### Signal Generator (`lib/services/SignalGenerator.ts`)
 

@@ -30,11 +30,18 @@ workspace/
 │   │   │   │   ├── memory/             # Memory Systems (NEW)
 │   │   │   │   │   ├── EpisodicMemory.ts # Past signals/outcomes via TradeLedgerService
 │   │   │   │   │   ├── SemanticMemory.ts # Patterns + agent_memory table (procedural rules)
-│   │   │   │   │   └── MemoryService.ts # Facade combining both tiers
+│   │   │   │   │   ├── MemoryService.ts # Facade combining both tiers
+│   │   │   │   └── vector/          # Qdrant vector database
+│   │   │   │       ├── types.ts     # VectorSignalRecord, SimilarSetupResult
+│   │   │   │       └── QdrantMemory.ts # storeSignal, findSimilar, formatForPrompt
 │   │   │   │   ├── harness/            # Observability (NEW)
 │   │   │   │   │   ├── types.ts         # TraceSpan, RunEvaluation types
 │   │   │   │   │   ├── LoopTracer.ts    # Step-level tracing + DB persistence
 │   │   │   │   │   └── LoopEvaluator.ts # Post-run scoring + memory ingestion
+│   │   │   │   ├── evaluation/      # LLM-as-Judge evaluator (Ragas-equivalent)
+│   │   │   │   ├── news/            # NewsFetcher, TextChunker, PdfParser
+│   │   │   │   ├── observability/   # Langfuse tracing wrapper
+│   │   │   │   ├── optimization/    # Prompt optimizer (DSPy-equivalent)
 │   │   │   │   └── smc/
 │   │   │   │       ├── config.ts       # Shared tuning constants (ATR, lookback, etc.)
 │   │   │   │       ├── types.ts        # All shared TypeScript interfaces

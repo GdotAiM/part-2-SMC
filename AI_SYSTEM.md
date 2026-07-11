@@ -198,6 +198,37 @@ The `buildSystemPrompt()` function transforms the `SmcReport` into the text brie
 
 ---
 
+
+## Observability — Langfuse
+Every LLM call and Agent Loop run is traced via Langfuse when configured.
+Set LANGFUSE_PUBLIC_KEY, LANGFUSE_SECRET_KEY, and LANGFUSE_HOST in .env.
+Traces include: token counts, cost USD, duration, model name, and loop quality scores.
+
+## Structured Outputs — lib/llm/structured.ts
+Guaranteed structured outputs from LLM calls using Zod schemas.
+extractStructured<T>(schema, systemPrompt, userContent) with auto-retry on parse failure.
+Used by the AgentLoop reason() step and AgentEvaluator.
+
+## Prompt Optimization — lib/optimization/prompt-optimizer.ts
+LLM-as-judge evaluation and improvement of agent prompts.
+POST /api/agent-loop/optimize to improve any agent prompt based on performance data.
+Variants stored in agent_memory table for comparison.
+
+## News & Macro Integration
+AgentLoop reason() includes news context when NEWS_ENABLED=true.
+Sources: CoinDesk, Bloomberg, Reuters RSS + CoinMarketCap API.
+Formatted as "RECENT NEWS & EVENTS:" and "UPCOMING ECONOMIC EVENTS:" sections.
+
+## Evaluation — lib/evaluation/index.ts
+LLM-as-judge scoring: faithfulness, answer relevance, correctness.
+Used in AgentLoop evaluate() step and available for batch evaluation.
+
+## Qdrant Vector Memory — lib/memory/vector/QdrantMemory.ts
+Vector database for long-term semantic memory of trade signals.
+findSimilar() queries past setups by symbol, setup type, or market regime.
+Start: docker compose --profile vector-memory up -d qdrant
+
+
 ## Future AI Roadmap
 
 - **Streaming narrative generation**: Replace the deterministic `buildMarketNarrative()` with a lighter AI call for richer narrative output
