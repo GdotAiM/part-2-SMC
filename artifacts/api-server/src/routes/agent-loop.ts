@@ -33,6 +33,8 @@ import { newsFetcher } from "../lib/news/index.js";
 import { qdrantMemory } from "../lib/memory/vector/QdrantMemory.js";
 import { buildNewsContext } from "../lib/news/index.js";
 import { AgentEvaluator } from "../lib/evaluation/index.js";
+import { fetchBinanceCandles, fetchBinanceCandlesDirect } from "../lib/fetchers/binance.js";
+import { fetchYahooCandles } from "../lib/fetchers/yahoo.js";
 
 const router: IRouter = Router();
 const memoryService = new MemoryService();
@@ -62,7 +64,6 @@ router.post("/agent-loop/run", async (req: Request, res: Response): Promise<void
   const tf = timeframe;
   const sym = symbol.toUpperCase();
 
-  // Merge provided config with defaults
   const config = {
     ...DEFAULT_LOOP_CONFIG,
     symbol: sym,
@@ -70,12 +71,31 @@ router.post("/agent-loop/run", async (req: Request, res: Response): Promise<void
     market: mkt as "crypto" | "forex",
   };
 
-  // Get candles
-  const candles = candleStore.getCandles(sym, tf);
+  // Get candles — try Binance Direct API for crypto, Yahoo for forex, then candle store
+  let candles: any[] = [];
+  try {
+    if (mkt === "crypto") {
+      candles = await fetchBinanceCandlesDirect(sym, tf);
+      logger.info({ symbol: sym, timeframe: tf, count: candles.length, source: "binance_direct" }, "Fetched candles from Binance API");
+    } else {
+      candles = await fetchYahooCandles(sym, tf);
+      logger.info({ symbol: sym, timeframe: tf, count: candles.length, source: "yahoo" }, "Fetched candles from Yahoo");
+    }
+  } catch (fetchErr) {
+    logger.warn({ err: fetchErr.message, symbol: sym, tf }, "Direct fetch failed, trying candle store");
+    candles = candleStore.getCandles(sym, tf);
+    if (candles.length >= 10) {
+      logger.info({ symbol: sym, timeframe: tf, count: candles.length, source: "candle_store" }, "Using candle store fallback");
+    }
+  }
   if (candles.length < 10) {
-    res.status(400).json({ error: `Only ${candles.length} candles available for ${sym} ${tf}. Need at least 10.` });
+    res.status(400).json({ error: "Not enough data for " + sym + " " + tf + ". API and store both unavailable." });
     return;
   }
+  // Seed candle store so SMC tools can read from it
+  try {
+    candleStore.seedCandles(sym, tf, candles);
+  } catch { /* non-critical */ }
 
   const report = buildReport(candles, sym, mkt as "crypto" | "forex", tf);
 
