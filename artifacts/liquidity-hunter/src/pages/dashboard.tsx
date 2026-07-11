@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useLocation } from "wouter";
-import { Activity, AlertCircle, BarChart2, BarChart3, ChevronDown, ChevronUp, Landmark, Minus, Radio, RefreshCw, TrendingDown, TrendingUp, Zap, Bell } from "lucide-react";
+import { Activity, AlertCircle, BarChart2, BarChart3, ChevronDown, ChevronUp, Landmark, Minus, Radio, RefreshCw, TrendingDown, TrendingUp, Zap, Bell, Newspaper } from "lucide-react";
 import { getLoopStatus } from "@/lib/api";
 import {
   getAnalyzeCryptoQueryKey,
@@ -493,6 +493,16 @@ export default function Dashboard() {
                 {monitorCount}
               </span>
             )}
+          </button>
+
+          {/* Knowledge button */}
+          <button
+            onClick={() => setLocation("/agent-loop")}
+            title="Market Intelligence — news, similar setups, RAG context"
+            className="flex items-center gap-1.5 px-2.5 py-1 rounded-sm border border-sky-500/30 bg-sky-500/10 text-sky-400 hover:bg-sky-500/20 hover:border-sky-500/50 transition-colors text-xs font-bold"
+          >
+            <Newspaper className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">INTEL</span>
           </button>
 
           {/* Auto-refresh ring */}

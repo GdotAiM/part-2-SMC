@@ -2,15 +2,16 @@ import { useState, useEffect, useRef } from "react";
 import {
   Activity, Play, Square, Clock, ChevronDown, ChevronUp,
   Loader2, Brain, Database, Target, AlertCircle, CheckCircle,
-  RefreshCw, Zap, Trash2,
+  RefreshCw, Zap, Trash2, Newspaper,
 } from "lucide-react";
 import {
   runAgentLoop, startLoopMonitor, stopLoopMonitor,
   getLoopStatus, getLoopRuns, getLoopRunDetail, getSemanticMemory,
   type LoopStepEvent,
 } from "@/lib/api";
+import { MarketIntelligence } from "./MarketIntelligence";
 
-type View = "loop" | "monitors" | "history" | "memory";
+type View = "loop" | "monitors" | "history" | "knowledge" | "memory";
 
 type Props = {
   /** Optional preset symbol to pre-fill the loop runner */
@@ -51,7 +52,7 @@ export function AgentLoopDashboard({ presetSymbol, presetTimeframe, presetMarket
         <span className="text-sm font-semibold uppercase tracking-wider">Agent Loop</span>
         <div className="flex-1" />
         <div className="flex gap-1">
-          {(["loop", "monitors", "history", "memory"] as View[]).map((v) => (
+          {(["loop", "monitors", "history", "knowledge", "memory"] as View[]).map((v) => (
             <button
               key={v}
               onClick={() => setView(v)}
@@ -61,7 +62,7 @@ export function AgentLoopDashboard({ presetSymbol, presetTimeframe, presetMarket
                   : "text-muted-foreground hover:text-foreground border border-transparent"
               }`}
             >
-              {v === "loop" ? "Run Loop" : v === "monitors" ? "Monitors" : v === "history" ? "History" : "Memory"}
+              {v === "loop" ? "Run Loop" : v === "monitors" ? "Monitors" : v === "history" ? "History" : v === "knowledge" ? "Knowledge" : "Memory"}
             </button>
           ))}
         </div>
@@ -71,6 +72,13 @@ export function AgentLoopDashboard({ presetSymbol, presetTimeframe, presetMarket
       {view === "monitors" && <MonitorManager />}
       {view === "history" && <RunHistory />}
       {view === "memory" && <MemoryViewer />}
+      {view === "knowledge" && (
+        <MarketIntelligence
+          symbol={presetSymbol || "BTCUSDT"}
+          timeframe={presetTimeframe || "4h"}
+          market={presetMarket || "crypto"}
+        />
+      )}
     </div>
   );
 }

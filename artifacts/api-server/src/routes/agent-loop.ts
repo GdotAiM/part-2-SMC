@@ -29,6 +29,10 @@ import { buildReport } from "../lib/smc/report.js";
 import { logger } from "../lib/logger.js";
 import { langfuse } from "../lib/observability/langfuse.js";
 import { PromptOptimizer } from "../lib/optimization/prompt-optimizer.js";
+import { newsFetcher } from "../lib/news/index.js";
+import { qdrantMemory } from "../lib/memory/vector/QdrantMemory.js";
+import { buildNewsContext } from "../lib/news/index.js";
+import { AgentEvaluator } from "../lib/evaluation/index.js";
 
 const router: IRouter = Router();
 const memoryService = new MemoryService();
@@ -348,3 +352,74 @@ router.get("/agent-loop/langfuse-status", (_req: Request, res: Response): void =
 });
 
 export default router;
+
+// ─── GET /api/agent-loop/news — Fetch news for a symbol ───────────────────
+
+router.get("/agent-loop/news", async (req: Request, res: Response): Promise<void> => {
+  const { symbol, limit } = req.query as { symbol?: string; limit?: string };
+  if (!symbol) {
+    res.status(400).json({ error: "symbol query param is required" });
+    return;
+  }
+  try {
+    const articles = await newsFetcher.fetchNews(symbol, limit ? parseInt(limit) : 5);
+    res.json({ articles });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ─── GET /api/agent-loop/news/macro — Fetch macro events ──────────────────
+
+router.get("/agent-loop/news/macro", async (_req: Request, res: Response): Promise<void> => {
+  try {
+    const events = await newsFetcher.fetchMacroEvents(10);
+    res.json({ events });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ─── POST /api/agent-loop/similar-setups — Find similar past setups ───────
+
+router.post("/agent-loop/similar-setups", async (req: Request, res: Response): Promise<void> => {
+  const { symbol, setupType, marketRegime, limit } = req.body as {
+    symbol?: string; setupType?: string; marketRegime?: string; limit?: number;
+  };
+  try {
+    const results = await qdrantMemory.findSimilar(
+      { symbol, setupType, marketRegime },
+      limit || 10,
+    );
+    res.json({ results });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ─── GET /api/agent-loop/qdrant-status — Qdrant health check ──────────────
+
+router.get("/agent-loop/qdrant-status", async (_req: Request, res: Response): Promise<void> => {
+  try {
+    const health = await qdrantMemory.health();
+    res.json(health);
+  } catch {
+    res.json({ connected: false, collections: [] });
+  }
+});
+
+// ─── GET /api/agent-loop/news-context — Formatted news for LLM ────────────
+
+router.get("/agent-loop/news-context", async (req: Request, res: Response): Promise<void> => {
+  const { symbol } = req.query as { symbol?: string };
+  if (!symbol) {
+    res.status(400).json({ error: "symbol query param is required" });
+    return;
+  }
+  try {
+    const context = await buildNewsContext(symbol);
+    res.json({ context });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});

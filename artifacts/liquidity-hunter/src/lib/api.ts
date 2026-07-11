@@ -237,6 +237,42 @@ export async function generateSignal(params: {
   return res.json();
 }
 
+
+// ── News & Intelligence endpoints ──────────────────────────────────────────
+
+export async function fetchNews(symbol: string, limit?: number): Promise<{ articles: any[] }> {
+  const qs = new URLSearchParams({ symbol });
+  if (limit) qs.set("limit", String(limit));
+  const res = await fetch(apiUrl(`/agent-loop/news?${qs}`));
+  return res.json();
+}
+
+export async function fetchMacroEvents(): Promise<{ events: any[] }> {
+  const res = await fetch(apiUrl("/agent-loop/news/macro"));
+  return res.json();
+}
+
+export async function findSimilarSetups(params: {
+  symbol?: string; setupType?: string; marketRegime?: string; limit?: number;
+}): Promise<{ results: any[] }> {
+  const res = await fetch(apiUrl("/agent-loop/similar-setups"), {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(params),
+  });
+  return res.json();
+}
+
+export async function getNewsContext(symbol: string): Promise<{ context: string }> {
+  const res = await fetch(apiUrl(`/agent-loop/news-context?symbol=${symbol}`));
+  return res.json();
+}
+
+export async function getQdrantStatus(): Promise<{ connected: boolean; collections: string[] }> {
+  const res = await fetch(apiUrl("/agent-loop/qdrant-status"));
+  return res.json();
+}
+
 export async function getSemanticMemory(params?: {
   tags?: string;
   limit?: number;
