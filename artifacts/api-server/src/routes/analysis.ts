@@ -2,6 +2,23 @@ import { Router, type IRouter } from "express";
 import { fetchBinanceCandles, fetchBinanceDailyCandles } from "../lib/fetchers/binance.js";
 import { fetchYahooCandles, fetchYahooDailyCandles } from "../lib/fetchers/yahoo.js";
 import { buildReport } from "../lib/smc/report.js";
+import { candleStore } from "../lib/realtime/candle-store.js";
+import { logger } from "../lib/logger.js";
+
+// ── Helpers ──────────────────────────────────────────────────────────────
+
+/**
+ * Try to get candles from the candle store (the real-time pipeline)
+ * as a fallback when external API fetches fail.
+ */
+function getCandlesFromStore(symbol: string, timeframe: string, minCandles = 50) {
+  const candles = candleStore.getCandles(symbol, timeframe);
+  if (candles.length >= minCandles) {
+    logger.info({ symbol, timeframe, count: candles.length, source: "candle_store" }, "Using candle store as fallback");
+    return candles;
+  }
+  return null;
+}
 
 const router: IRouter = Router();
 
@@ -78,7 +95,22 @@ router.get("/analysis/crypto", async (req, res): Promise<void> => {
     setCached(key, report);
     res.json(report);
   } catch (err) {
-    req.log.error({ err, symbol }, "Failed to fetch crypto analysis");
+    req.log.error({ err, symbol }, "Failed to fetch crypto analysis — trying candle store fallback");
+    // Fallback: use candle store when external API fails
+    const storeCandles = getCandlesFromStore(symbol, tf);
+    if (storeCandles) {
+      try {
+        const storeDaily = getCandlesFromStore(symbol, "1d", 10);
+        const report = buildReport(storeCandles, symbol, "crypto", tf, {
+          dailyCandles: storeDaily ?? undefined,
+        });
+        setCached(key, report);
+        res.json(report);
+        return;
+      } catch (fallbackErr) {
+        req.log.error({ err: fallbackErr, symbol }, "Candle store fallback also failed for crypto");
+      }
+    }
     const message = err instanceof Error ? err.message : "Unknown error";
     res.status(500).json({ error: `Failed to analyze ${symbol}: ${message}` });
   }
@@ -124,7 +156,22 @@ router.get("/analysis/forex", async (req, res): Promise<void> => {
     setCached(key, report);
     res.json(report);
   } catch (err) {
-    req.log.error({ err, symbol }, "Failed to fetch forex analysis");
+    req.log.error({ err, symbol }, "Failed to fetch forex analysis — trying candle store fallback");
+    // Fallback: use candle store when external API fails
+    const storeCandles = getCandlesFromStore(symbol, tf);
+    if (storeCandles) {
+      try {
+        const storeDaily = getCandlesFromStore(symbol, "1d", 10);
+        const report = buildReport(storeCandles, symbol, "forex", tf, {
+          dailyCandles: storeDaily ?? undefined,
+        });
+        setCached(key, report);
+        res.json(report);
+        return;
+      } catch (fallbackErr) {
+        req.log.error({ err: fallbackErr, symbol }, "Candle store fallback also failed for forex");
+      }
+    }
     const message = err instanceof Error ? err.message : "Unknown error";
     res.status(500).json({ error: `Failed to analyze ${symbol}: ${message}` });
   }
