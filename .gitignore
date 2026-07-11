@@ -56,3 +56,6 @@ graphify-out/
 # Dev artifacts
 attached_assets/
 docs-backup/
+
+# Log files
+*.log
