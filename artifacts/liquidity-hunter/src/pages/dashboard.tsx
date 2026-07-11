@@ -464,6 +464,16 @@ export default function Dashboard() {
             <span className="hidden sm:inline">BROKER</span>
           </button>
 
+          {/* Agent Loop button */}
+          <button
+            onClick={() => setLocation("/agent-loop")}
+            title="AI Agent Loop — monitor, history, one-shot analysis"
+            className="flex items-center gap-1.5 px-2.5 py-1 rounded-sm border border-amber-500/30 bg-amber-500/10 text-amber-400 hover:bg-amber-500/20 hover:border-amber-500/50 transition-colors text-xs font-bold"
+          >
+            <Zap className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">AGENT</span>
+          </button>
+
           {/* Auto-refresh ring */}
           <div className="ml-auto flex items-center gap-3">
             <button

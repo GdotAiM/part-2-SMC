@@ -5,6 +5,7 @@ import { TradingViewChart } from "./TradingViewChart";
 import type { SmcReport } from "@workspace/api-client-react";
 import { AgentPipeline } from "./AgentPipeline";
 import { AgentChat } from "./AgentChat";
+import { AgentLoopSection } from "./AgentLoopSection";
 import { BiasChip } from "@/components/ui/bias-chip";
 import { ConfBar } from "@/components/ui/conf-bar";
 import { fmtPrice, getBias, TF_LABEL_MAP, type Market } from "@/lib/smc-display";
@@ -636,6 +637,13 @@ export function IntelligenceSheet({ report, market, onClose, anchorTf, anchorBia
             <Section title="Agent Pipeline" icon={Zap}>
               <AgentPipeline report={report} />
             </Section>
+
+            {/* ══ 7. Agent Loop (NEW) ══ */}
+            <AgentLoopSection
+              symbol={report.symbol}
+              timeframe={report.timeframe}
+              market={market}
+            />
 
           </div>
         </div>
