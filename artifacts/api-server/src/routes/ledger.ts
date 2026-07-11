@@ -10,6 +10,8 @@ import { SignalGenerator } from "../lib/services/SignalGenerator.js";
 import { fetchBinanceCandles } from "../lib/fetchers/binance.js";
 import { fetchYahooCandles } from "../lib/fetchers/yahoo.js";
 import { buildReport } from "../lib/smc/report.js";
+import { candleStore } from "../lib/realtime/candle-store.js";
+import { logger } from "../lib/logger.js";
 
 const router: IRouter = Router();
 const ledgerService = new TradeLedgerService();
@@ -107,11 +109,22 @@ router.post("/signals/generate", async (req, res) => {
     const tf = timeframe || "1h";
     const mkt = market as "crypto" | "forex";
 
-    // Fetch live candles
-    const candles =
-      mkt === "crypto"
-        ? await fetchBinanceCandles(symbol as string, tf)
-        : await fetchYahooCandles(symbol as string, tf);
+    // Fetch live candles (with candle store fallback)
+    let candles;
+    try {
+      candles =
+        mkt === "crypto"
+          ? await fetchBinanceCandles(symbol as string, tf)
+          : await fetchYahooCandles(symbol as string, tf);
+    } catch (fetchErr) {
+      const storeCandles = candleStore.getCandles(symbol as string, tf);
+      if (storeCandles.length >= 50) {
+        logger.info({ symbol, timeframe: tf, count: storeCandles.length, source: "candle_store" }, "Signal gen using candle store");
+        candles = storeCandles;
+      } else {
+        throw fetchErr;
+      }
+    }
 
     // Run SMC analysis
     const report = buildReport(candles, symbol as string, mkt, tf);
