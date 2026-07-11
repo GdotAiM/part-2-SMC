@@ -8,7 +8,7 @@ The backend is a stateless Node.js/Express 5 server. Its responsibilities are:
 3. Running the ICT/SMC algorithmic engine over that data
 4. Caching results for 60 seconds
 5. Broadcasting real-time candle updates and rebuilt SMC reports to browsers via SSE
-6. Proxying requests to LLM providers (Fireworks, AMD/vLLM, OpenAI, custom) and streaming responses via SSE
+6. Proxying requests to LLM providers (Fireworks, OpenAI, self-hosted vLLM, custom) and streaming responses via SSE
 7. Serving an MCP (Model Context Protocol) server for external AI agent access
 8. Executing trades through broker adapters (MockBroker for development, AlpacaAdapter for paper trading)
 
@@ -636,7 +636,7 @@ A FastMCP v4.3.2 server runs alongside Express on port 3002 at `/mcp` (HTTP stre
 
 ## LLM Provider Abstraction (`lib/llm/provider.ts`)
 
-Four providers via `LLM_PROVIDER` env var: `fireworks` (default, DeepSeek V4 Pro), `amd` (local vLLM/ROCm, Gemma 4 26B), `openai` (GPT-4o), `custom` (any OpenAI-compatible endpoint). All LLM calls go through the same `/chat/completions` OpenAI-compatible pattern. Streaming and non-streaming both supported.
+Four providers via `LLM_PROVIDER` env var: `fireworks` (default, DeepSeek V4 Pro), `openai` (GPT-4o), `custom` (any OpenAI-compatible endpoint), `amd` (self-hosted vLLM on AMD GPU, Gemma 4 26B). All LLM calls go through the same `/chat/completions` OpenAI-compatible pattern. Streaming and non-streaming both supported.
 
 ---
 

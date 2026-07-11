@@ -63,8 +63,11 @@ FROM nginx:alpine AS frontend
 # Copy the built frontend assets from the builder stage
 COPY --from=builder /app/artifacts/liquidity-hunter/dist/public /usr/share/nginx/html
 
-# Copy nginx config
-COPY deploy/amd-developer-cloud/nginx/default.conf /etc/nginx/conf.d/default.conf
+# Copy nginx config — override NGINX_CONF for non-AMD deployments.
+# Default: AMD Developer Cloud.  For local/CPU deployments, set
+# --build-arg NGINX_CONF=deploy/local/nginx/default.conf
+ARG NGINX_CONF=deploy/amd-developer-cloud/nginx/default.conf
+COPY ${NGINX_CONF} /etc/nginx/conf.d/default.conf
 
 EXPOSE 80
 

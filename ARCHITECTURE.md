@@ -76,6 +76,17 @@ workspace/
 │       └── src/generated/
 │           └── api.zod.ts             # Zod schemas
 │
+├── deploy/
+│   ├── local/                            # CPU-friendly Docker Compose (Intel/AMD laptop)
+│   │   ├── docker-compose.yml
+│   │   ├── .env.example
+│   │   └── README.md
+│   └── amd-developer-cloud/              # AMD MI300X GPU Docker Compose (vLLM + ROCm)
+│       ├── docker-compose.yml
+│       ├── .env.amd
+│       ├── setup.sh
+│       └── README.md
+│
 ├── pnpm-workspace.yaml
 ├── package.json
 ├── README.md

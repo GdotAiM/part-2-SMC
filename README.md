@@ -113,7 +113,7 @@ Run locally (see Installation below) then visit `http://localhost:5173`.
 | Logger | Pino (JSON structured logging) |
 | Data (Crypto) | Binance REST + WebSocket (no key required) |
 | Data (Forex) | Yahoo Finance REST + Finnhub WebSocket (optional) |
-| AI | Fireworks AI — DeepSeek V4 Pro (SSE streaming) + multi-provider abstraction (AMD/vLLM, OpenAI, custom) |
+| AI | Multi-provider LLM abstraction — Fireworks AI (DeepSeek V4 Pro, default), OpenAI (GPT-4o), self-hosted vLLM (AMD GPU), or custom OpenAI-compatible endpoints |
 | MCP | FastMCP v4.3.2 on port 3002 — 11 tools, 2 resources, 1 prompt |
 | Execution | BrokerAdapter interface — MockBroker (file-based) + AlpacaAdapter (paper API) |
 | Database | PostgreSQL via Drizzle ORM (optional — server runs without it) |
@@ -139,7 +139,8 @@ Run locally (see Installation below) then visit `http://localhost:5173`.
 | `lib/api-spec` | OpenAPI 3.1 spec |
 | `lib/api-zod` | Zod schemas |
 | `lib/db` | Drizzle ORM — trades + performance matrix tables |
-| `deploy/amd-developer-cloud` | AMD MI300X deployment (Docker Compose + vLLM + Gemma 4) |
+| `deploy/local` | Local CPU deployment (Docker Compose — Intel/AMD laptop, no GPU) |
+| `deploy/amd-developer-cloud` | AMD MI300X GPU deployment (Docker Compose + vLLM + Gemma 4) |
 
 ---
 
@@ -262,33 +263,46 @@ workspace/
 
 ## Installation
 
-### Prerequisites
-- Node.js ≥ 20
-- pnpm ≥ 9
+### Option 1: Docker (recommended — zero-config)
+
+Choose the deployment that matches your hardware:
+
+#### Local / Intel CPU (any laptop)
+
+No GPU required. LLM inference runs on Fireworks AI's cloud.
+
+```bash
+cd deploy/local
+cp .env.example .env
+# Edit .env → add your FIREWORKS_API_KEY from https://fireworks.ai/api-keys
+docker compose up -d
+```
+
+Open **http://localhost:3000** for the full stack (frontend + API + database).
+
+#### AMD MI300X GPU (self-hosted LLM)
+
+Requires an AMD Developer Cloud VM with MI300X GPUs.
+
+```bash
+cd deploy/amd-developer-cloud
+chmod +x setup.sh && ./setup.sh
+cp .env.amd .env
+# Edit .env → set HF_TOKEN for gated models
+docker compose up -d
+```
+
+See `deploy/local/README.md` and `deploy/amd-developer-cloud/README.md` for full guides.
+
+### Option 2: Run from source (dev mode)
+
+**Prerequisites:** Node.js ≥ 20, pnpm ≥ 9
 
 ```bash
 git clone <repo-url>
 cd workspace
 pnpm install
 ```
-
----
-
-## Environment Variables
-
-| Variable | Required | Description |
-|---|---|---|
-| `FIREWORKS_API_KEY` | Yes | Fireworks AI key for the analyst agent. Get one free at https://fireworks.ai |
-| `FINNHUB_API_KEY` | No | Finnhub API key for forex real-time WebSocket. Without it, Yahoo polling is used as fallback (free, no key). Get one free at https://finnhub.io |
-| `ALPACA_API_KEY_ID` | No | Alpaca Paper Trading API key ID. Set both this and the secret to enable live paper-trading execution through AlpacaAdapter. Without them, the server uses MockBrokerAdapter (file-based, no real orders) |
-| `ALPACA_API_SECRET_KEY` | No | Alpaca Paper Trading API secret key |
-| `DATABASE_URL` | No | PostgreSQL connection string for persistent trade ledger + performance matrix. Server runs without it (ledger and matrix endpoints return empty) |
-
-Set via your platform's secrets manager or `.env` at the repo root.
-
----
-
-## Running Locally
 
 ```bash
 # Start API server (port 3001 by default)
@@ -299,6 +313,22 @@ pnpm --filter @workspace/liquidity-hunter run dev
 ```
 
 Then open `http://localhost:5173`.
+
+---
+
+## Environment Variables
+
+| Variable | Required | Description |
+|---|---|---|
+| `LLM_PROVIDER` | No | LLM backend: `fireworks` (default), `openai`, `custom`, or `amd`. See `deploy/local/README.md` for provider options. |
+| `FIREWORKS_API_KEY` | Yes (for Fireworks) | Fireworks AI key for the analyst agent. Get one free at https://fireworks.ai |
+| `LLM_API_KEY` | Depends on provider | API key for your chosen LLM provider. Set via `FIREWORKS_API_KEY`, `OPENAI_API_KEY`, or `LLM_API_KEY` depending on provider. |
+| `FINNHUB_API_KEY` | No | Finnhub API key for forex real-time WebSocket. Without it, Yahoo polling is used as fallback (free, no key). Get one free at https://finnhub.io |
+| `ALPACA_API_KEY_ID` | No | Alpaca Paper Trading API key ID. Set both this and the secret to enable live paper-trading execution through AlpacaAdapter. Without them, the server uses MockBrokerAdapter (file-based, no real orders) |
+| `ALPACA_API_SECRET_KEY` | No | Alpaca Paper Trading API secret key |
+| `DATABASE_URL` | No | PostgreSQL connection string for persistent trade ledger + performance matrix. Server runs without it (ledger and matrix endpoints return empty) |
+
+Set via your platform's secrets manager or `.env` at the repo root. Each deployment directory (`deploy/local/`, `deploy/amd-developer-cloud/`) has its own `.env.example` with sensible defaults.
 
 ---
 
@@ -366,7 +396,7 @@ curl "http://localhost:3001/api/stream/status"
 - [x] Broker dashboard — `/broker` page with account overview, orders, mode switch
 - [x] Backtesting — sliding-window backtest runner using real SMC engine
 - [x] Trade journal — PostgreSQL-backed ledger + performance matrix per setup
-- [x] Docker + CI — multi-stage Dockerfile, AMD MI300X docker-compose, GitHub Actions
+- [x] Docker + CI — multi-stage Dockerfile, local CPU + AMD MI300X docker-compose, GitHub Actions
 - [x] TypeScript — zero errors across both packages
 - [x] End-to-end MI300X deployment — run on real AMD Developer Cloud hardware
 - [ ] Price alert notifications when price enters OB zone or sweeps liquidity

@@ -57,7 +57,7 @@ The app was a stock/forex dashboard on Replit. It had:
 | `POST /api/agents/pipeline` | 4-agent sequential pipeline: Structure → Liquidity → FVG → Confluence |
 | `POST /api/agents/ask-mcp` | MCP-aware agent with autonomous tool calling (up to 3 rounds) |
 
-**LLM Provider abstraction** — supports Fireworks (default), AMD/vLLM, OpenAI, and custom BYOK endpoints. Switched via `LLM_PROVIDER` env var.
+**LLM Provider abstraction** — supports Fireworks (default), OpenAI, custom BYOK endpoints, and AMD/vLLM (self-hosted GPU). Switched via `LLM_PROVIDER` env var.
 
 ### MCP (Model Context Protocol) Tier 3
 `artifacts/api-server/src/lib/mcp/`
@@ -121,6 +121,15 @@ The app was a stock/forex dashboard on Replit. It had:
 **Key components:** ConfluenceCard, ConfluenceSheet, IntelligenceSheet, ChartView (Lightweight Charts v5 with PD Array overlay, SMT markers, session backgrounds), AgentChat, AgentPipeline, TradeLedgerDashboard, PerformanceMatrixHeatmap, SignalDetailSheet
 
 **UI library:** 50+ shadcn/ui primitives (Card, Badge, Table, Switch, AlertDialog, Select, Tabs, Skeleton, etc.)
+
+### Local CPU Deployment
+`deploy/local/`
+
+| Component | Detail |
+|---|---|
+| **docker-compose.yml** | API server + PostgreSQL + nginx frontend — no GPU required |
+| **.env.example** | Fireworks AI defaults (DeepSeek V4 Pro), optional OpenAI/custom providers |
+| **README.md** | Setup guide, resource estimates for Intel/AMD laptops, provider switching, troubleshooting |
 
 ### AMD Developer Cloud Deployment
 `deploy/amd-developer-cloud/`

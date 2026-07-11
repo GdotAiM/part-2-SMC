@@ -1,0 +1,91 @@
+# ──────────────────────────────────────────────────────────────────────────────
+# SMC Pulse Predict — Local / Intel CPU Deployment
+# ──────────────────────────────────────────────────────────────────────────────
+# Runs the full stack on any x86_64 laptop (Intel / AMD CPU, no GPU required).
+# Uses Fireworks AI (cloud-hosted DeepSeek V4 Pro) for LLM inference instead of
+# a local GPU.  What you need:
+#
+#   - Docker + Docker Compose
+#   - A Fireworks AI API key (free tier available at https://fireworks.ai)
+#
+# Quick start:
+#   1. cp .env.example .env
+#   2. Edit .env — add your FIREWORKS_API_KEY
+#   3. docker compose up -d
+#   4. Open http://localhost:3000 for the frontend
+#   5. curl http://localhost:3001/api/healthz to verify the API
+# ──────────────────────────────────────────────────────────────────────────────
+
+version: "3.9"
+
+services:
+  # ── SMC API Server ──────────────────────────────────────────────────────────
+  api:
+    build:
+      context: ../../
+      dockerfile: Dockerfile
+      target: runner
+    restart: unless-stopped
+    ports:
+      - "${API_PORT:-3001}:3001"
+      - "${MCP_PORT:-3002}:3002"
+    environment:
+      - NODE_ENV=production
+      - PORT=${API_PORT:-3001}
+      - MCP_PORT=${MCP_PORT:-3002}
+      # Default to Fireworks AI — no GPU needed.  Override via .env to use
+      # openai, custom, or amd (if you later add a GPU).
+      - LLM_PROVIDER=${LLM_PROVIDER:-fireworks}
+      - LLM_BASE_URL=${LLM_BASE_URL:-}
+      - LLM_API_KEY=${LLM_API_KEY:-}
+      - LLM_MODEL=${LLM_MODEL:-accounts/fireworks/models/deepseek-v4-pro}
+      - FIREWORKS_API_KEY=${FIREWORKS_API_KEY:-}
+      - DATABASE_URL=postgresql://smc:smc-liquidity-hunter@db:5432/smc_liquidity
+      - CORS_ORIGINS=${CORS_ORIGINS:-*}
+      - BINANCE_API_KEY=${BINANCE_API_KEY:-}
+      - FINNHUB_API_KEY=${FINNHUB_API_KEY:-}
+      - ALPACA_API_KEY_ID=${ALPACA_API_KEY_ID:-}
+      - ALPACA_API_SECRET_KEY=${ALPACA_API_SECRET_KEY:-}
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3001/api/healthz', r => process.exit(r.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+  # ── PostgreSQL ───────────────────────────────────────────────────────────────
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      - POSTGRES_USER=smc
+      - POSTGRES_PASSWORD=smc-liquidity-hunter
+      - POSTGRES_DB=smc_liquidity
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "smc", "-d", "smc_liquidity"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  # ── Frontend (nginx SPA) ────────────────────────────────────────────────────
+  frontend:
+    build:
+      context: ../../
+      dockerfile: Dockerfile
+      target: frontend
+      args:
+        NGINX_CONF: deploy/local/nginx/default.conf
+    restart: unless-stopped
+    ports:
+      - "${FRONTEND_PORT:-3000}:80"
+    depends_on:
+      - api
+
+volumes:
+  pgdata:
