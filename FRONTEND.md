@@ -27,7 +27,7 @@ The frontend is a React 18 SPA built with Vite and TypeScript. It connects to th
 
 ## Pages
 
-The app has four pages: **Dashboard** (`/`), **Analytics** (`/analytics`), **Broker** (`/broker`), and **Not Found** (`*`).
+The app has five pages: **Dashboard** (`/`), **Analytics** (`/analytics`), **Broker** (`/broker`), **Agent Loop** (`/agent-loop`), and **Not Found** (`*`).
 
 ### `pages/dashboard.tsx`
 
@@ -381,6 +381,7 @@ User switches TF pill → setActiveTf → chart recreated with new report
 - `/` → `<Dashboard />`
 - `/analytics` → `<Analytics />`
 - `/broker` → `<Broker />`
+- `/agent-loop` → `<AgentLoop />`
 - `*` → `<NotFound />`
 
 The Broker and Analytics pages are navigated via header buttons in Dashboard, styled identically to the CHART button (border, bg-muted, hover:text-primary pattern).
@@ -404,6 +405,34 @@ The broker management dashboard at `/broker`. Polls `/api/broker/status`, `/api/
 5. **Execution log**: Recent entries from `/api/ledger` filtered to REVIEW/LIVE modes. LIVE entries show a `Radio` icon badge distinguishing them from REVIEW previews. Outcome column shows WIN/LOSS/PENDING badges.
 
 6. **Not-connected state**: When `is_ready: false`, shows a centered `Card` with `AlertTriangle` icon explaining that `ALPACA_API_KEY_ID` and `ALPACA_API_SECRET_KEY` need to be set on the server, plus a "Back to Dashboard" button.
+
+### `pages/AgentLoop.tsx` (NEW)
+
+The Agent Loop page at `/agent-loop` wraps the `AgentLoopDashboard` component. It provides a standalone interface for running the AI Agent Loop system — one-shot analysis cycles, background monitors, run history, and memory inspection.
+
+```
+AgentLoop (page)
+└── AgentLoopDashboard
+    ├── Loop Runner (Run Loop tab)
+    │   ├── Symbol + timeframe inputs
+    │   ├── Run Loop button → SSE event stream
+    │   └── Real-time step/decision/signal/result display
+    ├── Monitor Manager (Monitors tab)
+    │   ├── Start monitor form
+    │   ├── Active monitors list with status indicators
+    │   └── Stop button per monitor
+    ├── Run History (History tab)
+    │   ├── Refresh button
+    │   ├── Runs list with score/status badges
+    │   └── Expandable step-level trace detail
+    └── Memory Viewer (Memory tab)
+        ├── Load memory button
+        └── Entries list with tags, source, score
+```
+
+**State management**: All state is local via `useState` — fetched from REST endpoints on demand (no TanStack Query needed for this admin-style page).
+
+---
 
 ### `pages/Analytics.tsx`
 
@@ -442,7 +471,7 @@ const { liveData, connected, candles } = useRealtimeStream({ symbol, timeframes,
 ```
 artifacts/liquidity-hunter/src/
 ├── lib/
-│   ├── api.ts              # REST + AI SSE helpers (existing)
+│   ├── api.ts              # REST + AI SSE helpers + agent loop API functions
 │   ├── realtime.ts          # useRealtimeStream hook (NEW)
 │   ├── format.ts
 │   └── utils.ts

@@ -21,6 +21,20 @@ workspace/
 │   │   │   │   │   ├── sse-manager.ts    # SSE client registry + broadcast
 │   │   │   │   │   ├── analysis-bridge.ts # candleClosed → buildReport → cache + SSE
 │   │   │   │   │   └── index.ts         # Barrel exports
+│   │   │   │   ├── loop/               # Agent Loop Engine (NEW)
+│   │   │   │   │   ├── types.ts         # LoopConfig, LoopStep, Decision, GuardrailConfig
+│   │   │   │   │   ├── LoopContext.ts    # Working memory, iteration/step tracking
+│   │   │   │   │   ├── AgentGuardrails.ts # Confidence floor, risk limits, confluence checks
+│   │   │   │   │   ├── AgentLoop.ts     # Central orchestrator (Observe→→→Update)
+│   │   │   │   │   └── MonitoringManager.ts # Background candle-close monitor registry
+│   │   │   │   ├── memory/             # Memory Systems (NEW)
+│   │   │   │   │   ├── EpisodicMemory.ts # Past signals/outcomes via TradeLedgerService
+│   │   │   │   │   ├── SemanticMemory.ts # Patterns + agent_memory table (procedural rules)
+│   │   │   │   │   └── MemoryService.ts # Facade combining both tiers
+│   │   │   │   ├── harness/            # Observability (NEW)
+│   │   │   │   │   ├── types.ts         # TraceSpan, RunEvaluation types
+│   │   │   │   │   ├── LoopTracer.ts    # Step-level tracing + DB persistence
+│   │   │   │   │   └── LoopEvaluator.ts # Post-run scoring + memory ingestion
 │   │   │   │   └── smc/
 │   │   │   │       ├── config.ts       # Shared tuning constants (ATR, lookback, etc.)
 │   │   │   │       ├── types.ts        # All shared TypeScript interfaces
@@ -36,6 +50,8 @@ workspace/
 │   │   │       ├── index.ts            # Router mount
 │   │   │       ├── analysis.ts         # GET /api/analysis/{crypto,forex} + cache
 │   │   │       ├── agents.ts           # POST /api/agents/{ask,pipeline} + Fireworks AI
+│   │   │       ├── agent-loop.ts      # POST /api/agent-loop/{run,start/stop-monitoring}
+│   │   │       │                      # GET  /api/agent-loop/{status,runs,memory}
 │   │   │       ├── stream.ts           # GET /api/stream/:symbol (SSE real-time)
 │   │   │       ├── symbols.ts          # GET /api/symbols
 │   │   │       └── health.ts           # GET /api/healthz
@@ -48,6 +64,7 @@ workspace/
 │   │   │   ├── App.tsx                 # Router setup (Wouter)
 │   │   │   ├── pages/
 │   │   │   │   ├── dashboard.tsx       # Main page — all state lives here
+│   │   │   │   ├── AgentLoop.tsx       # Agent Loop dashboard page (NEW)
 │   │   │   │   └── not-found.tsx       # 404 fallback
 │   │   │   ├── components/
 │   │   │   │   ├── ConfluenceCard.tsx  # Multi-TF cascade summary card
@@ -118,24 +135,21 @@ workspace/
 
 ```
 App (Wouter router)
-└── Dashboard (page)
-    ├── Header
-    │   ├── Market toggle (CRYPTO / FOREX)
-    │   ├── Symbol <select>
-    │   ├── Trading style pills (SCALP / INTRADAY / SWING / ALL)
-    │   ├── SMT toggle + correlated symbol <select>
-    │   ├── CHART button → ChartView (overlay)
-    │   └── Auto-refresh ring + price display
-    ├── ConfluenceCard
-    │   └── Cascade flow diagram (H4→H1→M15 etc.)
-    ├── TfAgentCard × N (one per active timeframe)
-    │   └── onOpen → IntelligenceSheet (overlay)
-    │       ├── AgentPipeline
-    │       └── AgentChat
-    ├── Session footer bar
-    ├── ConfluenceSheet (overlay, multi-TF deep dive)
-    ├── IntelligenceSheet (overlay, single TF)
-    └── ChartView (overlay, full-screen chart)
+├── Dashboard (page)
+│   ├── Header ...
+│   ├── ConfluenceCard
+│   ├── TfAgentCard × N
+│   │   └── IntelligenceSheet
+│   │       ├── AgentPipeline
+│   │       └── AgentChat
+│   ├── ConfluenceSheet / IntelligenceSheet / ChartView (overlays)
+│   └── Session footer bar
+└── AgentLoop (page)                    ← NEW
+    └── AgentLoopDashboard
+        ├── Loop Runner (Run Loop tab)
+        ├── Monitor Manager (Monitors tab)
+        ├── Run History (History tab)
+        └── Memory Viewer (Memory tab)
 ```
 
 ---
@@ -158,6 +172,18 @@ app.ts (Express factory)
     │       └── smt.ts          analyzeSMT()
     ├── routes/agents.ts         POST /api/agents/{ask,pipeline}
     │   └── Fireworks AI SSE stream
+    ├── routes/agent-loop.ts     POST /api/agent-loop/{run,start/stop-monitoring}
+    │   │                        GET  /api/agent-loop/{status,runs,memory}
+    │   ├── lib/loop/AgentLoop.ts      Central orchestrator
+    │   │   ├── LoopContext.ts         Working memory/session state
+    │   │   ├── AgentGuardrails.ts     Safety checks
+    │   │   └── MonitoringManager.ts   Background monitor registry
+    │   ├── lib/memory/MemoryService.ts
+    │   │   ├── EpisodicMemory.ts      Past signals/outcomes
+    │   │   └── SemanticMemory.ts      Patterns + procedural rules
+    │   └── lib/harness/
+    │       ├── LoopTracer.ts          Step tracing + DB persistence
+    │       └── LoopEvaluator.ts       Post-run scoring
     └── routes/stream.ts         GET /api/stream/:symbol (SSE) + /status
         ├── lib/realtime/binance-ws.ts   Binance US WS (crypto)
         ├── lib/realtime/forex-ws.ts     Finnhub WS / Yahoo polling (forex)
@@ -224,6 +250,24 @@ Server reads stream → re-emits SSE chunks to browser
 Frontend EventSource reads token deltas → appends to UI
 ```
 
+### Agent Loop Lifecycle (NEW)
+
+```
+POST /api/agent-loop/run { symbol, timeframe, market }
+  ▼
+AgentLoop.run(report, trigger)
+  │
+  ├── 1. OBSERVE     — store SmcReport in LoopContext, check guardrails
+  ├── 2. INTERPRET   — call 8 SMC tools via toolRegistry
+  ├── 3. REASON      — build prompt from interpreted data + memory, call LLM
+  ├── 4. DECIDE      — validate Decision through AgentGuardrails
+  ├── 5. ACT         — generate signal via SignalGenerator, log to ledger
+  ├── 6. EVALUATE    — score run via LoopEvaluator
+  └── 7. UPDATE      — persist trace to DB via LoopTracer, store memory entries
+  ▼
+SSE stream: loop_step → loop_decision → loop_signal → loop_complete
+```
+
 ---
 
 ## State Management
@@ -239,6 +283,10 @@ The frontend has no global state manager (no Redux/Zustand). State is split into
 | Chart active TF | `ChartView.tsx` | `useState<string>` |
 | Agent conversation | `AgentChat.tsx` | `useState<Message[]>` |
 | Pipeline streaming output | `AgentPipeline.tsx` | `useState<AgentResult[]>` |
+| Agent loop SSE events | `AgentLoopDashboard.tsx` | `useState<LoopStepEvent[]>` |
+| Active monitors | `AgentLoopDashboard.tsx` | `useState from GET /api/agent-loop/status` |
+| Run history | `AgentLoopDashboard.tsx` | `useState from GET /api/agent-loop/runs` |
+| Memory entries | `AgentLoopDashboard.tsx` | `useState from GET /api/agent-loop/memory` |
 | Real-time stream connection | `useRealtimeStream` hook | `useState<LiveTfData>` (live prices per TF) |
 | SSE candle data | `useRealtimeStream` hook | `useState<CandleData[]>` (live candles for chart) |
 | WS connection status | `useRealtimeStream` hook | `useState<boolean>` (green dot indicator) |
@@ -278,6 +326,17 @@ Real-time streaming uses a dedicated SSE endpoint:
 | GET | `/api/analysis/forex` | Full SMC report (forex, cached 60s) |
 | POST | `/api/agents/ask` | AI Q&A (SSE streaming) |
 | POST | `/api/agents/pipeline` | 4-agent pipeline (SSE streaming) |
+| POST | `/api/agents/ask-mcp` | MCP tool-calling agent (SSE streaming) |
+| POST | `/api/agent-loop/run` | Agent Loop one-shot cycle (SSE streaming) |
+| POST | `/api/agent-loop/start-monitoring` | Start background candle-close monitor |
+| POST | `/api/agent-loop/stop-monitoring` | Stop background monitor |
+| GET | `/api/agent-loop/status` | Active monitors list |
+| GET | `/api/agent-loop/runs` | Historical loop runs |
+| GET | `/api/agent-loop/runs/:id` | Detailed run trace with steps |
+| POST | `/api/agent-loop/runs/:id/evaluate` | Trigger post-run evaluation |
+| GET | `/api/agent-loop/memory` | Query semantic memory entries |
+| POST | `/api/agent-loop/memory` | Store manual memory entry |
+| DELETE | `/api/agent-loop/memory/:id` | Delete memory entry |
 | GET | `/api/stream/:symbol` | Real-time candle stream (SSE) |
 | GET | `/api/stream/status` | Real-time system status (debug) |
 

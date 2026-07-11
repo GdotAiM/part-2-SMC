@@ -206,3 +206,93 @@ The `buildSystemPrompt()` function transforms the `SmcReport` into the text brie
 - **Invalidation tracker**: Monitors live price against the AI-stated invalidation levels and fires alerts
 - **Fine-tuned SMC model**: A smaller model fine-tuned specifically on ICT educational material for lower latency and cost
 - **RAG over ICT corpus**: Attach a retrieval system so the agent can cite specific ICT concepts with their definitions
+
+---
+
+## Mode 3 — Agent Loop (`/api/agent-loop/run`)
+
+### Purpose
+An autonomous Observe → Interpret → Reason → Decide → Act → Evaluate → Update cycle that runs the LLM through a structured decision loop with memory, guardrails, and full observability.
+
+### How It Differs
+Unlike the stateless Q&A and pipeline modes, the Agent Loop is stateful — it maintains a `LoopContext` across iterations, consults memory from past signals and performance patterns, and persists every step to the database for later analysis.
+
+### The 7-Step Cycle
+
+| Step | What Happens | LLM Involved? |
+|---|---|---|
+| **Observe** | Store fresh `SmcReport` in `LoopContext`, check guardrails | No |
+| **Interpret** | Call 8 SMC tools via `toolRegistry` in sequence | No |
+| **Reason** | Build prompt from interpreted data + episodic/semantic memory, call LLM | **Yes** |
+| **Decide** | Pass LLM Decision through `AgentGuardrails` (confidence floor, risk limits) | No |
+| **Act** | Generate signal via `SignalGenerator`, log to `TradeLedgerService` | No |
+| **Evaluate** | Score run via `LoopEvaluator` (metrics: accuracy, tool usage, speed) | No |
+| **Update** | Persist trace to `agent_loop_runs`/`agent_loop_steps` tables, store memory entries | No |
+
+### Memory Architecture
+
+```
+MemoryService
+├── EpisodicMemory       ← Wraps TradeLedgerService (past signals/outcomes)
+│   ├── getRecentBySymbol(symbol, limit)
+│   ├── getBySetupType(setupType, limit)
+│   └── getWinRate(symbol, setupType?)
+│
+└── SemanticMemory       ← Wraps PerformanceMatrixService + agent_memory table
+    ├── getTopPatterns(symbol)      ← top win-rate/sharpe patterns from matrix
+    ├── getRulesForRegime(regime)   ← procedural rules from agent_memory
+    ├── storeEntry(entry)           ← upsert by memory_key
+    └── formatForPrompt(...)        ← formatted for LLM injection
+```
+
+### Guardrails
+
+| Guardrail | Default | Effect |
+|---|---|---|
+| `confidenceFloor` | 60 | Blocks decisions below this confidence |
+| `maxRiskPerTrade` | 0.02 (2%) | Rejects signals exceeding this risk |
+| `requireConfluenceMin` | 2 | Minimum draw targets for signal generation |
+| `confidenceThreshold` | 50 | Minimum confidence to validate a signal's R:R |
+| `prohibitSymbols` | [] | Hard block on specified symbols |
+
+### API Endpoints
+
+| Method | Path | Description |
+|---|---|---|
+| POST | `/api/agent-loop/run` | Execute one loop cycle (SSE stream) |
+| POST | `/api/agent-loop/start-monitoring` | Start background candle-close monitor |
+| POST | `/api/agent-loop/stop-monitoring` | Stop background monitor |
+| GET | `/api/agent-loop/status` | Active monitors list |
+| GET | `/api/agent-loop/runs` | Historical runs with filters |
+| GET | `/api/agent-loop/runs/:id` | Detailed run trace (run + steps) |
+| POST | `/api/agent-loop/runs/:id/evaluate` | Trigger evaluation on a completed run |
+| GET | `/api/agent-loop/memory` | Query semantic memory entries |
+| POST | `/api/agent-loop/memory` | Store a manual memory entry |
+| DELETE | `/api/agent-loop/memory/:id` | Delete a memory entry |
+
+### Background Monitoring
+
+`POST /api/agent-loop/start-monitoring` creates an `AgentLoop` instance that subscribes to `candleStore.on("candleClosed")` for its configured symbol/timeframe. On each candle close, it runs the full 7-step cycle automatically and stores the result. Active monitors are tracked by the `MonitoringManager` singleton.
+
+### SSE Event Protocol (one-shot run)
+
+```
+data: {"type":"loop_step","step":{"type":"observe",...}}
+data: {"type":"loop_step","step":{"type":"interpret",...}}
+data: {"type":"loop_step","step":{"type":"reason",...}}
+data: {"type":"loop_decision","decision":{"action":"analysis_report","confidence":70,...}}
+data: {"type":"loop_step","step":{"type":"act",...}}
+data: {"type":"loop_step","step":{"type":"evaluate",...}}
+data: {"type":"loop_step","step":{"type":"update_memory",...}}
+data: {"type":"loop_complete","result":{"action":"analysis_complete","confidence":70,...}}
+data: {"type":"done"}
+```
+
+### Scoring & Evaluation
+
+Each completed run receives an evaluation score (0–100):
+- **base score**: signal_generated=80, analysis_complete=60, no_action=40, error=10
+- **confidence bonus**: up to +15 based on decision confidence
+- **tool efficiency**: up to +5 for using 3–8 tools
+
+Results are persisted in `agent_loop_runs.evaluation` (jsonb) and key insights are stored as semantic memory entries via `agent_memory` for future loop iterations to reference.

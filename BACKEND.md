@@ -39,15 +39,17 @@ Express app factory. Configures:
 ### `routes/index.ts`
 Central router mount. Registers all sub-routers under the `/api` prefix:
 ```
-/api/healthz       → routes/health.ts
-/api/symbols       → routes/symbols.ts
-/api/analysis/*    → routes/analysis.ts
-/api/agents/*      → routes/agents.ts + agents-mcp.ts
-/api/stream/*      → routes/stream.ts
-/api/ledger/*      → routes/ledger.ts
-/api/signals/*     → routes/ledger.ts
-/api/broker/*      → routes/ledger.ts
-/api/account       → routes/ledger.ts
+/api/healthz          → routes/health.ts
+/api/symbols          → routes/symbols.ts
+/api/analysis/*       → routes/analysis.ts
+/api/agents/*         → routes/agents.ts + agents-mcp.ts
+/api/agent-loop/*     → routes/agent-loop.ts   ← NEW
+/api/stream/*         → routes/stream.ts
+/api/ledger/*         → routes/ledger.ts
+/api/signals/*        → routes/ledger.ts
+/api/broker/*         → routes/ledger.ts
+/api/account          → routes/ledger.ts
+/api/performance-matrix/* → routes/ledger.ts
 ```
 
 ---
@@ -151,6 +153,60 @@ See `AI_SYSTEM.md` for the full agent pipeline design.
 
 ---
 
+### `routes/agent-loop.ts` (NEW)
+
+Agent Loop Engine — autonomous market analysis cycle with memory, guardrails, and observability.
+
+**Endpoints**:
+
+| Method | Path | Description |
+|---|---|---|
+| POST | `/api/agent-loop/run` | Execute one loop cycle (SSE stream — 7 steps) |
+| POST | `/api/agent-loop/start-monitoring` | Start background candle-close monitor |
+| POST | `/api/agent-loop/stop-monitoring` | Stop background monitor |
+| GET | `/api/agent-loop/status` | Active monitors list |
+| GET | `/api/agent-loop/runs` | Historical runs with symbol/status/limit filters |
+| GET | `/api/agent-loop/runs/:id` | Detailed run trace (run record + all steps) |
+| POST | `/api/agent-loop/runs/:id/evaluate` | Trigger post-run evaluation scoring |
+| GET | `/api/agent-loop/memory` | Query semantic memory entries by tags/key |
+| POST | `/api/agent-loop/memory` | Store a manual semantic memory entry |
+| DELETE | `/api/agent-loop/memory/:id` | Delete a memory entry |
+
+**Architecture**:
+- `lib/loop/AgentLoop.ts` — Central orchestrator (extends EventEmitter). Runs the Observe→Interpret→Reason→Decide→Act→Evaluate→Update cycle
+- `lib/loop/LoopContext.ts` — Working memory: current report, previous reports, iteration/step tracking
+- `lib/loop/AgentGuardrails.ts` — Pre-flight and post-decision safety checks (confidence floor, risk limits, symbol blacklist)
+- `lib/loop/MonitoringManager.ts` — Singleton that tracks active background monitors per symbol/timeframe
+- `lib/memory/EpisodicMemory.ts` — Wraps TradeLedgerService for recall of past signals and outcomes
+- `lib/memory/SemanticMemory.ts` — Wraps PerformanceMatrixService for pattern knowledge + agent_memory table
+- `lib/memory/MemoryService.ts` — Facade combining all memory tiers
+- `lib/harness/LoopTracer.ts` — Step-level tracing persisted to agent_loop_runs/agent_loop_steps tables
+- `lib/harness/LoopEvaluator.ts` — Post-run scoring (0-100) and memory ingestion
+
+**Background Monitoring Flow**:
+1. `POST /api/agent-loop/start-monitoring` creates an AgentLoop + registers with MonitoringManager
+2. The loop subscribes to `candleStore.on("candleClosed")` for its configured symbol/timeframe
+3. Each candle close triggers the full 7-step cycle automatically
+4. Results are persisted to `agent_loop_runs` and `agent_loop_steps` tables
+5. `POST /api/agent-loop/stop-monitoring` unsubscribes and cleans up
+
+**Configuration** (can be overridden per request via `config` body field):
+```json
+{
+  "maxIterations": 3,
+  "confidenceFloor": 60,
+  "maxRiskPerTrade": 0.02,
+  "allowedActions": ["generate_signal", "analysis_report", "monitor"],
+  "guardrails": {
+    "requireConfluenceMin": 2,
+    "confidenceThreshold": 50,
+    "prohibitSymbols": []
+  }
+}
+```
+
+---
+
 ### `routes/stream.ts`
 
 **GET /api/stream/:symbol** and **GET /api/stream/status**
@@ -224,7 +280,62 @@ Wires the real-time candle pipeline into the SMC engine. On `candleClosed`:
 3. Pre-warms the REST analysis cache via `updateCachedReport()`
 4. Pushes the fresh `SmcReport` to browsers via SSE `report_update`
 
+The `AgentLoop` background monitor also subscribes to `candleClosed` — when active, it receives the same event and runs its full 7-step cycle (Observe→Interpret→Reason→Decide→Act→Evaluate→Update) on every candle close for its configured symbol/timeframe.
+
 Market-aware: detects crypto vs forex from symbol naming convention and calls the appropriate daily-candle fetcher.
+
+---
+
+## Database Tables (Drizzle ORM / PostgreSQL)
+
+Three new tables added for the Agent Loop system:
+
+### `agent_loop_runs`
+| Column | Type | Notes |
+|---|---|---|
+| `id` | `uuid` | PK, `gen_random_uuid()` |
+| `symbol` | `varchar(20)` | e.g. BTCUSDT |
+| `timeframe` | `varchar(5)` | e.g. 4h |
+| `market` | `varchar(10)` | crypto / forex |
+| `config_snapshot` | `jsonb` | Full LoopConfig at start |
+| `status` | `varchar(20)` | running / completed / error / stopped |
+| `triggered_by` | `varchar(20)` | candle_close / api / scheduled / manual |
+| `total_iterations` | `integer` | Count of completed iterations |
+| `total_tokens` | `integer` | Approximate LLM tokens used |
+| `result` | `jsonb` | LoopResult (action, confidence, narrative) |
+| `error` | `varchar(500)` | Error message if failed |
+| `evaluation_score` | `integer` | 0–100 post-run score |
+| `evaluation` | `jsonb` | Full RunEvaluation object |
+| `started_at` / `completed_at` | `timestamp` | Timing |
+Indexes: symbol, status, started_at, triggered_by
+
+### `agent_loop_steps`
+| Column | Type | Notes |
+|---|---|---|
+| `id` | `uuid` | PK |
+| `run_id` | `uuid` | FK → agent_loop_runs (cascade delete) |
+| `iteration_sequence` | `integer` | Which iteration this step belongs to |
+| `step_type` | `varchar(30)` | observe / interpret / reason / decide / act / evaluate / update_memory |
+| `started_at` / `completed_at` | `timestamp` | Timing |
+| `duration_ms` | `integer` | Auto-calculated |
+| `input_snapshot` / `output_snapshot` | `jsonb` | What went in and came out |
+| `tool_calls` | `jsonb` | Array of { name, args, result } |
+| `error` | `varchar(500)` | Per-step error |
+Indexes: run_id, step_type
+
+### `agent_memory`
+| Column | Type | Notes |
+|---|---|---|
+| `id` | `uuid` | PK |
+| `memory_key` | `varchar(200)` | Unique — deduplication key |
+| `content` | `text` | Natural language rule or insight |
+| `source` | `varchar(30)` | matrix / episode / manual / evaluation |
+| `score` | `decimal(5,4)` | 0–1 relevance factor |
+| `tags` | `varchar(50)[]` | PostgreSQL text array for multi-dimensional tagging |
+| `is_durable` | `boolean` | True if survives restarts |
+| `source_run_id` | `varchar(100)` | Link back to generating run |
+| `created_at` / `last_accessed_at` | `timestamp` | Lifecycle |
+Indexes: memory_key (unique), tags (GIN), score
 
 ---
 
@@ -532,6 +643,10 @@ Structured JSON output makes logs easy to search in production log aggregators.
 | Full uncached forex request | 200–400ms |
 | AI ask stream (first token) | 300–800ms |
 | AI pipeline (all 4 agents) | 8–15s |
+| Agent Loop — SMC tool execution (interpret step, 8 tools) | 300–800ms |
+| Agent Loop — LLM reasoning (reason step) | 2–5s |
+| Agent Loop — full cycle (no signal generated) | 3–7s |
+| Agent Loop — full cycle (with signal + persistence) | 4–8s |
 | Binance WebSocket latency | < 100ms from exchange |
 | Forex Yahoo polling interval | 15s (or 60s with Finnhub REST) |
 

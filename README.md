@@ -26,6 +26,7 @@ Most retail traders lose because they see charts the wrong way. Institutions don
 | **Draw on Liquidity** | Confluence-boosted target scoring that ranks BSL/SSL/OB/FVG as next price objectives |
 | **Visual Chart Layer** | TradingView Lightweight Charts (v5) with session backgrounds, OB/FVG rectangles, BOS/CHoCH markers, KZO lines |
 | **AI Agent System** | Fireworks AI (DeepSeek V4 Pro) — streaming Q&A + 4-agent sequential analysis pipeline + MCP tool-calling agent (11 autonomous tools) |
+| **Agent Loop Engine** | Autonomous Observe → Interpret → Reason → Decide → Act → Evaluate → Update cycle with background monitoring, memory tiers, guardrails, and run evaluation |
 | **MCP Tier 3** | FastMCP v4.3.2 server on port 3002 — 11 SMC tools, 2 resources, 1 prompt for external AI agent access |
 | **Broker Execution** | Broker-agnostic trade execution with REVIEW/LIVE mode toggle, Alpaca Paper API adapter, file-based mock broker |
 | **Broker Dashboard** | `/broker` page — account overview, open orders table, mode switch with typed-LIVE confirmation, execution log |
@@ -57,7 +58,7 @@ Run locally (see Installation below) then visit `http://localhost:5173`.
 - Tap any card → **Intelligence Sheet** for deep analysis
 - Tap **CHART** for the visual chart with SMC overlays
 - Tap **SMT** on any card → AI agent pipeline fires
-- Visit `/broker` for the broker dashboard — account balance, open orders, LIVE/REVIEW mode switch
+- Navigate to `/agent-loop` for the Agent Loop dashboard — run one-shot analysis, start background monitors, browse historical runs, and inspect learned patterns
 - Visit `/analytics` for trade ledger, performance matrix, and signal generation
 
 ---
