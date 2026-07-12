@@ -43,6 +43,12 @@ COPY --from=builder /app/artifacts/api-server/dist ./artifacts/api-server/dist
 # Install production deps only for the server
 RUN pnpm install --no-frozen-lockfile --prod --filter @workspace/api-server
 
+# Install Chromium for puppeteer/TradingView integration (optional — only used
+# when TV_ENABLED=true and TV_CONNECTION_TYPE=web)
+RUN apk add --no-cache chromium nss 2>/dev/null || echo "Chromium install skipped"
+ENV PUPPETEER_SKIP_DOWNLOAD=true \
+    PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser
+
 # Run as the non-root "node" user built into the base image, not root.
 # chown after install since pnpm needs root to write node_modules above.
 RUN chown -R node:node /app
