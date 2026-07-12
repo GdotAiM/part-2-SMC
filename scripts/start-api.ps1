@@ -1,0 +1,12 @@
+$env:PORT="3001"
+$env:MCP_PORT="3002"
+$env:LOG_LEVEL="info"
+$env:CORS_ORIGINS="*"
+$env:TV_ENABLED="true"
+$env:TV_CDP_PORT="9222"
+$env:TV_CONNECTION_TYPE="desktop"
+$env:TV_DATA_SOURCE="app"
+$env:TV_INTERACTION="readwrite"
+$env:NODE_ENV="development"
+Set-Location "C:\Users\cash\part-2-SMC\artifacts\api-server"
+node --enable-source-maps ./dist/index.mjs

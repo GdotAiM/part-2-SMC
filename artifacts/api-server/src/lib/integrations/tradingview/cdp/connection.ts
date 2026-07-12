@@ -74,21 +74,20 @@ export async function connect(): Promise<boolean> {
       const browserUrl = `http://${cdpHost}:${tvConfig.connection.cdpPort}`;
       logger.info({ browserUrl }, "Connecting to TradingView Desktop via CDP...");
       _browser = await puppeteer.connect({ browserURL: browserUrl });
-      const pages = await _browser.pages();
-      _page = pages.find((p) => p.url().toLowerCase().includes("tradingview")) ?? pages[0] ?? null;
-      if (!_page) {
-        _page = await _browser.newPage();
-        await _page.goto(tvConfig.connection.webUrl, { waitUntil: "networkidle2", timeout: 30000 });
-      }
     }
+    // Find an existing tradingview.com page, or open a new one
     const pages = await _browser.pages();
-    // Find the TradingView tab — look for a page with 'tradingview' in the URL
-    _page = pages.find((p) => p.url().toLowerCase().includes("tradingview")) ?? pages[0] ?? null;
+    _page = pages.find((p) => p.url().toLowerCase().includes("tradingview.com")) ?? null;
 
     if (!_page) {
-      // Open a new page to the web version
+      // Open a new page to TradingView.com — needed both for Electron apps
+      // where the chart lives in a webview hidden from pages(), and for
+      // the web-mode fallback where we launched our own browser above.
+      // Note: use "domcontentloaded" rather than "networkidle2" because
+      // TradingView keeps persistent WebSocket connections (live chart data)
+      // that would make "networkidle2" hang indefinitely.
       _page = await _browser.newPage();
-      await _page.goto(tvConfig.connection.webUrl, { waitUntil: "networkidle2", timeout: 30000 });
+      await _page.goto(tvConfig.connection.webUrl, { waitUntil: "domcontentloaded", timeout: 20000 });
     }
 
     _connected = true;
@@ -123,20 +122,28 @@ export async function disconnect(): Promise<void> {
 
 /**
  * Check if the CDP connection is still alive.
+ *
+ * Uses Puppeteer's built-in `browser.connected` property rather than
+ * evaluating `document.title` — the latter can fail on Electron-based
+ * TradingView Desktop pages due to CSP or sandbox restrictions.
+ *
  * Automatically reconnects if stale and enabled.
+ * Throttled to one check per 5 seconds.
  */
 export async function isConnected(): Promise<boolean> {
-  if (!_connected || !_page) return false;
+  if (!_connected || !_page || !_browser) return false;
 
   // Throttle health checks to every 5s
   if (Date.now() - _lastHealthCheck < 5000) return _connected;
 
   _lastHealthCheck = Date.now();
   try {
-    const title = await _page.evaluate(() => document.title);
-    _connected = title.toLowerCase().includes("tradingview") || title.length > 0;
+    _connected = _browser.connected;
   } catch {
     _connected = false;
+  }
+
+  if (!_connected) {
     // Attempt reconnect
     if (getTvConfig().enabled) {
       logger.info("CDP connection lost — attempting reconnect...");

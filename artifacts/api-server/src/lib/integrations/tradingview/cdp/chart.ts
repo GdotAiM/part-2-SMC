@@ -40,22 +40,60 @@ export async function getChartState(): Promise<ChartState | null> {
 
 /**
  * Read the active symbol from TradingView.
+ *
+ * Supports both the web version (window.tvWidget) and the TV Desktop
+ * (_exposed_chartWidgetCollection) APIs. Falls back gracefully if neither
+ * is available.
+ *
+ * NOTE: All helper logic must be INLINED inside the evaluate callback
+ * because it runs in the browser context, not Node.js.
  */
 export async function getSymbol(): Promise<string | null> {
   return evaluate(() => {
     try {
-      return (window as any).tvWidget?.chart?.()?.symbol?.() ?? null;
+      // Web version: tvWidget.chart().symbol()
+      const sym = (window as any).tvWidget?.chart?.()?.symbol?.();
+      if (sym) return sym;
+    } catch { /* fall through */ }
+
+    // TV Desktop: _exposed_chartWidgetCollection path
+    try {
+      const coll = (window as any)._exposed_chartWidgetCollection;
+      if (!coll?.activeChartWidget?._value) return null;
+      const pane = coll.activeChartWidget._value._paneWidgets?._value?.[0];
+      if (!pane?._legendWidget?._mainSeriesViewModel?._source) return null;
+      return pane._legendWidget._mainSeriesViewModel._source.symbol() ?? null;
     } catch { return null; }
   });
 }
 
 /**
  * Read the active timeframe from TradingView.
+ *
+ * Supports both web version (tvWidget.chart().resolution()) and TV Desktop
+ * (_exposed_chartWidgetCollection._activeChartInterval) APIs.
  */
 export async function getTimeframe(): Promise<string | null> {
   return evaluate(() => {
     try {
-      return (window as any).tvWidget?.chart?.()?.resolution?.() ?? null;
+      // Web version: tvWidget.chart().resolution()
+      const tf = (window as any).tvWidget?.chart?.()?.resolution?.();
+      if (tf) return tf;
+    } catch { /* fall through */ }
+
+    // TV Desktop: _activeChartInterval path
+    try {
+      const coll = (window as any)._exposed_chartWidgetCollection;
+      if (!coll?._activeChartInterval?._value) return null;
+      const intv = coll._activeChartInterval._value;
+      const kind = intv._kind;
+      const mult = intv._multiplier ?? 1;
+      if (kind === "minutes") return mult + "m";
+      if (kind === "hours") return mult + "h";
+      if (kind === "days") return "1d";
+      if (kind === "weeks") return "1w";
+      if (kind === "months") return "1M";
+      return mult + kind;
     } catch { return null; }
   });
 }

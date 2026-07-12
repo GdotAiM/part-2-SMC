@@ -419,6 +419,17 @@ router.post("/agent-loop/tv-sync", async (req, res) => {
   }
 });
 
+// ─── GET /api/agent-loop/tv-read — Read chart state (symbol, timeframe)
+router.get("/agent-loop/tv-read", async (_req, res) => {
+  try {
+    const tv = await import("../lib/integrations/tradingview/index.js");
+    const state = await tv.getChartState();
+    res.json({ state });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 export default router;
 
 
