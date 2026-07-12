@@ -59,14 +59,15 @@ export async function connect(): Promise<boolean> {
   try {
     if (tvConfig.connection.type === "web") {
       // Launch our own browser instance for web mode
-      logger.info({ url: tvConfig.connection.webUrl }, "Launching browser for TradingView web...");
+      logger.info({ url: tvConfig.connection.webUrl }, "Launching headless browser for TradingView web...");
+      const hasDisplay = !!process.env.DISPLAY;
       _browser = await puppeteer.launch({
-        headless: false,
-        args: ["--no-sandbox", "--disable-setuid-sandbox"],
+        headless: !hasDisplay,
+        args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-gpu"],
         defaultViewport: { width: 1280, height: 800 },
       });
       _page = await _browser.newPage();
-      await _page.goto(tvConfig.connection.webUrl, { waitUntil: "networkidle2", timeout: 30000 });
+      await _page.goto(tvConfig.connection.webUrl, { waitUntil: "domcontentloaded", timeout: 30000 });
     } else {
       // Desktop mode — connect to existing browser (requires --remote-debugging-port)
       const cdpHost = process.env.DOCKER_HOST_INTERNAL || "127.0.0.1";
