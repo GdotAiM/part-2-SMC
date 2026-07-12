@@ -3,6 +3,7 @@ import type { FastMCP } from "fastmcp";
 import { candleStore } from "../../realtime/candle-store.js";
 import { buildReport } from "../../smc/report.js";
 import { logger } from "../../logger.js";
+import { getCandlesWithFallback } from "./tv-data-fallback.js";
 import type { Market, Timeframe } from "../../smc/types.js";
 
 const ALL_TFS: Timeframe[] = ["1m", "5m", "15m", "1h", "4h", "1d", "1w"];
@@ -33,7 +34,7 @@ export function registerScanAllTool(server: FastMCP): void {
 
         for (const tf of ALL_TFS) {
           try {
-            const candles = candleStore.getCandles(sym, tf);
+            const candles = await getCandlesWithFallback(sym, tf);
             if (candles.length < 10) {
               results[tf] = { bias: "unknown", confidence: 0, price: 0, narrative: "", error: `${candles.length} candles (need ≥10)` };
               failed++;

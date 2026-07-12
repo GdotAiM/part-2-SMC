@@ -36,6 +36,7 @@ export class TradeSettlementService {
   }
 
   private async settlePending(): Promise<void> {
+    if (!process.env.DATABASE_URL || process.env.DATABASE_URL.includes("dummy")) return;
     try {
       const pending = (await this.ledger.getPendingSignals(100)) as unknown as PendingTrade[];
       if (pending.length === 0) return;

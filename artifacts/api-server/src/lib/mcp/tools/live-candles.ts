@@ -2,6 +2,7 @@ import { z } from "zod";
 import type { FastMCP } from "fastmcp";
 import { candleStore } from "../../realtime/candle-store.js";
 import { logger } from "../../logger.js";
+import { getCandlesWithFallback } from "./tv-data-fallback.js";
 
 export function registerLiveCandlesTool(server: FastMCP): void {
   server.addTool({
@@ -18,7 +19,7 @@ export function registerLiveCandlesTool(server: FastMCP): void {
     execute: async ({ symbol, timeframe, limit }) => {
       try {
         const sym = symbol.toUpperCase();
-        const candles = candleStore.getCandles(sym, timeframe);
+        const candles = await getCandlesWithFallback(sym, timeframe);
 
         if (candles.length === 0) {
           return { content: [{ type: "text", text: `No candle data for ${sym} ${timeframe}. Wait for WebSocket data to accumulate.` }] };

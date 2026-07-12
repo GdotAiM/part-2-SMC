@@ -5,6 +5,7 @@ import { buildReport } from "../../smc/report.js";
 import { fetchBinanceDailyCandles } from "../../fetchers/binance.js";
 import { fetchYahooDailyCandles } from "../../fetchers/yahoo.js";
 import { logger } from "../../logger.js";
+import { getCandlesWithFallback } from "./tv-data-fallback.js";
 import type { Market } from "../../smc/types.js";
 
 function detectMarket(symbol: string): Market {
@@ -29,7 +30,7 @@ export function registerFullReportTool(server: FastMCP): void {
       try {
         const sym = symbol.toUpperCase();
         const market = detectMarket(sym);
-        const candles = candleStore.getCandles(sym, timeframe);
+        const candles = await getCandlesWithFallback(sym, timeframe);
         if (candles.length < 10) {
           return { content: [{ type: "text", text: `Insufficient candle data for ${sym} ${timeframe} (${candles.length} candles)` }] };
         }

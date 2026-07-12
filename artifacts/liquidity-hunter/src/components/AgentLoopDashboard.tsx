@@ -334,7 +334,7 @@ function MonitorManager() {
     setError(null);
     try {
       const data = await getLoopStatus();
-      setMonitors(data.monitors);
+      setMonitors(data?.monitors ?? []);
     } catch (err: any) {
       setError(err.message);
     }
@@ -469,7 +469,7 @@ function RunHistory() {
     setError(null);
     try {
       const data = await getLoopRuns({ limit: 25 });
-      setRuns(data.runs);
+      setRuns(data?.runs ?? []);
     } catch (err: any) {
       setError(err.message);
     }
@@ -670,7 +670,7 @@ function MemoryViewer() {
     setError(null);
     try {
       const data = await getSemanticMemory({ limit: 50 });
-      setEntries(data.entries);
+      setEntries(data?.entries ?? []);
     } catch (err: any) {
       setError(err.message);
     }

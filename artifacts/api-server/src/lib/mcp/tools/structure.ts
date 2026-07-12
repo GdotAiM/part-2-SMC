@@ -3,6 +3,7 @@ import type { FastMCP } from "fastmcp";
 import { candleStore } from "../../realtime/candle-store.js";
 import { analyzeStructure } from "../../smc/structure.js";
 import { logger } from "../../logger.js";
+import { getCandlesWithFallback } from "./tv-data-fallback.js";
 
 export function registerStructureTool(server: FastMCP): void {
   server.addTool({
@@ -20,7 +21,7 @@ export function registerStructureTool(server: FastMCP): void {
     execute: async ({ symbol, timeframe }) => {
       const start = Date.now();
       try {
-        const candles = candleStore.getCandles(symbol.toUpperCase(), timeframe);
+        const candles = await getCandlesWithFallback(symbol.toUpperCase(), timeframe);
         if (candles.length < 10) {
           return {
             content: [{

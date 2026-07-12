@@ -13,13 +13,32 @@ const { Pool } = pg;
 let _pool: pg.Pool | null = null;
 let _db: NodePgDatabase<typeof schema> | null = null;
 
+// ── Deep-noop chain for offline mode ──────────────────────────────────────
+// Returns a callable Proxy that intercepts both property access and function
+// calls, always returning itself.  This lets chained APIs such as
+//   db.select().from(t).where(...).orderBy(...).limit(...)
+// complete without throwing, returning a noop thenable at the end.
+function deepNoop(): any {
+  const fn: any = () => deepNoop();
+  return new Proxy(fn, {
+    get(t, prop) {
+      if (prop === "then" || prop === "catch") return undefined;   // not a promise
+      if (prop === Symbol.toPrimitive) return () => "[noop-db]";
+      if (prop === "toJSON") return () => null;
+      return deepNoop();
+    },
+    apply(t, _this, args) {
+      return deepNoop();
+    },
+    construct(t, args) {
+      return deepNoop();
+    },
+  });
+}
+
 function getPool(): pg.Pool {
+  if (!process.env.DATABASE_URL) return deepNoop();
   if (!_pool) {
-    if (!process.env.DATABASE_URL) {
-      throw new Error(
-        "DATABASE_URL must be set. Did you forget to provision a database?",
-      );
-    }
     _pool = new Pool({ connectionString: process.env.DATABASE_URL });
   }
   return _pool;
@@ -33,6 +52,9 @@ export const pool = new Proxy({} as pg.Pool, {
 
 export const db = new Proxy({} as NodePgDatabase<typeof schema>, {
   get(_target, prop) {
+    if (!process.env.DATABASE_URL) {
+      return deepNoop();
+    }
     if (!_db) {
       _db = drizzle(getPool(), { schema });
     }

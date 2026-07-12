@@ -127,17 +127,20 @@ export class LoopEvaluator {
    */
   async persistEvaluation(evaluation: RunEvaluation, runId: string): Promise<void> {
     // Store the aggregate evaluation on the run record
-    const { db } = await import("@workspace/db");
-    const { agentLoopRuns } = await import("@workspace/db/schema");
-    const { eq } = await import("drizzle-orm");
+    if (!process.env.DATABASE_URL) return;
+    try {
+      const { db } = await import("@workspace/db");
+      const { agentLoopRuns } = await import("@workspace/db/schema");
+      const { eq } = await import("drizzle-orm");
 
-    await (db as any)
-      .update(agentLoopRuns)
-      .set({
-        evaluation_score: evaluation.score,
-        evaluation: evaluation as any,
-      })
-      .where(eq(agentLoopRuns.id, runId));
+      await (db as any)
+        .update(agentLoopRuns)
+        .set({
+          evaluation_score: evaluation.score,
+          evaluation: evaluation as any,
+        })
+        .where(eq(agentLoopRuns.id, runId));
+    } catch { /* DB unavailable — skip */ }
 
     // Store evaluation insights as semantic memory
     for (const weakness of evaluation.weaknesses) {

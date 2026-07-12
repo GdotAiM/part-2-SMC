@@ -16,6 +16,7 @@ import { ConfluenceSheet } from "@/components/ConfluenceSheet";
 import { IntelligenceSheet } from "@/components/IntelligenceSheet";
 import { ChartView } from "@/components/ChartView";
 import { MarketBriefing } from "@/components/MarketBriefing";
+import { TvStatus } from "@/components/TvStatus";
 import { useRealtimeStream } from "@/lib/realtime";
 import { fmtPrice, getBias, getConfidence, TF_LABEL_MAP, TF_WEIGHT, type Market } from "@/lib/smc-display";
 
@@ -459,6 +460,9 @@ export default function Dashboard() {
             <BarChart2 className="w-3.5 h-3.5" />
             <span className="hidden sm:inline">CHART</span>
           </button>
+
+          {/* TV Desktop Status */}
+          <TvStatus />
 
           {/* Analytics button */}
           <button

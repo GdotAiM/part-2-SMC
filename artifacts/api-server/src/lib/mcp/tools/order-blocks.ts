@@ -4,6 +4,7 @@ import { candleStore } from "../../realtime/candle-store.js";
 import { analyzeOrderBlocks } from "../../smc/order-blocks.js";
 import { analyzeFVG } from "../../smc/fvg.js";
 import { logger } from "../../logger.js";
+import { getCandlesWithFallback } from "./tv-data-fallback.js";
 import type { Market } from "../../smc/types.js";
 
 function detectMarket(symbol: string): Market {
@@ -25,7 +26,7 @@ export function registerOrderBlocksTool(server: FastMCP): void {
     execute: async ({ symbol, timeframe }) => {
       try {
         const sym = symbol.toUpperCase();
-        const candles = candleStore.getCandles(sym, timeframe);
+        const candles = await getCandlesWithFallback(sym, timeframe);
         if (candles.length < 10) {
           return { content: [{ type: "text", text: `Insufficient candle data for ${sym} ${timeframe}` }] };
         }

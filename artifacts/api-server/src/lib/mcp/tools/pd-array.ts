@@ -3,6 +3,7 @@ import type { FastMCP } from "fastmcp";
 import { candleStore } from "../../realtime/candle-store.js";
 import { analyzePdArray } from "../../smc/pd-array.js";
 import { logger } from "../../logger.js";
+import { getCandlesWithFallback } from "./tv-data-fallback.js";
 
 export function registerPdArrayTool(server: FastMCP): void {
   server.addTool({
@@ -18,7 +19,7 @@ export function registerPdArrayTool(server: FastMCP): void {
     execute: async ({ symbol, timeframe }) => {
       try {
         const sym = symbol.toUpperCase();
-        const candles = candleStore.getCandles(sym, timeframe);
+        const candles = await getCandlesWithFallback(sym, timeframe);
         if (candles.length < 10) {
           return { content: [{ type: "text", text: `Insufficient candle data for ${sym} ${timeframe}` }] };
         }

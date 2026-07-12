@@ -7,6 +7,7 @@
 
 import { z } from "zod";
 import { candleStore } from "../realtime/candle-store.js";
+import { getCandlesWithFallback } from "./tools/tv-data-fallback.js";
 import { analyzeStructure } from "../smc/structure.js";
 import { analyzeLiquidity } from "../smc/liquidity.js";
 import { analyzeOrderBlocks } from "../smc/order-blocks.js";
@@ -34,7 +35,7 @@ export const toolRegistry = new Map<string, ToolFn>();
 toolRegistry.set("analyze_structure", async (args) => {
   const symbol = (args.symbol as string).toUpperCase();
   const timeframe = args.timeframe as string;
-  const candles = candleStore.getCandles(symbol, timeframe);
+  const candles = await getCandlesWithFallback(symbol, timeframe);
   if (candles.length < 10) return JSON.stringify({ error: `Only ${candles.length} candles for ${symbol} ${timeframe}` });
   const r = analyzeStructure(candles, timeframe);
   return JSON.stringify({
@@ -50,7 +51,7 @@ toolRegistry.set("analyze_structure", async (args) => {
 toolRegistry.set("analyze_liquidity", async (args) => {
   const symbol = (args.symbol as string).toUpperCase();
   const timeframe = args.timeframe as string;
-  const candles = candleStore.getCandles(symbol, timeframe);
+  const candles = await getCandlesWithFallback(symbol, timeframe);
   if (candles.length < 10) return JSON.stringify({ error: "Insufficient candles" });
   const mkt = detectMarket(symbol);
   const r = analyzeLiquidity(candles, timeframe, mkt);
@@ -67,7 +68,7 @@ toolRegistry.set("analyze_liquidity", async (args) => {
 toolRegistry.set("analyze_order_blocks", async (args) => {
   const symbol = (args.symbol as string).toUpperCase();
   const timeframe = args.timeframe as string;
-  const candles = candleStore.getCandles(symbol, timeframe);
+  const candles = await getCandlesWithFallback(symbol, timeframe);
   if (candles.length < 10) return JSON.stringify({ error: "Insufficient candles" });
   const mkt = detectMarket(symbol);
   const fvg = analyzeFVG(candles, mkt);
@@ -88,7 +89,7 @@ toolRegistry.set("analyze_order_blocks", async (args) => {
 toolRegistry.set("analyze_fvg", async (args) => {
   const symbol = (args.symbol as string).toUpperCase();
   const timeframe = args.timeframe as string;
-  const candles = candleStore.getCandles(symbol, timeframe);
+  const candles = await getCandlesWithFallback(symbol, timeframe);
   if (candles.length < 10) return JSON.stringify({ error: "Insufficient candles" });
   const mkt = detectMarket(symbol);
   const fvgs = analyzeFVG(candles, mkt);
@@ -105,7 +106,7 @@ toolRegistry.set("analyze_fvg", async (args) => {
 toolRegistry.set("analyze_pd_array", async (args) => {
   const symbol = (args.symbol as string).toUpperCase();
   const timeframe = args.timeframe as string;
-  const candles = candleStore.getCandles(symbol, timeframe);
+  const candles = await getCandlesWithFallback(symbol, timeframe);
   if (candles.length < 10) return JSON.stringify({ error: "Insufficient candles" });
   const r = analyzePdArray(candles, timeframe);
   return JSON.stringify({
@@ -133,8 +134,8 @@ toolRegistry.set("detect_smt", async (args) => {
   const pSym = (args.primarySymbol as string).toUpperCase();
   const cSym = (args.correlatedSymbol as string).toUpperCase();
   const tf = args.timeframe as string;
-  const pCandles = candleStore.getCandles(pSym, tf);
-  const cCandles = candleStore.getCandles(cSym, tf);
+  const pCandles = await getCandlesWithFallback(pSym, tf);
+  const cCandles = await getCandlesWithFallback(cSym, tf);
   if (pCandles.length < 10 || cCandles.length < 10) return JSON.stringify({ error: "Insufficient candles" });
   const r = analyzeSMT(pCandles, cCandles, pSym, cSym);
   return JSON.stringify({
@@ -149,7 +150,7 @@ toolRegistry.set("detect_smt", async (args) => {
 toolRegistry.set("get_draw_targets", async (args) => {
   const symbol = (args.symbol as string).toUpperCase();
   const timeframe = args.timeframe as string;
-  const candles = candleStore.getCandles(symbol, timeframe);
+  const candles = await getCandlesWithFallback(symbol, timeframe);
   if (candles.length < 10) return JSON.stringify({ error: "Insufficient candles" });
   const mkt = detectMarket(symbol);
   const r = buildReport(candles, symbol, mkt, timeframe);
@@ -166,7 +167,7 @@ toolRegistry.set("get_draw_targets", async (args) => {
 toolRegistry.set("build_full_report", async (args) => {
   const symbol = (args.symbol as string).toUpperCase();
   const timeframe = args.timeframe as string;
-  const candles = candleStore.getCandles(symbol, timeframe);
+  const candles = await getCandlesWithFallback(symbol, timeframe);
   if (candles.length < 10) return JSON.stringify({ error: "Insufficient candles" });
   const mkt = detectMarket(symbol);
   let daily;
@@ -192,7 +193,7 @@ toolRegistry.set("get_live_candles", async (args) => {
   const symbol = (args.symbol as string).toUpperCase();
   const timeframe = (args.timeframe as string) || "4h";
   const limit = Math.min((args.limit as number) || 20, 300);
-  const candles = candleStore.getCandles(symbol, timeframe);
+  const candles = await getCandlesWithFallback(symbol, timeframe);
   return JSON.stringify({
     symbol, timeframe, totalCandles: candles.length,
     candles: candles.slice(-limit).map(c => ({ time: c.time, open: c.open, high: c.high, low: c.low, close: c.close, volume: c.volume })),
@@ -207,7 +208,7 @@ toolRegistry.set("scan_all_timeframes", async (args) => {
   const results: Record<string, { bias: string; confidence: number; price: number }> = {};
   for (const tf of ALL_TFS) {
     try {
-      const candles = candleStore.getCandles(symbol, tf);
+      const candles = await getCandlesWithFallback(symbol, tf);
       if (candles.length < 10) { results[tf] = { bias: "unknown", confidence: 0, price: 0 }; continue; }
       const r = buildReport(candles, symbol, mkt, tf);
       results[tf] = { bias: r.structure.bias, confidence: Math.round(r.structure.confidence * 100) / 100, price: r.currentPrice };

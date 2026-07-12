@@ -1,0 +1,13 @@
+$env:PORT = "3001"
+$env:MCP_PORT = "3002"
+$env:LOG_LEVEL = "info"
+$env:CORS_ORIGINS = "*"
+$env:NODE_ENV = "development"
+$env:TV_ENABLED = "true"
+$env:TV_CDP_PORT = "9222"
+$env:TV_CONNECTION_TYPE = "desktop"
+$env:FIREWORKS_API_KEY = "fw_999FR8g7mGZA5WCX5SBzyH"
+$env:LLM_PROVIDER = "fireworks"
+$env:LLM_MODEL = "accounts/fireworks/models/deepseek-v4-pro"
+Set-Location "C:\Users\cash\part-2-SMC\artifacts\api-server"
+node --enable-source-maps ./dist/index.mjs
