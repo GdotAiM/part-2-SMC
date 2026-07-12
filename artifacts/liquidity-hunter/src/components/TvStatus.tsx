@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { Monitor, Tv, Wifi, WifiOff, RefreshCw, X } from "lucide-react";
+import { Tv, Wifi, WifiOff, RefreshCw, X, Trash2, Eye, EyeOff, BarChart3, Target, Layers, Zap, Paintbrush } from "lucide-react";
 
 const API = import.meta.env.BASE_URL.replace(/\/$/, "");
 function apiUrl(path: string) { return `${API}/api${path}`; }
@@ -18,17 +18,27 @@ interface TvState {
 interface ChartState {
   symbol: string;
   timeframe: string;
+  visibleRange?: any;
   drawings?: any[];
 }
+
+interface DrawResult {
+  action: string;
+  levels: any[];
+  fvgs: any[];
+  logs: string[];
+}
+
+type DrawAction = "levels" | "fvgs" | "killzones" | "clear" | "all";
 
 export function TvStatus() {
   const [open, setOpen] = useState(false);
   const [tv, setTv] = useState<TvState | null>(null);
   const [chart, setChart] = useState<ChartState | null>(null);
   const [loading, setLoading] = useState(false);
+  const [drawing, setDrawing] = useState<DrawAction | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [syncing, setSyncing] = useState(false);
-  const [syncMsg, setSyncMsg] = useState<string | null>(null);
+  const [logs, setLogs] = useState<string[]>([]);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -36,10 +46,8 @@ export function TvStatus() {
     try {
       const res = await fetch(apiUrl("/agent-loop/tv-status"));
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data = await res.json();
-      setTv(data);
+      setTv(await res.json());
 
-      // Also try to get chart state
       try {
         const cr = await fetch(apiUrl("/agent-loop/tv-read"));
         if (cr.ok) {
@@ -56,41 +64,42 @@ export function TvStatus() {
   const connect = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch(apiUrl("/agent-loop/tv-connect"), { method: "POST" });
-      const data = await res.json();
+      await fetch(apiUrl("/agent-loop/tv-connect"), { method: "POST" });
+      load();
+    } catch (err: any) { setError(err.message); }
+    setLoading(false);
+  }, [load]);
+
+  const draw = useCallback(async (action: DrawAction) => {
+    setDrawing(action);
+    setError(null);
+    setLogs([]);
+    try {
+      const res = await fetch(apiUrl("/agent-loop/tv-draw"), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action }),
+      });
+      const data: DrawResult = await res.json();
+      if (data.logs) setLogs(data.logs);
+      if (!res.ok) setError(data.logs?.join(", ") || "Draw failed");
+      // Refresh chart state after drawing
       load();
     } catch (err: any) {
       setError(err.message);
     }
-    setLoading(false);
+    setDrawing(null);
   }, [load]);
 
-  const sync = useCallback(async () => {
-    setSyncing(true);
-    setSyncMsg(null);
-    try {
-      // Read current chart state as a report
-      const res = await fetch(apiUrl("/agent-loop/tv-read"));
-      if (!res.ok) throw new Error("Cannot read chart");
-      setSyncMsg("TV Desktop connected and ready");
-      setTimeout(() => setSyncMsg(null), 3000);
-    } catch (err: any) {
-      setSyncMsg("Sync failed: " + err.message);
-    }
-    setSyncing(false);
-  }, []);
-
-  useEffect(() => { if (open) load(); }, [open, load]);
-
   const isConnected = tv?.connected ?? false;
-  const isEnabled = tv?.enabled ?? false;
+  const isReadWrite = tv?.config?.interactionMode === "readwrite";
 
   return (
     <>
       {/* TV Button in header */}
       <button
         onClick={() => setOpen(true)}
-        title="TradingView Desktop integration"
+        title={`TradingView Desktop — ${isConnected ? "Connected" : "Disconnected"}${isReadWrite ? " (Read/Write)" : ""}`}
         className={`flex items-center gap-1.5 px-2.5 py-1 rounded-sm border transition-colors text-xs font-bold
           ${isConnected
             ? "border-green-500/50 bg-green-500/10 text-green-400"
@@ -104,100 +113,125 @@ export function TvStatus() {
       {/* TV Modal */}
       {open && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
-          <div className="bg-card border border-border rounded-md w-full max-w-sm mx-4 shadow-2xl font-mono">
+          <div className="bg-card border border-border rounded-md w-full max-w-lg mx-4 shadow-2xl font-mono max-h-[90vh] overflow-y-auto">
             {/* Header */}
-            <div className="flex items-center justify-between px-4 py-3 border-b border-border">
+            <div className="flex items-center justify-between px-4 py-3 border-b border-border sticky top-0 bg-card z-10">
               <div className="flex items-center gap-2">
                 <Tv className="w-4 h-4 text-primary" />
-                <span className="text-sm font-bold text-primary">TV Desktop</span>
+                <span className="text-sm font-bold text-primary">TV Desktop Control</span>
               </div>
               <button onClick={() => setOpen(false)} className="text-muted-foreground hover:text-foreground">
                 <X className="w-4 h-4" />
               </button>
             </div>
 
-            {/* Body */}
-            <div className="p-4 space-y-3 text-xs">
-              {/* Status */}
-              <div className="flex items-center justify-between">
-                <span className="text-muted-foreground">Connection</span>
-                <span className={`font-semibold flex items-center gap-1 ${isConnected ? "text-green-400" : "text-destructive"}`}>
-                  {isConnected ? <><Wifi className="w-3 h-3" /> Connected</> : <><WifiOff className="w-3 h-3" /> Disconnected</>}
-                </span>
+            <div className="p-4 space-y-4 text-xs">
+              {/* Status Row */}
+              <div className="flex items-center justify-between bg-muted/30 rounded-sm px-3 py-2">
+                <div className="flex items-center gap-2">
+                  {isConnected
+                    ? <Wifi className="w-3.5 h-3.5 text-green-400" />
+                    : <WifiOff className="w-3.5 h-3.5 text-destructive" />}
+                  <span className={isConnected ? "text-green-400 font-semibold" : "text-destructive font-semibold"}>
+                    {isConnected ? "Connected" : "Disconnected"}
+                  </span>
+                </div>
+                {tv?.config && (
+                  <div className="flex items-center gap-3 text-muted-foreground">
+                    <span className="uppercase">{tv.config.connection.type}</span>
+                    <span>:{tv.config.connection.cdpPort}</span>
+                    <span className={`uppercase ${isReadWrite ? "text-green-400" : ""}`}>
+                      {tv.config.interactionMode}
+                    </span>
+                  </div>
+                )}
               </div>
 
-              {tv?.config && (
-                <>
-                  <div className="flex items-center justify-between">
-                    <span className="text-muted-foreground">Mode</span>
-                    <span className="font-semibold uppercase">{tv.config.connection.type}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-muted-foreground">CDP Port</span>
-                    <span className="font-semibold">{tv.config.connection.cdpPort}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-muted-foreground">Data Source</span>
-                    <span className="font-semibold uppercase">{tv.config.dataSource}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-muted-foreground">Interaction</span>
-                    <span className="font-semibold uppercase">{tv.config.interactionMode}</span>
-                  </div>
-                </>
-              )}
-
+              {/* Chart Info */}
               {chart && (
-                <>
-                  <div className="border-t border-border/40 pt-3" />
-                  <div className="flex items-center justify-between">
-                    <span className="text-muted-foreground">Chart Symbol</span>
-                    <span className="font-semibold text-primary">{chart.symbol}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-muted-foreground">Timeframe</span>
-                    <span className="font-semibold">{chart.timeframe}</span>
-                  </div>
-                </>
+                <div className="flex items-center gap-3 text-muted-foreground bg-muted/20 rounded-sm px-3 py-2">
+                  <span className="font-semibold text-primary">{chart.symbol}</span>
+                  <span>{chart.timeframe}</span>
+                  {chart.visibleRange && (
+                    <span className="text-[10px]">
+                      {new Date(chart.visibleRange.from * 1000).toLocaleTimeString()} – {new Date(chart.visibleRange.to * 1000).toLocaleTimeString()}
+                    </span>
+                  )}
+                </div>
               )}
 
+              {/* Section: Drawing Controls */}
+              <div>
+                <div className="flex items-center gap-1.5 mb-2 text-muted-foreground font-semibold uppercase tracking-wider text-[10px]">
+                  <Paintbrush className="w-3 h-3" /> Drawing Tools
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <button onClick={() => draw("levels")} disabled={!!drawing || !isConnected}
+                    className="flex items-center gap-2 px-3 py-2 rounded-sm border border-border bg-muted hover:bg-muted/80 text-xs font-semibold transition-colors disabled:opacity-40">
+                    <BarChart3 className="w-3.5 h-3.5 text-green-400" />
+                    <span>BSL / SSL / Price</span>
+                  </button>
+                  <button onClick={() => draw("fvgs")} disabled={!!drawing || !isConnected}
+                    className="flex items-center gap-2 px-3 py-2 rounded-sm border border-border bg-muted hover:bg-muted/80 text-xs font-semibold transition-colors disabled:opacity-40">
+                    <Target className="w-3.5 h-3.5 text-purple-400" />
+                    <span>FVG Boxes</span>
+                  </button>
+                  <button onClick={() => draw("killzones")} disabled={!!drawing || !isConnected}
+                    className="flex items-center gap-2 px-3 py-2 rounded-sm border border-border bg-muted hover:bg-muted/80 text-xs font-semibold transition-colors disabled:opacity-40">
+                    <Layers className="w-3.5 h-3.5 text-blue-400" />
+                    <span>Killzone Sessions</span>
+                  </button>
+                  <button onClick={() => draw("all")} disabled={!!drawing || !isConnected}
+                    className="flex items-center gap-2 px-3 py-2 rounded-sm border border-primary/30 bg-primary/10 hover:bg-primary/20 text-xs font-semibold transition-colors disabled:opacity-40">
+                    <Zap className="w-3.5 h-3.5 text-primary" />
+                    <span>Draw All</span>
+                  </button>
+                  <button onClick={() => draw("clear")} disabled={!!drawing || !isConnected}
+                    className="flex items-center gap-2 px-3 py-2 rounded-sm border border-destructive/30 bg-destructive/10 hover:bg-destructive/20 text-xs font-semibold transition-colors disabled:opacity-40 col-span-2">
+                    <Trash2 className="w-3.5 h-3.5 text-destructive" />
+                    <span>Clear All Drawings</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Drawing status / logs */}
+              {drawing && (
+                <div className="flex items-center gap-2 text-primary animate-pulse">
+                  <RefreshCw className="w-3 h-3 animate-spin" />
+                  <span>{drawing === "clear" ? "Clearing..." : `Drawing ${drawing}...`}</span>
+                </div>
+              )}
+              {logs.length > 0 && (
+                <div className="bg-muted/30 rounded-sm p-2 max-h-24 overflow-y-auto space-y-0.5">
+                  {logs.map((l, i) => (
+                    <p key={i} className="text-[10px] text-muted-foreground">{l}</p>
+                  ))}
+                </div>
+              )}
               {error && (
                 <div className="bg-destructive/10 border border-destructive/30 rounded-sm p-2 text-destructive">
                   {error}
                 </div>
               )}
 
-              {syncMsg && (
-                <div className="bg-green-500/10 border border-green-500/30 rounded-sm p-2 text-green-400">
-                  {syncMsg}
-                </div>
-              )}
-
-              {/* Actions */}
+              {/* Section: Connection Actions */}
               <div className="border-t border-border/40 pt-3 flex gap-2">
                 <button onClick={load} disabled={loading}
-                  className="flex-1 flex items-center justify-center gap-1 px-3 py-1.5 rounded-sm border border-border bg-muted text-xs font-semibold hover:bg-muted/80 transition-colors disabled:opacity-50">
+                  className="flex items-center justify-center gap-1 px-3 py-1.5 rounded-sm border border-border bg-muted text-xs font-semibold hover:bg-muted/80 transition-colors disabled:opacity-50">
                   <RefreshCw className={`w-3 h-3 ${loading ? "animate-spin" : ""}`} /> Refresh
                 </button>
                 {!isConnected && (
                   <button onClick={connect} disabled={loading}
-                    className="flex-1 px-3 py-1.5 rounded-sm bg-primary text-primary-foreground text-xs font-semibold hover:bg-primary/90 transition-colors disabled:opacity-50">
+                    className="px-3 py-1.5 rounded-sm bg-primary text-primary-foreground text-xs font-semibold hover:bg-primary/90 transition-colors disabled:opacity-50">
                     Connect
-                  </button>
-                )}
-                {isConnected && (
-                  <button onClick={sync} disabled={syncing}
-                    className="flex-1 px-3 py-1.5 rounded-sm bg-primary/10 border border-primary/30 text-primary text-xs font-semibold hover:bg-primary/20 transition-colors disabled:opacity-50">
-                    Sync Data
                   </button>
                 )}
               </div>
 
-              {/* Instructions */}
-              <div className="border-t border-border/40 pt-3 text-[10px] text-muted-foreground space-y-0.5">
-                <p>TV Desktop integration reads live chart bars for SMC analysis when external APIs are unavailable.</p>
-                <p className="mt-1"><span className="text-green-400">●</span> Green = connected &amp; ready</p>
-                <p><span className="text-destructive">●</span> Red = disconnected (click Connect)</p>
+              {/* Footer */}
+              <div className="border-t border-border/40 pt-3 text-[10px] text-muted-foreground space-y-1">
+                <p>Drawing uses <span className="text-primary font-semibold">Alt+H</span> (Horizontal ray) and <span className="text-primary font-semibold">Alt+Shift+R</span> (Rectangle) keyboard shortcuts on TV Desktop.</p>
+                <p>SMC levels: BSL (🟢 above), SSL (🔴 below), Current (🔵). FVGs in 🟣, killzone sessions in colored boxes.</p>
               </div>
             </div>
           </div>

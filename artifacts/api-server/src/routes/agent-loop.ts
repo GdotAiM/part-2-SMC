@@ -457,6 +457,241 @@ router.get("/agent-loop/tv-read", async (_req, res) => {
   }
 });
 
+// ─── POST /api/agent-loop/tv-draw — Draw SMC levels on TV chart
+router.post("/agent-loop/tv-draw", async (req, res) => {
+  try {
+    const tv = await import("../lib/integrations/tradingview/index.js");
+    const { action, symbol, timeframe } = req.body as { action?: string; symbol?: string; timeframe?: string };
+
+    if (!tv.isTvEnabled()) {
+      res.status(400).json({ error: "TV Desktop not enabled" });
+      return;
+    }
+
+    // Ensure connected
+    if (!(await tv.isConnected())) {
+      await tv.connect();
+    }
+
+    // If symbol/timeframe provided, switch TV Desktop chart to that context
+    if (symbol && timeframe) {
+      if (await tv.isConnected()) {
+        const converted = tv.toTvSymbol ? tv.toTvSymbol(symbol) : symbol;
+        const tvTf = timeframe.replace("m", "").replace("h", "").replace("d", "D").replace("w", "W");
+        const kind = timeframe.endsWith("m") ? "minutes" : timeframe.endsWith("h") ? "hours" : timeframe.endsWith("d") ? "days" : "weeks";
+        const mult = parseInt(timeframe) || 1;
+
+        await tv.evaluateWithArgs((sym: string, tf: string, k: string, m: number) => {
+          try {
+            const coll = (window as any)._exposed_chartWidgetCollection;
+            const src = coll?.activeChartWidget?._value
+              ?._paneWidgets?._value?.[0]
+              ?._legendWidget?._mainSeriesViewModel?._source;
+            if (!src) return;
+            src.setSymbol(sym);
+            src.setInterval(tf, { kind: k, multiplier: m });
+          } catch {}
+        }, converted, tvTf, kind, mult);
+
+        // Wait for chart to load new data
+        await new Promise(r => setTimeout(r, 3000));
+
+        // Wait a bit more for BTC on 1m — it can be slow
+        if (symbol.includes("BTC") && timeframe === "1m") {
+          await new Promise(r => setTimeout(r, 3000));
+        }
+      }
+    }
+
+    const result: any = { action, levels: [], fvgs: [], logs: [] };
+    const log = (msg: string) => result.logs.push(msg);
+
+    if (action === "clear") {
+      // Clear all drawings via keyboard: Escape to deselect, then remove all
+      for (let i = 0; i < 3; i++) { await tv.keyboardPress("Escape"); await new Promise(r => setTimeout(r, 200)); }
+      // Also call removeAllDrawingTools via evaluate
+      await tv.evaluate(() => {
+        try {
+          const w = window._exposed_chartWidgetCollection;
+          if (w?._chartWidgetsDefs?.[0]?.chartWidget?.model) {
+            w._chartWidgetsDefs[0].chartWidget.model().removeAllDrawingTools();
+          }
+        } catch {}
+      });
+      log("Chart cleared");
+    }
+
+    if (action === "levels" || action === "all") {
+      // Compute and draw BSL/SSL/Current
+      const coords = await tv.evaluate(() => {
+        try {
+          const cw = window._exposed_chartWidgetCollection._chartWidgetsDefs[0].chartWidget;
+          const pane = cw.model().model().mainPane();
+          const ps = pane.defaultPriceScale();
+          const ts = cw.model().timeScale();
+          const src = window._exposed_chartWidgetCollection.activeChartWidget._value
+            ._paneWidgets._value[0]._legendWidget._mainSeriesViewModel._source;
+          const items = src.bars()._items.map((i: any) => i.value);
+          const cur = items[items.length - 1][4];
+          const h = items.map((b: any) => b[2]), l = items.map((b: any) => b[3]);
+
+          // Swing highs/lows
+          const sh: number[] = [], sl: number[] = [];
+          for (let i = 3; i < items.length - 3; i++) {
+            if (h[i] > h[i-1] && h[i] > h[i-2] && h[i] > h[i-3] && h[i] > h[i+1] && h[i] > h[i+2] && h[i] > h[i+3]) sh.push(h[i]);
+            if (l[i] < l[i-1] && l[i] < l[i-2] && l[i] < l[i-3] && l[i] < l[i+1] && l[i] < l[i+2] && l[i] < l[i+3]) sl.push(l[i]);
+          }
+          const d = (p: number[], t: number) => {
+            const s = [...new Set(p)].sort((a, b) => a - b);
+            const u: number[] = [];
+            for (const x of s) { if (!u.length || Math.abs(x - u[u.length - 1]) / u[u.length - 1] > t) u.push(x); }
+            return u;
+          };
+          const thr = src.symbol().includes("BTC") ? 0.0005 : 0.0003;
+          const bsl = d(sh, thr).filter(x => x > cur).sort((a, b) => a - b);
+          const ssl = d(sl, thr).filter(x => x < cur).sort((a, b) => b - a);
+
+          const levels: any[] = [];
+          if (bsl.length) levels.push({ type: "BSL", price: bsl[0], y: ps.priceToCoordinate(bsl[0]) });
+          if (ssl.length) levels.push({ type: "SSL", price: ssl[0], y: ps.priceToCoordinate(ssl[0]) });
+          levels.push({ type: "Current", price: cur, y: ps.priceToCoordinate(cur) });
+
+          // Get pane position for absolute coordinates
+          const el = document.querySelector(".chart-markup-table");
+          const rect = el?.getBoundingClientRect();
+
+          return { levels, paneTop: rect?.top || 0, paneLeft: rect?.left || 0 };
+        } catch { return null; }
+      });
+
+      if (coords && coords.levels) {
+        for (const lvl of coords.levels) {
+          if (lvl.y === null) continue;
+          await tv.keyboardPress("Alt+h");
+          await new Promise(r => setTimeout(r, 1200));
+          await tv.mouseClick(coords.paneLeft + 200, coords.paneTop + lvl.y);
+          await new Promise(r => setTimeout(r, 1000));
+          result.levels.push(lvl);
+          log(`Drawn ${lvl.type} at ${lvl.price}`);
+        }
+      }
+    }
+
+    if (action === "fvgs" || action === "all") {
+      // Compute and draw FVG boxes
+      const fvgData = await tv.evaluate(() => {
+        try {
+          const cw = window._exposed_chartWidgetCollection._chartWidgetsDefs[0].chartWidget;
+          const pane = cw.model().model().mainPane();
+          const ps = pane.defaultPriceScale();
+          const ts = cw.model().timeScale();
+          const src = window._exposed_chartWidgetCollection.activeChartWidget._value
+            ._paneWidgets._value[0]._legendWidget._mainSeriesViewModel._source;
+          const items = src.bars()._items.map((i: any) => i.value);
+          const r = items.slice(-40);
+          const fvgs: any[] = [];
+          for (let i = 1; i < r.length - 1; i++) {
+            const p = r[i - 1], n = r[i + 1];
+            if (n[3] > p[2]) {
+              const top = n[3], bottom = p[2];
+              if (top - bottom > 1) fvgs.push({ top, bottom, x: ts.timeToCoordinate(r[i][0]), yTop: ps.priceToCoordinate(top), yBottom: ps.priceToCoordinate(bottom) });
+            }
+            if (n[2] < p[3]) {
+              const top = p[3], bottom = n[2];
+              if (top - bottom > 1) fvgs.push({ top, bottom, x: ts.timeToCoordinate(r[i][0]), yTop: ps.priceToCoordinate(top), yBottom: ps.priceToCoordinate(bottom) });
+            }
+          }
+          const rect = document.querySelector(".chart-markup-table")?.getBoundingClientRect();
+          return { fvgs: fvgs.slice(-3), paneLeft: rect?.left || 0, paneTop: rect?.top || 0 };
+        } catch { return null; }
+      });
+
+      if (fvgData && fvgData.fvgs) {
+        for (const f of fvgData.fvgs) {
+          if (f.yTop === null || f.yBottom === null || f.x === null) continue;
+
+          await tv.keyboardPress("Alt+Shift+r");
+          await new Promise(r => setTimeout(r, 1200));
+
+          // Draw rectangle spanning ~30px around the candle
+          const span = 30;
+          const cx = fvgData.paneLeft + f.x;
+          await tv.mouseClick(cx - span, fvgData.paneTop + f.yTop);
+          await new Promise(r => setTimeout(r, 600));
+          await tv.mouseClick(cx + span, fvgData.paneTop + f.yBottom);
+          await new Promise(r => setTimeout(r, 1500));
+          result.fvgs.push(f);
+          log(`Drawn FVG $${f.bottom.toFixed(2)} -> $${f.top.toFixed(2)}`);
+        }
+      }
+    }
+
+    if (action === "killzones" || action === "all") {
+      // Draw session killzone boxes
+      const kzData = await tv.evaluate(() => {
+        try {
+          const cw = window._exposed_chartWidgetCollection._chartWidgetsDefs[0].chartWidget;
+          const pane = cw.model().model().mainPane();
+          const ps = pane.defaultPriceScale();
+          const ts = cw.model().timeScale();
+          const src = window._exposed_chartWidgetCollection.activeChartWidget._value
+            ._paneWidgets._value[0]._legendWidget._mainSeriesViewModel._source;
+          const items = src.bars()._items.map((i: any) => i.value);
+
+          function getZone(time: number): string {
+            const d = new Date(time * 1000);
+            const mins = d.getUTCHours() * 60 + d.getUTCMinutes();
+            if (mins >= 0 && mins < 540) return "asian";
+            if (mins >= 420 && mins < 960) return "london";
+            if (mins >= 720 && mins < 1260) return "ny";
+            return "other";
+          }
+
+          const firstIdx = Math.max(0, items.length - 100);
+          const zones: any[] = [];
+          let curZone: string | null = null;
+          let blockStart: number | null = null;
+
+          for (let i = firstIdx; i < items.length; i++) {
+            const z = getZone(items[i][0]);
+            if (z !== curZone) {
+              if (curZone !== null && blockStart !== null) {
+                zones.push({ zone: curZone, startX: ts.timeToCoordinate(blockStart), endX: ts.timeToCoordinate(items[i - 1][0]) });
+              }
+              curZone = z;
+              blockStart = items[i][0];
+            }
+          }
+          if (curZone !== null && blockStart !== null && curZone !== "other") {
+            zones.push({ zone: curZone, startX: ts.timeToCoordinate(blockStart), endX: ts.timeToCoordinate(items[items.length - 1][0]) });
+          }
+
+          const rect = document.querySelector(".chart-markup-table")?.getBoundingClientRect();
+          return { zones: zones.filter((z: any) => z.zone !== "other" && z.startX !== null && z.endX !== null), paneTop: rect?.top || 0, paneLeft: rect?.left || 0 };
+        } catch { return null; }
+      });
+
+      if (kzData && kzData.zones) {
+        for (const z of kzData.zones) {
+          await tv.keyboardPress("Alt+Shift+r");
+          await new Promise(r => setTimeout(r, 1200));
+
+          await tv.mouseClick(kzData.paneLeft + z.startX, kzData.paneTop + 5);
+          await new Promise(r => setTimeout(r, 600));
+          await tv.mouseClick(kzData.paneLeft + z.endX, kzData.paneTop + 500);
+          await new Promise(r => setTimeout(r, 1500));
+          log(`Drawn ${z.zone} killzone`);
+        }
+      }
+    }
+
+    await tv.keyboardPress("Escape");
+    res.json(result);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 export default router;
 
 

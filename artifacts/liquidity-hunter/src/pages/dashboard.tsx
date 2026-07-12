@@ -17,6 +17,7 @@ import { IntelligenceSheet } from "@/components/IntelligenceSheet";
 import { ChartView } from "@/components/ChartView";
 import { MarketBriefing } from "@/components/MarketBriefing";
 import { TvStatus } from "@/components/TvStatus";
+import { TvCardControl } from "@/components/TvCardControl";
 import { useRealtimeStream } from "@/lib/realtime";
 import { fmtPrice, getBias, getConfidence, TF_LABEL_MAP, TF_WEIGHT, type Market } from "@/lib/smc-display";
 
@@ -56,10 +57,10 @@ function getRoles(tfs: Tf[]): Record<Tf, string> {
 
 /* ─── TF Agent Card ─── */
 function TfAgentCard({
-  tf, report, market, isLoading, error, onOpen,
+  tf, symbol, report, market, isLoading, error, onOpen,
   role, anchorTf, anchorBias, isAnchor,
 }: {
-  tf: Tf; report: SmcReport | undefined; market: Market;
+  tf: Tf; symbol: string; report: SmcReport | undefined; market: Market;
   isLoading: boolean; error: unknown; onOpen: () => void;
   role?: string; anchorTf?: string; anchorBias?: string; isAnchor?: boolean;
 }) {
@@ -163,6 +164,7 @@ function TfAgentCard({
               {role}
             </span>
           )}
+          <TvCardControl symbol={symbol} timeframe={tf} />
         </div>
         <span className={`text-[10px] px-1.5 py-0.5 rounded-sm font-bold uppercase border ${biasColor} ${biasBg}`}>
           {bias}
@@ -620,6 +622,7 @@ export default function Dashboard() {
               <TfAgentCard
                 key={tf}
                 tf={tf}
+                symbol={symbol}
                 report={q.data}
                 market={market}
                 isLoading={q.isLoading}

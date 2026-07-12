@@ -16,7 +16,7 @@ export type {
 export { toTvSymbol, fromTvSymbol, toTvTimeframe, fromTvTimeframe, SYMBOL_TO_TV } from "./types.js";
 
 // CDP Connection
-export { connect, disconnect, isConnected, evaluate, evaluateWithArgs, getPageUrl } from "./cdp/connection.js";
+export { connect, disconnect, isConnected, evaluate, evaluateWithArgs, getPageUrl, keyboardPress, mouseClick, getPanePosition } from "./cdp/connection.js";
 
 // CDP Chart Reader
 export { getChartState, getSymbol, getTimeframe, getVisibleRange, getDrawings, getBars } from "./cdp/chart.js";

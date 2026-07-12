@@ -197,3 +197,64 @@ export async function getPageUrl(): Promise<string | null> {
     return null;
   }
 }
+
+// ─── Keyboard & Mouse helpers (for drawing) ──────────────────────────────
+
+/**
+ * Send a keyboard shortcut to the TV Desktop page.
+ * Example: keyboardPress("Alt+h") presses Alt then H then releases both.
+ * Supports modifiers: Alt, Shift, Control, Meta.
+ */
+export async function keyboardPress(shortcut: string): Promise<boolean> {
+  if (!_page) return false;
+  try {
+    const parts = shortcut.split("+").map(s => s.trim());
+    const key = parts[parts.length - 1].toLowerCase();
+    const modifiers = parts.slice(0, -1);
+
+    // Press all modifiers down
+    for (const mod of modifiers) {
+      const mapped = mod === "Alt" ? "Alt" : mod === "Shift" ? "Shift" : mod === "Control" ? "Control" : mod === "Meta" ? "Meta" : mod;
+      await _page.keyboard.down(mapped);
+    }
+    // Press and release the key
+    await _page.keyboard.press(key);
+    // Release all modifiers (reverse order)
+    for (const mod of [...modifiers].reverse()) {
+      const mapped = mod === "Alt" ? "Alt" : mod === "Shift" ? "Shift" : mod === "Control" ? "Control" : mod === "Meta" ? "Meta" : mod;
+      await _page.keyboard.up(mapped);
+    }
+    return true;
+  } catch (err: any) {
+    logger.warn({ err: err.message, shortcut }, "TV keyboard shortcut failed");
+    return false;
+  }
+}
+
+/**
+ * Click on the TV Desktop chart at a specific coordinate.
+ * Coordinates are relative to the viewport, to compute them use
+ * `priceToCoordinate` and `timeToCoordinate` and add the pane offset.
+ */
+export async function mouseClick(x: number, y: number): Promise<boolean> {
+  if (!_page) return false;
+  try {
+    await _page.mouse.click(x, y);
+    return true;
+  } catch (err: any) {
+    logger.warn({ err: err.message, x, y }, "TV mouse click failed");
+    return false;
+  }
+}
+
+/**
+ * Get the chart pane position (for coordinate math).
+ */
+export async function getPanePosition(): Promise<{ top: number; left: number; width: number; height: number } | null> {
+  return evaluate(() => {
+    const el = document.querySelector(".chart-markup-table");
+    if (!el) return null;
+    const rect = el.getBoundingClientRect();
+    return { top: rect.top, left: rect.left, width: rect.width, height: rect.height };
+  });
+}
