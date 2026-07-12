@@ -215,3 +215,35 @@ toolRegistry.set("scan_all_timeframes", async (args) => {
   }
   return JSON.stringify({ symbol, market: mkt, results });
 });
+
+
+
+// ── TradingView Tools ─────────────────────────────────────────────────────
+import { getChartState, getSymbol, getTimeframe, getDrawings, isConnected, connect } from "../integrations/tradingview/index.js";
+import { changeSymbol, changeTimeframe, drawHorizontalLine, drawFibRetracement, drawLabel, deleteDrawings, setAlert } from "../integrations/tradingview/index.js";
+
+async function tvExec(args, fn) {
+  try {
+    if (!(await isConnected())) await connect();
+    const tv = { getChartState, getSymbol, getTimeframe, getDrawings, changeSymbol, changeTimeframe, drawHorizontalLine, drawFibRetracement, drawLabel, deleteDrawings, setAlert };
+    return JSON.stringify(await fn(args, tv));
+  } catch (err) {
+    return JSON.stringify({ error: err.message || "TV tool failed" });
+  }
+}
+
+function rt(name, fn) {
+  toolRegistry.set(name, (args) => tvExec(args, fn));
+}
+
+rt("tv_get_chart_state", async (args, tv) => { const state = await tv.getChartState(); return { chartState: state }; });
+rt("tv_get_symbol", async (args, tv) => ({ symbol: await tv.getSymbol() }));
+rt("tv_get_timeframe", async (args, tv) => ({ timeframe: await tv.getTimeframe() }));
+rt("tv_get_drawings", async (args, tv) => ({ drawings: await tv.getDrawings() }));
+rt("tv_change_symbol", async (args, tv) => ({ success: await tv.changeSymbol(args.symbol) }));
+rt("tv_change_timeframe", async (args, tv) => ({ success: await tv.changeTimeframe(args.timeframe) }));
+rt("tv_draw_horizontal_line", async (args, tv) => ({ success: await tv.drawHorizontalLine(args.price, args.text, args.color) }));
+rt("tv_draw_fib_retracement", async (args, tv) => ({ success: await tv.drawFibRetracement(args.high, args.low) }));
+rt("tv_draw_label", async (args, tv) => ({ success: await tv.drawLabel(args.price, args.text, args.color) }));
+rt("tv_delete_drawings", async (args, tv) => ({ success: await tv.deleteDrawings(args.type) }));
+rt("tv_set_alert", async (args, tv) => ({ success: await tv.setAlert(args.price, args.direction, args.message) }));

@@ -23,6 +23,7 @@ import { DEFAULT_LOOP_CONFIG } from "./types.js";
 import { langfuse } from "../observability/langfuse.js";
 import { buildNewsContext } from "../news/index.js";
 import { AgentEvaluator } from "../evaluation/index.js";
+import { reconcile, formatReconciliationForPrompt, isTvEnabled } from "../integrations/tradingview/index.js";
 
 import type {
   LoopConfig,
@@ -374,7 +375,16 @@ export class AgentLoop extends EventEmitter {
     const semanticStr = await this.memory.semantic.formatForPrompt(report.symbol, marketRegime);
     const newsStr = await buildNewsContext(report.symbol);
 
-    const prompt = this.buildDecisionPrompt(contextSummary, episodicStr, semanticStr, newsStr, toolResults);
+    // TradingView reconciliation (optional)
+    let tvString = "";
+    if (isTvEnabled()) {
+      try {
+        const tvReport = await reconcile(report);
+        tvString = formatReconciliationForPrompt(tvReport);
+      } catch { /* graceful degradation */ }
+    }
+
+    const prompt = this.buildDecisionPrompt(contextSummary, episodicStr, semanticStr, newsStr, tvString, toolResults);
 
     const llmConfig = resolveLlmConfig();
     if (!llmConfig.apiKey && llmConfig.provider !== "amd") {
@@ -411,6 +421,7 @@ export class AgentLoop extends EventEmitter {
     episodicStr: string,
     semanticStr: string,
     newsStr: string,
+    tvString: string,
     toolResults: Record<string, unknown>,
   ): string {
     const structure = toolResults["analyze_structure"] as any || {};
@@ -437,6 +448,8 @@ ${episodicStr}
 
 Pattern Knowledge (Semantic Memory):
 ${semanticStr}
+${tvString}
+${newsStr}
 
 DECISION TASK:
 Based on the above data, choose ONE action:

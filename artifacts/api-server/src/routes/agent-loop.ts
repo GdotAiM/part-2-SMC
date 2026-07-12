@@ -371,7 +371,56 @@ router.get("/agent-loop/langfuse-status", (_req: Request, res: Response): void =
   });
 });
 
+
+
+// ─── GET /api/agent-loop/tv-status — TradingView connection status
+router.get("/agent-loop/tv-status", async (_req, res) => {
+  try {
+    const tv = await import("../lib/integrations/tradingview/index.js");
+    const connected = await tv.isConnected();
+    res.json({ connected, config: tv.getTvConfig(), url: connected ? await tv.getPageUrl() : null });
+  } catch (err) {
+    res.json({ connected: false, error: err.message });
+  }
+});
+
+// ─── POST /api/agent-loop/tv-config — Update TV config
+router.post("/agent-loop/tv-config", async (req, res) => {
+  try {
+    const { setTvConfig, getTvConfig } = await import("../lib/integrations/tradingview/config.js");
+    setTvConfig(req.body);
+    res.json({ config: getTvConfig() });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ─── POST /api/agent-loop/tv-connect — Force reconnect
+router.post("/agent-loop/tv-connect", async (_req, res) => {
+  try {
+    const tv = await import("../lib/integrations/tradingview/index.js");
+    const ok = await tv.connect();
+    res.json({ connected: ok });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ─── POST /api/agent-loop/tv-sync — Sync SMC levels to TV chart
+router.post("/agent-loop/tv-sync", async (req, res) => {
+  try {
+    const tv = await import("../lib/integrations/tradingview/index.js");
+    const { report } = req.body;
+    if (!report) { res.status(400).json({ error: "report is required" }); return; }
+    const count = await tv.syncSmcLevels(report);
+    res.json({ synced: count });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 export default router;
+
 
 // ─── GET /api/agent-loop/news — Fetch news for a symbol ───────────────────
 
