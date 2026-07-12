@@ -19,7 +19,7 @@ export { toTvSymbol, fromTvSymbol, toTvTimeframe, fromTvTimeframe, SYMBOL_TO_TV 
 export { connect, disconnect, isConnected, evaluate, evaluateWithArgs, getPageUrl } from "./cdp/connection.js";
 
 // CDP Chart Reader
-export { getChartState, getSymbol, getTimeframe, getVisibleRange, getDrawings } from "./cdp/chart.js";
+export { getChartState, getSymbol, getTimeframe, getVisibleRange, getDrawings, getBars } from "./cdp/chart.js";
 
 // CDP Actions
 export { changeSymbol, changeTimeframe, drawHorizontalLine, drawFibRetracement, drawLabel, deleteDrawings, setAlert, syncSmcLevels } from "./cdp/actions.js";

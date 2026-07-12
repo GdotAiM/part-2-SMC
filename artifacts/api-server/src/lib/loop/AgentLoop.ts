@@ -169,7 +169,13 @@ export class AgentLoop extends EventEmitter {
       currentSpanId = langfuse.createSpan({ traceId: langfuseTraceId, name: "reason", input: { toolResults: Object.keys(toolResults) } });
       const reasonStep = this.context.addStep("reason", { toolResults });
       const marketRegime = report.structure.phase;
-      const decision = await this.reason(report, toolResults, marketRegime);
+      let decision: Decision;
+      try {
+        decision = await this.reason(report, toolResults, marketRegime);
+      } catch (reasonErr: any) {
+        logger.warn({ err: reasonErr.message }, "Reason step failed — falling back to analysis report");
+        decision = { action: "analysis_report", confidence: 0, reasoning: "Reason error: " + reasonErr.message };
+      }
       reasonStep.output = decision;
       this.context.completeStep("reason", decision);
       await this.tracer.traceStep(runId, this.context.iterations.length, reasonStep);

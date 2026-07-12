@@ -162,6 +162,37 @@ export async function getIndicators(): Promise<string[]> {
   return result ?? [];
 }
 
+/**
+ * Read OHLCV bar data from the TradingView Desktop chart.
+ *
+ * Returns up to `limit` bars (default 500) from the chart's cached data,
+ * formatted as { time, open, high, low, close, volume } objects.
+ * Returns null if CDP is not connected or the chart has no data.
+ */
+export async function getBars(limit: number = 500): Promise<Array<{ time: number; open: number; high: number; low: number; close: number; volume: number }> | null> {
+  return evaluate((maxBars: number) => {
+    try {
+      const coll = (window as any)._exposed_chartWidgetCollection;
+      if (!coll?.activeChartWidget?._value) return null;
+      const pane = coll.activeChartWidget._value._paneWidgets?._value?.[0];
+      if (!pane?._legendWidget?._mainSeriesViewModel?._source) return null;
+      const src = pane._legendWidget._mainSeriesViewModel._source;
+      const bars = src.bars();
+      if (!bars?._items) return null;
+      const len = bars._items.length;
+      const start = Math.max(0, len - maxBars);
+      return bars._items.slice(start).map((item: any) => ({
+        time: item.value[0],
+        open: item.value[1],
+        high: item.value[2],
+        low: item.value[3],
+        close: item.value[4],
+        volume: item.value[5],
+      }));
+    } catch { return null; }
+  }, limit);
+}
+
 // ─── Helpers ──────────────────────────────────────────────────────────────
 
 function mapTvType(type: string): Drawing["type"] {

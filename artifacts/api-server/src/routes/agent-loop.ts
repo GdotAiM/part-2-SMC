@@ -89,7 +89,34 @@ router.post("/agent-loop/run", async (req: Request, res: Response): Promise<void
     }
   }
   if (candles.length < 10) {
-    res.status(400).json({ error: "Not enough data for " + sym + " " + tf + ". API and store both unavailable." });
+    // Fallback: try reading bars from TradingView Desktop (it has a live connection)
+    try {
+      const tv = await import("../lib/integrations/tradingview/index.js");
+      if (tv.isTvEnabled()) {
+        logger.info({ symbol: sym, tf }, "Binance/Yahoo unavailable — trying TradingView Desktop...");
+        // Ensure we're connected
+        await tv.connect();
+        // Read the current symbol/timeframe from TV to see if it matches
+        const tvSymbol = await tv.getSymbol();
+        const tvTf = await tv.getTimeframe();
+        if (tvSymbol && tvTf) {
+          logger.info({ tvSymbol, tvTf }, "TV Desktop chart is showing");
+          // Attempt conversion
+          const rawSymbol = tv.fromTvSymbol ? tv.fromTvSymbol(tvSymbol) : tvSymbol;
+          // Read bars — TV has the most recent data cached
+          const tvBars = await tv.getBars(500);
+          if (tvBars && tvBars.length >= 10) {
+            candles = tvBars.map(b => [b.time, b.open, b.high, b.low, b.close, b.volume]);
+            logger.info({ symbol: sym, tf, count: candles.length, source: "tradingview_desktop" }, "Using TV Desktop bars");
+          }
+        }
+      }
+    } catch (tvErr: any) {
+      logger.warn({ err: tvErr.message }, "TV Desktop fallback failed");
+    }
+  }
+  if (candles.length < 10) {
+    res.status(400).json({ error: "Not enough data for " + sym + " " + tf + ". API, store, and TV Desktop all unavailable." });
     return;
   }
   // Seed candle store so SMC tools can read from it
