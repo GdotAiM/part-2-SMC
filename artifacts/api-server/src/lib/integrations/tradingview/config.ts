@@ -6,7 +6,7 @@
  * override path.
  */
 
-import type { TradingViewConfig, DataSourceMode, InteractionMode } from "./types.js";
+import type { TradingViewConfig, DataSourceMode, InteractionMode, TvConnectionType } from "./types.js";
 import { DEFAULT_TV_CONFIG } from "./types.js";
 
 // ── Mutable singleton config ──────────────────────────────────────────────
@@ -21,6 +21,7 @@ try {
   if (process.env.TV_WEB_URL) _config.connection.webUrl = process.env.TV_WEB_URL;
   if (process.env.TV_DATA_SOURCE) _config.dataSource = process.env.TV_DATA_SOURCE as DataSourceMode;
   if (process.env.TV_INTERACTION) _config.interactionMode = process.env.TV_INTERACTION as InteractionMode;
+  if (process.env.TV_CONNECTION_TYPE) _config.connection.type = process.env.TV_CONNECTION_TYPE as TvConnectionType;
   if (process.env.TV_SYNC_LEVELS === "true") _config.syncLevels = true;
 } catch { /* safe to ignore — defaults apply */ }
 

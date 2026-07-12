@@ -57,10 +57,29 @@ export async function connect(): Promise<boolean> {
   });
 
   try {
-    // Try connecting to an existing browser (TradingView Desktop)
-    const wsUrl = `ws://127.0.0.1:${tvConfig.connection.cdpPort}/devtools/browser`;
-    logger.info({ wsUrl }, "Connecting to TradingView via CDP...");
-    _browser = await puppeteer.connect({ browserURL: `http://127.0.0.1:${tvConfig.connection.cdpPort}` });
+    if (tvConfig.connection.type === "web") {
+      // Launch our own browser instance for web mode
+      logger.info({ url: tvConfig.connection.webUrl }, "Launching browser for TradingView web...");
+      _browser = await puppeteer.launch({
+        headless: false,
+        args: ["--no-sandbox", "--disable-setuid-sandbox"],
+        defaultViewport: { width: 1280, height: 800 },
+      });
+      _page = await _browser.newPage();
+      await _page.goto(tvConfig.connection.webUrl, { waitUntil: "networkidle2", timeout: 30000 });
+    } else {
+      // Desktop mode — connect to existing browser (requires --remote-debugging-port)
+      const cdpHost = process.env.DOCKER_HOST_INTERNAL || "127.0.0.1";
+      const browserUrl = `http://${cdpHost}:${tvConfig.connection.cdpPort}`;
+      logger.info({ browserUrl }, "Connecting to TradingView Desktop via CDP...");
+      _browser = await puppeteer.connect({ browserURL: browserUrl });
+      const pages = await _browser.pages();
+      _page = pages.find((p) => p.url().toLowerCase().includes("tradingview")) ?? pages[0] ?? null;
+      if (!_page) {
+        _page = await _browser.newPage();
+        await _page.goto(tvConfig.connection.webUrl, { waitUntil: "networkidle2", timeout: 30000 });
+      }
+    }
     const pages = await _browser.pages();
     // Find the TradingView tab — look for a page with 'tradingview' in the URL
     _page = pages.find((p) => p.url().toLowerCase().includes("tradingview")) ?? pages[0] ?? null;
