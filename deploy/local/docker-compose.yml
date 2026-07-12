@@ -56,7 +56,7 @@ services:
       - TV_CDP_PORT=${TV_CDP_PORT:-9222}
       - TV_CONNECTION_TYPE=${TV_CONNECTION_TYPE:-desktop}
       - TV_DATA_SOURCE=${TV_DATA_SOURCE:-app}
-      - TV_INTERACTION=${TV_INTERACTION:-readonly}
+      - TV_INTERACTION=${TV_INTERACTION:-readwrite}
       - NEWS_ENABLED=${NEWS_ENABLED:-false}
       - QDRANT_URL=${QDRANT_URL:-http://qdrant:6333}
     extra_hosts:

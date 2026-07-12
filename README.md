@@ -25,6 +25,8 @@ Most retail traders lose because they see charts the wrong way. Institutions don
 | **SMT Divergence** | Correlated-pair divergence detection (BTC/ETH, EUR/GBP) with magnitude + timing scoring |
 | **Draw on Liquidity** | Confluence-boosted target scoring that ranks BSL/SSL/OB/FVG as next price objectives |
 | **Visual Chart Layer** | TradingView Lightweight Charts (v5) with session backgrounds, OB/FVG rectangles, BOS/CHoCH markers, KZO lines |
+| **TradingView Desktop Integration** | CDP-based Puppeteer connection to TradingView Desktop app — reads live chart bars, auto-draws SMC levels (BSL/SSL/FVGs/killzones) via keyboard shortcuts. Used as data fallback when Binance/Yahoo are unreachable |
+| **TV Drawing Controls** | Contextual [TV] buttons on each timeframe card — switches TV Desktop to that symbol/timeframe, draws BSL/SSL/Current rays. Full drawing panel with FVG boxes and session killzones |
 | **AI Agent System** | Fireworks AI (DeepSeek V4 Pro) — streaming Q&A + 4-agent sequential analysis pipeline + MCP tool-calling agent (11 autonomous tools) |
 | **Agent Loop Engine** | Autonomous Observe → Interpret → Reason → Decide → Act → Evaluate → Update cycle with background monitoring, memory tiers, guardrails, and run evaluation |
 | **Langfuse Observability** | LLM call tracing, cost tracking, and run scoring via Langfuse (configurable via env vars, graceful fallback) |
@@ -392,10 +394,69 @@ curl "http://localhost:3001/api/stream/status"
 
 ---
 
+## TradingView Desktop Integration
+
+The app connects to your local TradingView Desktop app via Chrome DevTools Protocol (CDP) for:
+
+1. **Live chart data fallback** — reads 300+ bars directly from TV Desktop when Binance/Yahoo APIs are DNS-blocked
+2. **SMC level drawing** — draws BSL/SSL/Current/FVG/killzones directly on your TV Desktop chart from the frontend
+3. **Contextual switching** — click the **[TV]** button on any timeframe card → it switches TV Desktop to that symbol/timeframe and draws liquidity levels
+
+### Quick Start (Windows)
+
+```powershell
+# 1. Start the API server (with LLM + TV + no-DB mode)
+scripts\start-server-full.ps1
+
+# 2. Start the frontend
+scripts\run-frontend.ps1
+
+# 3. Launch TradingView Desktop with CDP enabled
+scripts\launch-tv.bat
+
+# 4. Open http://localhost:3000
+```
+
+### Frontend Controls
+
+| Button | Location | Action |
+|--------|----------|--------|
+| **TV** (header, green pulsing) | Top bar → opens TV Control Panel | Shows connection status, chart info. Has buttons for full drawing (levels, FVGs, killzones, clear) |
+| **[TV]** (on each timeframe card) | Inside the timeframe agent card | Switches TV Desktop to that symbol/timeframe, draws BSL/SSL/Current rays |
+
+### Data Fallback Chain
+
+```
+Agent Loop or SMC tool needs candles
+  └─ 1. Candle Store (in-memory cache)
+  └─ 2. Binance Direct API / Yahoo Finance
+  └─ 3. TradingView Desktop CDP ← reads live bars from open chart ✅
+```
+
+### Architecture
+
+```
+TradingView Desktop (Electron, --remote-debugging-port=9222)
+    │
+    ├── Puppeteer CDP → chart.ts (getBars, getSymbol, getTimeframe)
+    ├── Puppeteer CDP → connection.ts (keyboardPress, mouseClick)
+    └── Used by: tool-registry (data fallback), agent-loop route (bars)
+```
+
+### Windows MSIX Notes
+
+- TV Desktop is an MSIX package installed in `WindowsApps`
+- Launch with CDP: `Start-Process "shell:AppsFolder\TradingView.Desktop_...!TradingView.Desktop" -ArgumentList "--remote-debugging-port=9222"`
+- Page matching uses `tradingview.com` (not `tradingview`) to avoid matching MSIX path
+
+---
+
 ## Roadmap
 
 - [x] WebSocket live price feed (Binance US for crypto, Finnhub/Yahoo for forex)
 - [x] Real-time candle-close SMC report rebuild with SSE push to browser
+- [x] TV Desktop CDP integration — live chart data fallback + drawing
+- [x] Contextual TV drawing — [TV] button on each timeframe card
 - [x] AI agent system — streaming Q&A + 4-agent pipeline + MCP tool-calling
 - [x] MCP Tier 3 server — 11 SMC tools, 2 resources, 1 prompt for external AI agents
 - [x] Broker abstraction — MockBroker + AlpacaAdapter with REVIEW/LIVE mode toggle

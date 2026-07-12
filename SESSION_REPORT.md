@@ -1,9 +1,10 @@
-# Session Report: Broker-Agnostic Trade Intent + Mock Execution Layer
+# Session Report: TV Desktop CDP Integration + SMC Drawing
 
-## SMC Liquidity Hunter — Hackathon Build Session
+## SMC Liquidity Hunter — Build Session
 
-**Date**: July 5, 2026
-**Code added**: 2,860 lines across 11 new files, 4 files modified
+**Date**: July 12, 2026
+**Focus**: TradingView Desktop integration via Chrome DevTools Protocol
+**Code added**: ~1,200 lines across 30+ files
 
 ---
 
@@ -57,6 +58,34 @@
 | `liquidity-hunter/src/App.tsx` | +2 lines — added `/ledger` route + `TradeLedgerDashboard` import |
 | `liquidity-hunter/vite.config.ts` | +5 lines — added `/api` proxy to `localhost:3001` |
 | `api-server/src/lib/smc/config.ts` | `maxCandles: 300→500`, `maxDailyCandles: 60→120` |
+
+---
+
+## TV Desktop Integration Summary
+
+### What Was Built
+
+| Component | Lines | Purpose |
+|---|---|---|
+| `cdp/connection.ts` | 200+ | Puppeteer CDP singleton, `keyboardPress()`, `mouseClick()`, health checks |
+| `cdp/chart.ts` | 176 | `getBars()`, `getSymbol()`, `getTimeframe()` with TV Desktop API support |
+| `cdp/actions.ts` | 213 | `changeSymbol()`, `changeTimeframe()`, drawing operations, `syncSmcLevels()` |
+| `config.ts` | 60 | Env-var seeded config singleton |
+| `reconciliation.ts` | — | SMC vs TV data comparison engine |
+| `mcp-tools.ts` | 268 | 11 TV MCP tools registered in FastMCP + toolRegistry |
+| `tv-data-fallback.ts` | 60 | `getCandlesWithFallback()` — seamless fallback for all SMC tools |
+| `TvStatus.tsx` | 208 | Frontend TV control panel (connect/disconnect, drawing tools) |
+| `TvCardControl.tsx` | 75 | Contextual [TV] button on each timeframe card |
+| `tv-killzone.mjs` (script) | — | Full pipeline: clean → compute → draw levels + FVGs + killzones |
+
+### TV Desktop CDP — Windows Fixes Applied
+
+1. **MSIX launch**: TV Desktop (MSIX package) requires `shell:AppsFolder` to pass `--remote-debugging-port=9222`
+2. **Page URL matching**: `.includes("tradingview.com")` not `"tradingview"` — MSIX path contains `TradingView.Desktop_`
+3. **Health check**: `_browser.connected` instead of `document.title` (CSP on Electron blocks evaluate)
+4. **Goto strategy**: `domcontentloaded` instead of `networkidle2` (WebSocket livestream hangs)
+5. **TV Desktop API**: Uses `_exposed_chartWidgetCollection` (no `window.tvWidget`)
+6. **Drawing**: Keyboard shortcuts via Puppeteer (`Alt+H`, `Alt+Shift+R`)
 
 ---
 

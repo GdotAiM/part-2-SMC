@@ -40,6 +40,18 @@ workspace/
 │   │   │   │   │   └── LoopEvaluator.ts # Post-run scoring + memory ingestion
 │   │   │   │   ├── evaluation/      # LLM-as-Judge evaluator (Ragas-equivalent)
 │   │   │   │   ├── news/            # NewsFetcher, TextChunker, PdfParser
+│   │   │   │   ├── integrations/
+│   │   │   │   │   └── tradingview/  # TV Desktop CDP integration
+│   │   │   │   │       ├── types.ts          # Connection config, chart state types
+│   │   │   │   │       ├── config.ts         # Env-var seeded config singleton
+│   │   │   │   │       ├── index.ts          # Barrel exports
+│   │   │   │   │       ├── reconciliation.ts # SMC vs TV data comparison
+│   │   │   │   │       ├── mcp-tools.ts      # 11 TV MCP tools
+│   │   │   │   │       ├── cdp/
+│   │   │   │   │       │   ├── connection.ts # Puppeteer CDP singleton, keyboardPress/mouseClick
+│   │   │   │   │       │   ├── chart.ts      # getBars, getSymbol, getTimeframe
+│   │   │   │   │       │   └── actions.ts    # changeSymbol/Timeframe, draw*, syncSmcLevels
+│   │   │   │   │       └── tv-data-fallback.ts # getCandlesWithFallback helper
 │   │   │   │   ├── observability/   # Langfuse tracing wrapper
 │   │   │   │   ├── optimization/    # Prompt optimizer (DSPy-equivalent)
 │   │   │   │   └── smc/
@@ -238,6 +250,44 @@ buildReport(candles, "BTCUSDT", "crypto", "4h", options)
 SmcReport JSON (cached 60s)
   ▼
 Browser → TanStack Query → React state → UI render
+```
+
+### TV Desktop Data Fallback
+
+When the candle store is empty and external APIs are unreachable:
+
+```
+SMC Tool or Agent Loop needs candle data
+  │  candleStore.getCandles(sym, tf)  → empty
+  ▼
+getCandlesWithFallback(sym, tf)
+  ├── 1. Candle Store check → cached EURUSD (not BTCUSDT)
+  ├── 2. TV Desktop CDP:
+  │     ├── connect via Puppeteer to 127.0.0.1:9222
+  │     ├── page.evaluate(() → _exposed_chartWidgetCollection..._source.bars())
+  │     ├── returns 300 candles as [{time,open,high,low,close,volume}]
+  │     └── seeds candleStore for subsequent calls
+  └── 3. Returns candle array to SMC tool
+```
+
+### TV Drawing Lifecycle
+
+```
+User clicks [TV] on timeframe card (or "Draw Levels" in TV panel)
+  │
+  POST /api/agent-loop/tv-draw { action: "levels", symbol, timeframe }
+  ▼
+tv-draw route handler
+  ├── 1. Connect if not connected (Puppeteer → 127.0.0.1:9222)
+  ├── 2. Switch chart: evaluate src.setSymbol() + src.setInterval()
+  ├── 3. Wait for bars to load (~3-6s)
+  ├── 4. Compute BSL/SSL/Current via evaluate()
+  ├── 5. For each level:
+  │     ├── keyboardPress("Alt+h")       ← activate Horizontal Ray
+  │     ├── mouseClick(x, y)             ← place at exact price coordinate
+  │     └── wait 1s
+  ├── 6. keyboardPress("Escape")         ← deselect tool
+  └── 7. Return { levels, logs }
 ```
 
 ### AI Agent Request Lifecycle
