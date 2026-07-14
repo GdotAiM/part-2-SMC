@@ -1,3 +1,14 @@
+import dotenv from "dotenv";
+import { fileURLToPath } from "url";
+import { dirname, resolve } from "path";
+
+// Load .env from the project root so PORT and other vars are picked up
+// automatically when running `node artifacts/api-server/dist/index.mjs`
+// without going through docker-compose or a wrapper script.
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+dotenv.config({ path: resolve(__dirname, "../../../.env") });
+
 import app from "./app";
 import { logger } from "./lib/logger";
 import { binanceWs } from "./lib/realtime/binance-ws.js";

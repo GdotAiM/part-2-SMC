@@ -282,3 +282,7 @@ export const agentMemory = pgTable(
     idxMemoryScore: index("idx_memory_score").on(table.score),
   })
 );
+
+// ── Learning & Validation Framework ─────────────────────────────────
+export * from "./learning";
+

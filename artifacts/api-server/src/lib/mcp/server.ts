@@ -21,6 +21,8 @@ import { registerScanAllTool } from "./tools/scan-all.js";
 import { registerCandleResource } from "./resources/candles.js";
 import { registerStatusResource } from "./resources/status.js";
 import { registerSmcAnalysisPrompt } from "./prompts/analysis.js";
+import { registerTradingViewTools } from "../integrations/tradingview/mcp-tools.js";
+import { registerAllDesktopTools } from "../integrations/tradingview-desktop/register-all.js";
 
 export function createSmcMcpServer(): FastMCP {
   const server = new FastMCP({
@@ -40,6 +42,16 @@ export function createSmcMcpServer(): FastMCP {
   registerFullReportTool(server);
   registerLiveCandlesTool(server);
   registerScanAllTool(server);
+
+  // ── TV Desktop Tools (~80+) ────────────────────────────────────────────────
+  // Replaces the old web-mode TV tools with the full Desktop-native surface.
+  // Uses chrome-remote-interface to connect to TV Desktop's CDP port and
+  // accesses the internal window.TradingViewApi for reliable drawing, data,
+  // alerts, indicators, replay, Pine Script, tabs, UI, and more.
+  registerAllDesktopTools(server);
+
+  // Legacy web-mode TV tools (keep for backward compatibility for now)
+  registerTradingViewTools(server);
 
   // ── Resources (2) ─────────────────────────────────────────────────────────
   registerCandleResource(server);

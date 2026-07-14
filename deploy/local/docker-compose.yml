@@ -75,6 +75,8 @@ services:
   db:
     image: postgres:16-alpine
     restart: unless-stopped
+    ports:
+      - "5433:5432"
     environment:
       - POSTGRES_USER=smc
       - POSTGRES_PASSWORD=smc-liquidity-hunter

@@ -7,6 +7,7 @@ import streamRouter from "./stream.js";
 import agentsMcpRouter from "./agents-mcp.js";
 import ledgerRouter from "./ledger.js";
 import agentLoopRouter from "./agent-loop.js";
+import learningRouter from "./learning.js";
 
 const router: IRouter = Router();
 
@@ -18,5 +19,6 @@ router.use(streamRouter);
 router.use(agentsMcpRouter);
 router.use(ledgerRouter);
 router.use(agentLoopRouter);
+router.use("/learning", learningRouter);
 
 export default router;
