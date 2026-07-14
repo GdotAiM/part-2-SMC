@@ -92,7 +92,9 @@ export async function readPineDetections(indicatorName: string): Promise<Detecti
     const parsed = JSON.parse(studies);
     for (const study of parsed) {
       for (const [key, val] of Object.entries(study.values)) {
-        const numericVal = typeof val === "number" ? val : parseFloat(String(val));
+        // Strip locale formatting (commas) before parse — e.g. "64,515.47" -> 64515.47
+        const cleanedVal = typeof val === "string" ? val.replace(/,/g, "") : val;
+        const numericVal = typeof cleanedVal === "number" ? cleanedVal : parseFloat(String(cleanedVal));
         if (!isNaN(numericVal)) {
           results.push({
             detectionType: mapPineLabelToType(key, study.name),

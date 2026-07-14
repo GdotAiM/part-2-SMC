@@ -31,17 +31,8 @@ CRITICAL RULES:
 4. Only describe your approach AFTER you have the data, as part of your final synthesis.
 
 Available tools:
-- analyze_structure: Market structure (pivots, BOS/CHoCH, bias, phase)
-- analyze_liquidity: Liquidity pools (BSL/SSL with sweep probability)
-- analyze_order_blocks: Order blocks and breaker blocks
-- analyze_fvg: Fair value gaps (unfilled gaps, inversions)
-- analyze_pd_array: Premium/discount/equilibrium zones
-- get_daily_bias: Higher-timeframe daily bias
-- detect_smt: SMT divergence between correlated symbols
-- get_draw_targets: Ranked draw-on-liquidity targets
-- build_full_report: Complete SMC report (all 8 dimensions)
-- get_live_candles: Raw OHLCV candles from real-time feed
-- scan_all_timeframes: Multi-timeframe cascade (M1→W1)`;
+[SMC Analysis] analyze_structure, analyze_liquidity, analyze_order_blocks, analyze_fvg, analyze_pd_array, get_daily_bias, detect_smt, get_draw_targets, build_full_report, get_live_candles, scan_all_timeframes
+[TV Desktop] tv_connect, tv_status, tv_chart_get_state, tv_chart_set_symbol, tv_chart_set_timeframe, tv_draw_shape, tv_ui_click, tv_ui_find_element, tv_ui_open_panel, tv_ui_keyboard, tv_data_get_quote, tv_data_get_depth, read_tv_indicator_levels, compare_engine_vs_tv, get_reliability_report, evaluate_outcomes`;
 
   if (context?.symbol) {
     const parts = [`\n\nDASHBOARD CONTEXT (the user is currently viewing this market):`];
@@ -52,7 +43,54 @@ Available tools:
     prompt += parts.join("\n");
   }
 
-  prompt += `\n\nAlways cite specific price levels from tool results. Do not give financial advice or buy/sell signals. Synthesize in 3-6 sentences — don't list every number from every tool, highlight only the most actionable findings.`;
+  prompt += `\n\nADDITIONAL SYSTEM CAPABILITIES (available as tools below):
+- TradingView Desktop CDP connection — connect to the user's local TV Desktop, check connection status
+- Pine indicator level reading — read horizontal lines from any indicator on the TV chart (LuxAlgo, custom Pine scripts, etc.), auto-classified into OB/FVG/BOS/CHoCH/liquidity/SMT types
+- Comparison Engine — cross-reference TV indicator levels against the internal SMC engine, get agreement rates, price discrepancies, and confidence gaps per detection type
+- Reliability scoring — per-type reliability tracking (engine vs TV) with trend data
+- Outcome evaluation — check forward price action to see which source was correct
+- Truth Engine arbitration — single authoritative verdict when TV and engine disagree
+
+FULL TRADINGVIEW DESKTOP CAPABILITIES (70+ tools across 13 categories):
+
+1. CHART CONTROL (8 tools): tv_chart_get_state (read symbol/timeframe/indicators), tv_chart_set_symbol (change symbol), tv_chart_set_timeframe (change timeframe), tv_chart_set_type (Candles/Line/Area/HeikinAshi/Renko/etc), tv_chart_visible_range (get/set visible date range), tv_chart_scroll_to_date, tv_chart_symbol_info (full symbol details), tv_chart_symbol_search (search symbols by name)
+
+2. DRAWING (6 tools): tv_draw_shape (draw horizontal_line, trend_line, fib_retracement, rectangle, ray, text, arrows, pitchfork, gann_fan, signal, risk_reward, etc. at specific time/price), tv_draw_list (list all drawings), tv_draw_get_properties (inspect drawing), tv_draw_remove (remove one), tv_draw_clear_all (remove all)
+
+3. DATA READING (10 tools): tv_data_get_ohlcv (extract OHLCV bars), tv_data_get_quote (real-time quote with bid/ask), tv_data_get_depth (DOM/order book), tv_data_get_indicator_values (read all indicator values), tv_data_get_pine_lines (read Pine Script horizontal lines), tv_data_get_pine_labels (read Pine labels), tv_data_get_pine_boxes (read Pine box zones), tv_data_get_pine_tables (read Pine table data), tv_data_get_strategy_results (backtest metrics: profit factor, Sharpe, drawdown, win rate), tv_data_get_trades (individual trade list from backtest), tv_data_get_equity (equity curve)
+
+4. ALERTS (3 tools): tv_alert_create (set price alerts with crossing/above/below conditions), tv_alert_list (list all active alerts), tv_alert_delete (remove alerts)
+
+5. INDICATORS (3 tools): tv_indicator_add (add any indicator by name), tv_indicator_remove, tv_indicator_get (inspect indicator inputs/values)
+
+6. PANE/LAYOUT (4 tools): tv_pane_get_layout (read multi-pane layout), tv_pane_set_layout (split into 1-4 panes), tv_pane_focus (switch active pane), tv_pane_set_symbol (set symbol in a specific pane)
+
+7. REPLAY MODE (6 tools): tv_replay_start (from a date), tv_replay_stop, tv_replay_autoplay (set speed), tv_replay_step_forward, tv_replay_trade (buy/sell/close in replay!), tv_replay_get_status
+
+8. TABS (3 tools): tv_tab_get (list chart tabs), tv_tab_switch (switch tab), tv_tab_close (close tab)
+
+9. UI AUTOMATION (11 tools): tv_ui_click (click any UI element by aria-label, data-name, or text — can click buy/sell buttons!), tv_ui_open_panel (open/close pine-editor, strategy-tester, watchlist, alerts, trading panel), tv_ui_fullscreen, tv_ui_keyboard (keyboard shortcuts), tv_ui_type_text (type into focused input), tv_ui_hover (hover over elements), tv_ui_scroll (scroll chart), tv_ui_mouse_click (click at viewport coordinates), tv_ui_find_element (find UI elements by text/CSS/aria), tv_ui_evaluate (execute custom JavaScript), tv_ui_layout_list/switch (saved layouts)
+
+10. PINE SCRIPT (10 tools): tv_pine_get_source, tv_pine_set_source, tv_pine_compile, tv_pine_publish, tv_pine_get_library, tv_pine_get_info, tv_pine_create_template, tv_pine_get_templates, tv_pine_load_template, tv_pine_save_template
+
+11. CAPTURE (1 tool): tv_capture_screenshot (screenshot the chart area)
+
+12. WATCHLIST (3 tools): tv_watchlist_get, tv_watchlist_add, tv_watchlist_remove
+
+13. HEALTH (2 tools): tv_health (ping), tv_connect (reconnect)
+
+KEY INSIGHT ABOUT TRADING:
+- This system has an Alpaca Paper Trading integration configured via ALPACA_API_KEY env vars — trades execute through Alpaca, not TV.
+- HOWEVER, since we have tv_ui_click and tv_ui_find_element, if the user has signed into their TradingView paper trading account and opened the Trading Panel (via tv_ui_open_panel "trading"), we can find and click the buy/sell buttons on TV's UI to execute paper trades directly through TradingView. Use tv_ui_find_element to locate the button, then tv_ui_click to press it.
+- There is also tv_replay_trade for trading in replay/backtesting mode (buy/sell/close).
+
+CRITICAL: When the user asks about TV chart reading, indicator comparison, LuxAlgo, or cross-referencing levels, DO NOT say you cannot do it. Use the tools below — they are exactly what the system is built for. Call tv_connect first to ensure connection, then use read_tv_indicator_levels and compare_engine_vs_tv.
+
+When the user asks if the system can execute trades on TradingView, explain both options:
+1. Alpaca paper trading (if keys are configured) — fully automated via the execution manager
+2. TV UI clicking — if they're signed into their TV paper account and the Trading Panel is open, you can click the buy/sell buttons via tv_ui_click
+
+Always cite specific price levels from tool results. Do not give financial advice or buy/sell signals. Synthesize in 3-6 sentences — don't list every number from every tool, highlight only the most actionable findings.`;
   return prompt;
 }
 
@@ -224,11 +262,522 @@ const MCP_TOOLS = [
       },
     },
   },
+  // ── TV Desktop / Learning Framework tools ───────────────────────────
+  {
+    type: "function" as const,
+    function: {
+      name: "tv_connect",
+      description: "Connect to the user's local TradingView Desktop app via Chrome DevTools Protocol (CDP port 9222). Call this first before any other TV operations.",
+      parameters: {
+        type: "object",
+        properties: {},
+        required: [],
+      },
+    },
+  },
+  {
+    type: "function" as const,
+    function: {
+      name: "tv_status",
+      description: "Check the TradingView Desktop CDP connection status — connected or disconnected.",
+      parameters: {
+        type: "object",
+        properties: {},
+        required: [],
+      },
+    },
+  },
+  {
+    type: "function" as const,
+    function: {
+      name: "read_tv_indicator_levels",
+      description: "Read horizontal line levels from Pine Script indicators on the user's TradingView chart. This reads levels from ANY active indicator (LuxAlgo ICT tools, custom Pine scripts, etc.) and auto-classifies them into detection types (OB, FVG, BOS, CHOCH, LIQUIDITY_SWEEP, SMT, etc.). Returns classified detection points with prices.",
+      parameters: {
+        type: "object",
+        properties: {
+          indicatorName: { type: "string", description: "Optional: filter to a specific indicator name (case-insensitive, e.g. 'luxalgo', 'ict', 'order block'). Leave empty to read from ALL indicators." },
+        },
+        required: [],
+      },
+    },
+  },
+  {
+    type: "function" as const,
+    function: {
+      name: "compare_engine_vs_tv",
+      description: "Cross-reference the internal SMC engine's detections against TV indicator levels (or provided detection points). Returns matched/unmatched levels, agreement rates, price discrepancies, confidence gaps, and the Truth Engine's arbitrated verdicts. Runs the full comparison pipeline.",
+      parameters: {
+        type: "object",
+        properties: {
+          symbol: { type: "string", description: "Trading symbol to analyze (e.g. BTCUSDT, EURUSD=X)" },
+          timeframe: { type: "string", enum: ["1m","5m","15m","1h","4h","1d","1w"], description: "Timeframe to compare on" },
+          market: { type: "string", enum: ["crypto", "forex"], description: "Market type" },
+          indicatorName: { type: "string", description: "TV indicator name to read levels from (optional — auto-detects if left empty)" },
+        },
+        required: ["symbol", "timeframe", "market"],
+      },
+    },
+  },
+  {
+    type: "function" as const,
+    function: {
+      name: "get_reliability_report",
+      description: "Get per-type reliability scores comparing the internal engine vs TV indicators across all detection types (OB, FVG, BOS, CHOCH, LIQUIDITY_SWEEP, SMT, etc.). Shows which source is more reliable for each detection type.",
+      parameters: {
+        type: "object",
+        properties: {},
+        required: [],
+      },
+    },
+  },
+  {
+    type: "function" as const,
+    function: {
+      name: "evaluate_outcomes",
+      description: "Take past comparisons and check forward price action to determine which source (TV or engine) was correct. Updates reliability scores with actual market outcomes.",
+      parameters: {
+        type: "object",
+        properties: {
+          symbol: { type: "string", description: "Trading symbol" },
+          timeframe: { type: "string", enum: ["1m","5m","15m","1h","4h","1d","1w"] },
+          market: { type: "string", enum: ["crypto", "forex"] },
+          detectionType: { type: "string", description: "Optional: filter to a specific detection type" },
+          limit: { type: "number", description: "Number of recent comparisons to evaluate (default 20, max 100)" },
+        },
+        required: ["symbol", "timeframe", "market"],
+      },
+    },
+  },
+  // ── TV Desktop UI tools (chart control, drawing, clicking) ──────────
+  {
+    type: "function" as const,
+    function: {
+      name: "tv_chart_set_symbol",
+      description: "Change the active symbol on the TradingView chart. E.g. BTCUSDT, AAPL, EURUSD, BINANCE:ETHUSDT.",
+      parameters: {
+        type: "object",
+        properties: {
+          symbol: { type: "string", description: "Trading symbol to switch to, e.g. BTCUSDT, AAPL, EURUSD" },
+        },
+        required: ["symbol"],
+      },
+    },
+  },
+  {
+    type: "function" as const,
+    function: {
+      name: "tv_chart_set_timeframe",
+      description: "Change the active timeframe on the TradingView chart.",
+      parameters: {
+        type: "object",
+        properties: {
+          timeframe: { type: "string", enum: ["1m","5m","15m","1h","4h","1d","1w"], description: "Timeframe to switch to" },
+        },
+        required: ["timeframe"],
+      },
+    },
+  },
+  {
+    type: "function" as const,
+    function: {
+      name: "tv_chart_get_state",
+      description: "Read the full TradingView chart state: symbol, timeframe, chart type, and list of active indicators.",
+      parameters: {
+        type: "object",
+        properties: {},
+        required: [],
+      },
+    },
+  },
+  {
+    type: "function" as const,
+    function: {
+      name: "tv_draw_shape",
+      description: "Draw a shape on the TradingView chart at specified time/price. Supports: horizontal_line, trend_line, fib_retracement, rectangle, ray, text, arrow, signal, risk_reward, and many more.",
+      parameters: {
+        type: "object",
+        properties: {
+          shape: { type: "string", description: "Shape type: horizontal_line, trend_line, fib_retracement, rectangle, ray, text, arrow, signal, risk_reward" },
+          time: { type: "number", description: "Time of the first point as Unix timestamp (seconds)" },
+          price: { type: "number", description: "Price of the first point" },
+          time2: { type: "number", description: "Optional: time of the second point (for trend_line, fib_retracement)" },
+          price2: { type: "number", description: "Optional: price of the second point" },
+          text: { type: "string", description: "Optional label/text" },
+          color: { type: "string", description: "Optional hex color, e.g. #22c55e" },
+        },
+        required: ["shape", "time", "price"],
+      },
+    },
+  },
+  {
+    type: "function" as const,
+    function: {
+      name: "tv_ui_open_panel",
+      description: "Open or close a TradingView panel. Panels: trading (to access buy/sell buttons), watchlist, alerts, pine-editor, strategy-tester.",
+      parameters: {
+        type: "object",
+        properties: {
+          panel: { type: "string", enum: ["trading", "watchlist", "alerts", "pine-editor", "strategy-tester"], description: "Panel name to open/close" },
+          action: { type: "string", enum: ["open", "close", "toggle"], description: "Action (default: toggle)" },
+        },
+        required: ["panel"],
+      },
+    },
+  },
+  {
+    type: "function" as const,
+    function: {
+      name: "tv_ui_click",
+      description: "Click a button or UI element on the TradingView interface. Can click buy/sell buttons, toolbar buttons, menu items, etc. Use tv_ui_find_element first to locate the element.",
+      parameters: {
+        type: "object",
+        properties: {
+          by: { type: "string", enum: ["aria-label", "data-name", "text", "class-contains"], description: "How to find the element: by aria-label, data-name attribute, visible text content, or class name" },
+          value: { type: "string", description: "The value to match (e.g. 'Buy', 'Sell', 'Market', 'Trading Panel', 'Order type')" },
+        },
+        required: ["by", "value"],
+      },
+    },
+  },
+  {
+    type: "function" as const,
+    function: {
+      name: "tv_ui_find_element",
+      description: "Find UI elements on the TradingView page by text content, CSS selector, or aria-label. Returns position, size, and visibility info so you can click them with tv_ui_click.",
+      parameters: {
+        type: "object",
+        properties: {
+          query: { type: "string", description: "Text to search for (e.g. 'Buy', 'Sell', 'Market Order', 'Buy Market')" },
+          strategy: { type: "string", enum: ["text", "css", "aria-label"], description: "Search strategy (default: text contains)" },
+        },
+        required: ["query"],
+      },
+    },
+  },
+  {
+    type: "function" as const,
+    function: {
+      name: "tv_ui_keyboard",
+      description: "Send a keyboard shortcut to the TradingView page. E.g. key='s', modifiers=['ctrl'] for Ctrl+S.",
+      parameters: {
+        type: "object",
+        properties: {
+          key: { type: "string", description: "Key to press (e.g. 's', 'Enter', 'Escape', 'ArrowUp')" },
+          modifiers: { type: "array", items: { type: "string", enum: ["alt", "ctrl", "meta", "shift"] }, description: "Optional modifier keys to hold" },
+        },
+        required: ["key"],
+      },
+    },
+  },
+  {
+    type: "function" as const,
+    function: {
+      name: "tv_data_get_quote",
+      description: "Get a real-time quote for the current chart symbol. Returns last price, bid, ask, open, high, low, volume.",
+      parameters: {
+        type: "object",
+        properties: {
+          symbol: { type: "string", description: "Optional: symbol to get quote for (defaults to current chart)" },
+        },
+        required: [],
+      },
+    },
+  },
+  {
+    type: "function" as const,
+    function: {
+      name: "tv_data_get_depth",
+      description: "Read the Depth of Market (DOM) / order book from TradingView if visible. Returns bid and ask levels with sizes, plus spread.",
+      parameters: {
+        type: "object",
+        properties: {},
+        required: [],
+      },
+    },
+  },
 ];
 
 // ── Tool executor — routes tool calls to the tool registry ──────────────────
 
+const API_BASE = `http://127.0.0.1:${process.env.PORT || "3001"}`;
+
 async function executeToolCall(name: string, args: Record<string, unknown>): Promise<string> {
+  // ── TV Desktop / Learning Framework tools (self-contained HTTP calls) ──
+  try {
+    switch (name) {
+      case "tv_connect": {
+        const resp = await fetch(`${API_BASE}/api/agent-loop/tv-connect`, { method: "POST", headers: { "Content-Type": "application/json" } });
+        const data = await resp.json();
+        return JSON.stringify(data);
+      }
+      case "tv_status": {
+        const resp = await fetch(`${API_BASE}/api/agent-loop/tv-status`);
+        const data = await resp.json();
+        return JSON.stringify(data);
+      }
+      case "read_tv_indicator_levels": {
+        // Use the dedicated HTTP endpoint which handles CDP connection internally
+        const resp = await fetch(`${API_BASE}/api/learning/read-tv-indicator-levels`);
+        const data = await resp.json();
+        if (!data.connected) {
+          // Try connecting TV first
+          await fetch(`${API_BASE}/api/agent-loop/tv-connect`, { method: "POST", headers: { "Content-Type": "application/json" } });
+          const retryResp = await fetch(`${API_BASE}/api/learning/read-tv-indicator-levels`);
+          const retryData = await retryResp.json();
+          return JSON.stringify(retryData);
+        }
+        // Apply indicator name filter if provided
+        const indicatorName = (args.indicatorName as string) || "";
+        let levels = data.levels || [];
+        if (indicatorName) {
+          const filter = indicatorName.toLowerCase();
+          levels = levels.filter((l: any) => (l.indicator || "").toLowerCase().includes(filter));
+        }
+        return JSON.stringify({
+          totalLevels: levels.length,
+          indicatorFilter: indicatorName || "all indicators",
+          indicatorsFound: data.indicatorsFound || [],
+          byType: data.byType || {},
+          levels: levels.slice(0, 50).map((l: any) => ({
+            detectionType: l.detectionType,
+            price: Math.round(l.price * 100000) / 100000,
+            confidence: l.confidence,
+            indicator: l.indicator,
+            label: l.label || "",
+          })),
+        });
+      }
+      case "compare_engine_vs_tv": {
+        // First read TV levels to ensure we have fresh data
+        let tvLevels: any[] = [];
+        try {
+          const levelResp = await fetch(`${API_BASE}/api/learning/read-tv-indicator-levels`);
+          const levelData = await levelResp.json();
+          if (levelData.levels && levelData.levels.length > 0) {
+            tvLevels = levelData.levels.map((l: any) => ({
+              detectionType: l.detectionType,
+              price: l.price,
+              confidence: l.confidence,
+              metadata: { indicator: l.indicator, label: l.label },
+            }));
+          }
+        } catch (e) { /* levels read is best-effort */ }
+
+        // Now run the full comparison with the TV levels
+        const resp = await fetch(`${API_BASE}/api/learning/comparisons/analyze`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            symbol: args.symbol,
+            timeframe: args.timeframe,
+            market: args.market,
+            indicatorName: args.indicatorName || "",
+            tvDetections: tvLevels.length > 0 ? tvLevels : undefined,
+          }),
+        });
+        const data = await resp.json();
+        return JSON.stringify({
+          comparisonsCount: data.comparisonsCount,
+          metrics: data.metrics,
+          tvLevelsRead: tvLevels.length,
+          fusedDecisions: data.fusedDecisions?.slice(0, 10),
+          arbitratedMarketView: data.arbitratedMarketView,
+          report: data.report,
+        });
+      }
+      case "get_reliability_report": {
+        const resp = await fetch(`${API_BASE}/api/learning/reliability`);
+        const data = await resp.json();
+        return JSON.stringify({
+          inMemory: data.inMemory,
+          database: data.database?.slice(0, 30),
+        });
+      }
+      case "evaluate_outcomes": {
+        // Fetch recent comparisons for this symbol/timeframe
+        const compResp = await fetch(`${API_BASE}/api/learning/comparisons?symbol=${args.symbol}&timeframe=${args.timeframe}&limit=${args.limit || 20}`);
+        const compData = await compResp.json();
+        const comps: any[] = compData.comparisons || [];
+        if (comps.length === 0) return JSON.stringify({ outcomes: [], message: "No comparisons found to evaluate" });
+        const resp = await fetch(`${API_BASE}/api/learning/evaluate-outcomes`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            comparisonIds: comps.map((c: any) => c.id),
+            lookbackBars: 20,
+          }),
+        });
+        const data = await resp.json();
+        return JSON.stringify({
+          outcomesCount: data.count,
+          outcomes: data.outcomes?.slice(0, 20),
+        });
+      }
+      // ── TV Desktop tools (CDP-based) ─────────────────────────────────
+      case "tv_chart_get_state":
+      case "tv_chart_set_symbol":
+      case "tv_chart_set_timeframe":
+      case "tv_draw_shape":
+      case "tv_ui_open_panel":
+      case "tv_ui_click":
+      case "tv_ui_find_element":
+      case "tv_ui_keyboard":
+      case "tv_data_get_quote":
+      case "tv_data_get_depth": {
+        // Ensure TV is connected first
+        await fetch(`${API_BASE}/api/agent-loop/tv-connect`, { method: "POST", headers: { "Content-Type": "application/json" } });
+
+        // Connect directly via CDP
+        const CDP = (await import("chrome-remote-interface")).default;
+        const targets = await fetch("http://127.0.0.1:9222/json/list").then(r => r.json());
+        const target = targets.find((t: any) => t.type === "page" && /tradingview\.com\/chart/i.test(t.url));
+        if (!target) return JSON.stringify({ error: "No TradingView chart page found" });
+
+        const client = await CDP({ host: "127.0.0.1", port: 9222, target: target.id });
+        await client.Runtime.enable();
+        const E = async (expr: string) => {
+          const r = await client.Runtime.evaluate({ expression: expr, returnByValue: true, awaitPromise: true });
+          return r.result.value;
+        };
+        const eStr = (s: string) => JSON.stringify(s);
+
+        let result: any;
+        try {
+          switch (name) {
+            case "tv_chart_get_state":
+              result = await E(`(function() {
+                var api = window.TradingViewApi._activeChartWidgetWV.value();
+                var studies = []; try { var all = api.getAllStudies(); studies = (all || []).map(function(s) { return { id: s.id, name: s.name || s.title || '?' }; }); } catch(e) {}
+                return { symbol: api.symbol(), resolution: api.resolution(), chartType: api.chartType(), studies: studies };
+              })()`);
+              break;
+
+            case "tv_chart_set_symbol":
+              await E(`window.TradingViewApi._activeChartWidgetWV.value().setSymbol(${eStr(String(args.symbol))}, {})`);
+              await new Promise(r => setTimeout(r, 2000));
+              result = { success: true, symbol: args.symbol };
+              break;
+
+            case "tv_chart_set_timeframe":
+              const tfMap: Record<string, string> = {"1m":"1","5m":"5","15m":"15","1h":"60","4h":"240","1d":"1D","1w":"1W"};
+              const tvTf = tfMap[String(args.timeframe)] || String(args.timeframe);
+              await E(`window.TradingViewApi._activeChartWidgetWV.value().setResolution(${eStr(tvTf)}, {})`);
+              await new Promise(r => setTimeout(r, 1500));
+              result = { success: true, timeframe: args.timeframe, resolved: tvTf };
+              break;
+
+            case "tv_draw_shape":
+              const s = String(args.shape || "horizontal_line");
+              const t = Number(args.time) || Math.floor(Date.now() / 1000);
+              const p = Number(args.price) || 0;
+              const t2 = args.time2 != null ? Number(args.time2) : null;
+              const p2 = args.price2 != null ? Number(args.price2) : null;
+              const overrides: any = {};
+              if (args.color) overrides.color = args.color;
+              const overStr = JSON.stringify(overrides);
+              const txt = args.text ? eStr(String(args.text)) : '""';
+              if (t2 && p2) {
+                await E(`window.TradingViewApi._activeChartWidgetWV.value().createMultipointShape([{time:${t},price:${p}},{time:${t2},price:${p2}}],{shape:${eStr(s)},overrides:${overStr},text:${txt}})`);
+              } else {
+                await E(`window.TradingViewApi._activeChartWidgetWV.value().createShape({time:${t},price:${p}},{shape:${eStr(s)},overrides:${overStr},text:${txt}})`);
+              }
+              result = { success: true, shape: s };
+              break;
+
+            case "tv_ui_open_panel":
+              result = await E(`(function() {
+                var panel = ${eStr(String(args.panel))};
+                var action = ${eStr(String(args.action || "toggle"))};
+                var bwb = window.TradingView && window.TradingView.bottomWidgetBar;
+                if (panel === 'pine-editor' || panel === 'strategy-tester') {
+                  var widgetName = panel === 'pine-editor' ? 'pine-editor' : 'backtesting';
+                  if (!bwb) return { error: 'bottomWidgetBar not available' };
+                  if (action === 'open') { bwb.showWidget(widgetName); }
+                  else if (action === 'close') { bwb.hideWidget(widgetName); }
+                  else { var ba = document.querySelector('[class*="layout__area--bottom"]'); var isOpen = ba && ba.offsetHeight > 50; if (isOpen) bwb.hideWidget(widgetName); else bwb.showWidget(widgetName); }
+                  return { success: true, panel: panel, action: action };
+                }
+                var sel = { trading: 'trading-button', watchlist: 'base-watchlist-widget-button', alerts: 'alerts-button' };
+                var dn = sel[panel];
+                if (!dn) return { error: 'Unknown panel: ' + panel };
+                var btn = document.querySelector('[data-name="' + dn + '"]') || document.querySelector('[aria-label="' + panel.charAt(0).toUpperCase() + panel.slice(1) + '"]');
+                if (!btn) return { error: 'Button not found for ' + panel };
+                btn.click();
+                return { success: true, panel: panel, action: 'toggled' };
+              })()`);
+              break;
+
+            case "tv_ui_click":
+              result = await E(`(function() {
+                var by = ${eStr(String(args.by))};
+                var value = ${eStr(String(args.value))};
+                var el = null;
+                if (by === 'aria-label') { el = document.querySelector('[aria-label="' + value.replace(/"/g,'\\\\"') + '"]'); if (!el) el = document.querySelector('[aria-label*="' + value.replace(/"/g,'\\\\"') + '"]'); }
+                else if (by === 'data-name') el = document.querySelector('[data-name="' + value.replace(/"/g,'\\\\"') + '"]');
+                else if (by === 'text') { var cs = document.querySelectorAll('button, a, [role="button"], [role="menuitem"]'); for (var i=0;i<cs.length;i++) { if (cs[i].textContent.trim() === value || cs[i].textContent.trim().toLowerCase() === value.toLowerCase()) { el=cs[i]; break; } } }
+                else if (by === 'class-contains') el = document.querySelector('[class*="' + value.replace(/"/g,'\\\\"') + '"]');
+                if (!el) return { found: false, error: 'Element not found: ' + by + '=' + value };
+                el.click();
+                return { found: true, tag: el.tagName.toLowerCase(), text: (el.textContent||'').trim().substring(0,80) };
+              })()`);
+              break;
+
+            case "tv_ui_find_element":
+              const query = String(args.query);
+              const strategy = String(args.strategy || "text");
+              const raw = await E(`(function() {
+                var q = ${eStr(query)}; var strat = ${eStr(strategy)}; var r=[];
+                if (strat === 'css') { var els=document.querySelectorAll(q); for(var i=0;i<Math.min(els.length,20);i++){ var rc=els[i].getBoundingClientRect(); r.push({tag:els[i].tagName.toLowerCase(),text:(els[i].textContent||'').trim().substring(0,80),aria_label:els[i].getAttribute('aria-label'),x:rc.x,y:rc.y,width:rc.width,height:rc.height,visible:els[i].offsetParent!==null}); } }
+                else { var all=document.querySelectorAll('button,a,[role="button"],span,div,input'); for(var i=0;i<all.length;i++){ var t=(all[i].textContent||'').trim(); if(t.toLowerCase().indexOf(q.toLowerCase())!==-1&&t.length<200){ var rc=all[i].getBoundingClientRect(); if(rc.width>0&&rc.height>0){ r.push({tag:all[i].tagName.toLowerCase(),text:t.substring(0,80),aria_label:all[i].getAttribute('aria-label'),x:rc.x,y:rc.y,width:rc.width,height:rc.height,visible:all[i].offsetParent!==null}); if(r.length>=20) break; } } } }
+                return r;
+              })()`);
+              result = { query, strategy, count: (raw || []).length, elements: raw || [] };
+              break;
+
+            case "tv_ui_keyboard":
+              const k = String(args.key);
+              const mods: string[] = (args.modifiers as string[]) || [];
+              await client.Input.dispatchKeyEvent({ type: "keyDown", key: k, windowsVirtualKeyCode: k.toUpperCase().charCodeAt(0) });
+              await client.Input.dispatchKeyEvent({ type: "keyUp", key: k });
+              result = { success: true, key: k, modifiers: mods };
+              break;
+
+            case "tv_data_get_quote":
+              result = await E(`(function() {
+                var chart = window.TradingViewApi._activeChartWidgetWV.value()._chartWidget;
+                var sym = ''; try { sym = chart.symbol(); } catch(e) {}
+                var bars = chart.model().mainSeries().bars();
+                var quote = { symbol: sym };
+                if (bars && typeof bars.lastIndex === 'function') { var v = bars.valueAt(bars.lastIndex()); if (v) { quote.time=v[0]; quote.open=v[1]; quote.high=v[2]; quote.low=v[3]; quote.close=v[4]; quote.last=v[4]; quote.volume=v[5]||0; } }
+                var hdr=document.querySelector('[class*="headerRow"] [class*="last-"]'); if(hdr){var hp=parseFloat(hdr.textContent.replace(/[^0-9.\\-]/g,'')); if(!isNaN(hp)) quote.header_price=hp;}
+                return quote;
+              })()`);
+              break;
+
+            case "tv_data_get_depth":
+              result = await E(`(function() {
+                var dom = document.querySelector('[class*="depth"],[class*="orderBook"],[class*="dom-"],[data-name="dom"]');
+                if (!dom) return { found: false, error: 'DOM panel not found. Open Depth of Market panel first.' };
+                var bids=[], asks=[]; var rows=dom.querySelectorAll('[class*="row"], tr');
+                for(var i=0;i<rows.length;i++){ var pEl=rows[i].querySelector('[class*="price"]'); var sEl=rows[i].querySelector('[class*="size"],[class*="volume"]'); if(!pEl) continue; var pr=parseFloat(pEl.textContent.replace(/[^0-9.\\-]/g,'')); var sz=sEl?parseFloat(sEl.textContent.replace(/[^0-9.\\-]/g,'')):0; if(isNaN(pr)) continue; var rc=(rows[i].className||'')+(rows[i].innerHTML||''); if(/bid|buy/i.test(rc)) bids.push({price:pr,size:sz}); else if(/ask|sell/i.test(rc)) asks.push({price:pr,size:sz}); else if(i<rows.length/2) asks.push({price:pr,size:sz}); else bids.push({price:pr,size:sz}); }
+                bids.sort(function(a,b){return b.price-a.price}); asks.sort(function(a,b){return a.price-b.price});
+                var spread=asks.length&&bids.length?+(asks[0].price-bids[0].price).toFixed(6):null;
+                return {found:true,bids:bids.slice(0,20),asks:asks.slice(0,20),spread:spread};
+              })()`);
+              break;
+          }
+        } finally {
+          await client.close();
+        }
+        return JSON.stringify(result || { error: "Tool returned no result" });
+      }
+    }
+  } catch (err) {
+    logger.error({ err, tool: name }, "Learning/TV tool execution failed");
+    return JSON.stringify({ error: err instanceof Error ? err.message : "Unknown error" });
+  }
+
+  // ── Fallback: SMC tools from toolRegistry ───────────────────────────
   const fn = toolRegistry.get(name);
   if (!fn) {
     return JSON.stringify({ error: `Tool "${name}" not found. Available: ${[...toolRegistry.keys()].join(", ")}` });

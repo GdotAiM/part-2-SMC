@@ -156,6 +156,130 @@ router.post("/comparisons/analyze", async (req, res) => {
   }
 });
 
+/**
+ * GET /api/learning/read-tv-indicator-levels
+ * Read indicator levels from TradingView Desktop via CDP.
+ * Extracts data window values from ALL active Pine Script indicators.
+ */
+router.get("/read-tv-indicator-levels", async (_req, res) => {
+  try {
+    // Use chrome-remote-interface directly
+    const CDP = (await import("chrome-remote-interface")).default;
+    const targets = await fetch("http://127.0.0.1:9222/json/list").then(r => r.json());
+    const target = targets.find((t: any) => t.type === "page" && /tradingview\.com\/chart/i.test(t.url));
+    if (!target) { res.json({ error: "No TradingView chart page found", levels: [] }); return; }
+
+    const client = await CDP({ host: "127.0.0.1", port: 9222, target: target.id });
+    await client.Runtime.enable();
+
+    const E = async (expr: string) => {
+      const r = await client.Runtime.evaluate({ expression: expr, returnByValue: true, awaitPromise: true });
+      return r.result.value;
+    };
+
+    const raw = await E(`
+      (function() {
+        var api = window.TradingViewApi;
+        var wv = api._activeChartWidgetWV.value();
+        var model = wv._chartWidget.model();
+        var sources = model.model().dataSources();
+        var results = [];
+
+        for (var si = 0; si < sources.length; si++) {
+          var s = sources[si];
+          if (!s.metaInfo) continue;
+          try {
+            var meta = s.metaInfo();
+            var name = (meta.description || meta.shortDescription || '').toLowerCase();
+            // Skip main price series and default overlays
+            if (name.includes('dividend') || name.includes('split') || name.includes('earning') || name.includes('dates calculator')) continue;
+
+            var dwv = s.dataWindowView();
+            if (!dwv) continue;
+            var items = dwv.items();
+            var vals = [];
+
+            for (var i = 0; i < items.length; i++) {
+              var item = items[i];
+              if (item._value && item._value !== '∅' && item._value !== '' && item._value !== 'NaN') {
+                var raw = String(item._value).replace(/,/g, '');
+                var num = parseFloat(raw);
+                if (!isNaN(num) && num > 0.001) {
+                  vals.push({ title: item._title || '', value: num, raw: item._value });
+                }
+              }
+            }
+
+            if (vals.length > 0) {
+              results.push({ name: name, values: vals });
+            }
+          } catch(e) {}
+        }
+        return JSON.stringify(results);
+      })()
+    `);
+
+    await client.close();
+
+    const indicators = JSON.parse(raw || "[]");
+
+    // Classify values into detection types
+    const allLevels: any[] = [];
+    const seen = new Set<string>();
+
+    for (const ind of indicators) {
+      for (const v of ind.values) {
+        // Classic detection types based on indicator name + value title
+        let detectionType = "LIQUIDITY_SWEEP";
+        const name = ind.name.toLowerCase();
+        const title = (v.title || "").toLowerCase();
+
+        if (name.includes("ob") || name.includes("order") || title.includes("ob") || title.includes("order")) detectionType = "OB";
+        else if (name.includes("fvg") || name.includes("gap") || name.includes("imbalance") || title.includes("fvg") || title.includes("gap")) detectionType = "FVG";
+        else if (name.includes("bos") || name.includes("structure") || title.includes("bos") || title.includes("choch") || title.includes("mss")) {
+          if (title.includes("choch")) detectionType = "CHOCH";
+          else detectionType = "BOS";
+        }
+        else if (name.includes("liquidity") || name.includes("target") || title.includes("bsl") || title.includes("ssl")) detectionType = "LIQUIDITY_SWEEP";
+        else if (name.includes("premium") || title.includes("premium")) detectionType = "PREMIUM";
+        else if (name.includes("discount") || title.includes("discount")) detectionType = "DISCOUNT";
+        else if (name.includes("smt") || title.includes("divergence") || title.includes("smt")) detectionType = "SMT";
+        else if (title.includes("plotcandle") || title.includes("plot")) {
+          // PlotCandle values are price levels — treat as liquidity levels
+          detectionType = "LIQUIDITY_SWEEP";
+        }
+
+        const key = `${detectionType}_${Math.round(v.value * 10000)}`;
+        if (!seen.has(key)) {
+          seen.add(key);
+          allLevels.push({
+            detectionType,
+            price: v.value,
+            confidence: 0.75,
+            indicator: ind.name,
+            label: v.title,
+            rawValue: v.raw,
+          });
+        }
+      }
+    }
+
+    const byType: Record<string, number> = {};
+    for (const l of allLevels) byType[l.detectionType] = (byType[l.detectionType] || 0) + 1;
+
+    res.json({
+      connected: true,
+      indicatorsFound: indicators.map((i: any) => i.name),
+      totalLevels: allLevels.length,
+      byType,
+      levels: allLevels.slice(0, 100),
+    });
+  } catch (err: any) {
+    logger.warn({ err: err.message }, "read-tv-indicator-levels failed");
+    res.json({ connected: false, error: err.message, levels: [] });
+  }
+});
+
 router.post("/evaluate-outcomes", async (req, res) => {
   try {
     const { comparisonIds, lookbackBars } = req.body;
