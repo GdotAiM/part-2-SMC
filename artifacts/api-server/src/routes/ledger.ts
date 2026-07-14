@@ -56,7 +56,7 @@ router.get("/ledger", async (req, res) => {
 
     res.json({ signals, metrics });
   } catch (error: any) {
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: (error as Error).message });
   }
 });
 
@@ -71,7 +71,7 @@ router.get("/ledger/pending", async (_req, res) => {
     const signals = await ledgerService.getPendingSignals();
     res.json({ signals });
   } catch (error: any) {
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: (error as Error).message });
   }
 });
 
@@ -92,7 +92,7 @@ router.get("/performance-matrix", async (req, res) => {
 
     res.json(matrix);
   } catch (error: any) {
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: (error as Error).message });
   }
 });
 
@@ -152,7 +152,7 @@ router.post("/signals/generate", async (req, res) => {
 
     res.json({ signals: [signal] });
   } catch (error: any) {
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: (error as Error).message });
   }
 });
 
@@ -181,7 +181,7 @@ router.post("/signals/execute", async (req, res) => {
 
     res.json(result);
   } catch (error: any) {
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: (error as Error).message });
   }
 });
 
@@ -213,7 +213,7 @@ router.post("/broker/mode", (req, res) => {
     executionManager.setMode(mode);
     res.json({ mode: executionManager.getMode() });
   } catch (error: any) {
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: (error as Error).message });
   }
 });
 
@@ -229,7 +229,7 @@ router.get("/broker/status", (_req, res) => {
       is_paper: true, // hardcoded — AlpacaAdapter is paper-only
     });
   } catch (error: any) {
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: (error as Error).message });
   }
 });
 
@@ -240,7 +240,7 @@ router.get("/account", async (_req, res) => {
     const status = await executionManager.getAccountStatus();
     res.json(status);
   } catch (error: any) {
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: (error as Error).message });
   }
 });
 
@@ -251,7 +251,7 @@ router.post("/performance-matrix/rebuild", async (_req, res) => {
     const count = await matrixService.rebuildFullMatrix();
     res.json({ message: `Performance matrix rebuilt`, combinations: count });
   } catch (error: any) {
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: (error as Error).message });
   }
 });
 
@@ -279,7 +279,7 @@ router.post("/backtest/run", async (req, res) => {
     try { await matrixService.rebuildFullMatrix(); } catch { /* non-critical */ }
     res.json(result);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: (error as Error).message });
   }
 });
 
@@ -298,7 +298,7 @@ router.post("/backtest/run-multi", async (req, res) => {
     try { await matrixService.rebuildFullMatrix(); } catch { /* non-critical */ }
     res.json({ results: Object.fromEntries(results) });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: (error as Error).message });
   }
 });
 

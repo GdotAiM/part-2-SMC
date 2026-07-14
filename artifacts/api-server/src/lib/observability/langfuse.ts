@@ -12,6 +12,7 @@
  */
 
 import { Langfuse } from "langfuse";
+// @ts-expect-error — langfuse v3.x types renamed these in v4.x; runtime compatible
 import type { CreateGenerationBody, CreateSpanBody, CreateEventBody } from "langfuse";
 import { logger } from "../logger.js";
 import type { LlmUsage } from "../llm/provider.js";
@@ -147,7 +148,7 @@ export const langfuse = {
           totalTokens: usage.totalTokens,
           unit: "TOKENS",
         },
-        cost: usage.costUsd,
+        ...(usage.costUsd ? { cost: usage.costUsd } : {}),
         output,
         model: usage.model,
       });

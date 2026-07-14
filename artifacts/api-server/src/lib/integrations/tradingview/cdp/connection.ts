@@ -179,7 +179,7 @@ export async function evaluateWithArgs<T, A extends unknown[]>(
 ): Promise<T | null> {
   if (!(await isConnected()) || !_page) return null;
   try {
-    return await _page.evaluate(fn, ...args);
+    return await _page.evaluate(fn as any, ...args);
   } catch (err: any) {
     logger.warn({ err: err.message }, "TV page evaluateWithArgs failed");
     return null;
@@ -215,14 +215,14 @@ export async function keyboardPress(shortcut: string): Promise<boolean> {
     // Press all modifiers down
     for (const mod of modifiers) {
       const mapped = mod === "Alt" ? "Alt" : mod === "Shift" ? "Shift" : mod === "Control" ? "Control" : mod === "Meta" ? "Meta" : mod;
-      await _page.keyboard.down(mapped);
+      await (_page.keyboard as any).down(mapped);
     }
     // Press and release the key
-    await _page.keyboard.press(key);
+    await (_page.keyboard as any).press(key);
     // Release all modifiers (reverse order)
     for (const mod of [...modifiers].reverse()) {
       const mapped = mod === "Alt" ? "Alt" : mod === "Shift" ? "Shift" : mod === "Control" ? "Control" : mod === "Meta" ? "Meta" : mod;
-      await _page.keyboard.up(mapped);
+      await (_page.keyboard as any).up(mapped);
     }
     return true;
   } catch (err: any) {

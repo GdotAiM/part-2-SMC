@@ -135,7 +135,7 @@ export class PromptOptimizer {
           total: (db as any).sql`count(*)::int`,
           wins: (db as any).sql`count(*) filter (where outcome->>'win' = 'true')::int`,
         })
-        .from(db._.trades || db._.agentMemory)
+        .from((db as any)._.trades || (db as any)._.agentMemory)
         .where((db as any).sql`outcome is not null`);
       // This is a simplified query — real implementation would use proper Drizzle aggregation
     } catch {

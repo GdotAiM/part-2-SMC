@@ -257,7 +257,7 @@ router.get("/agent-loop/runs", async (req: Request, res: Response): Promise<void
 
 router.get("/agent-loop/runs/:id", async (req: Request, res: Response): Promise<void> => {
   try {
-    const trace = await tracer.getRunTrace(req.params.id);
+    const trace = await tracer.getRunTrace(req.params.id as string);
     if (!trace.run) {
       res.status(404).json({ error: `Run "${req.params.id}" not found` });
       return;
@@ -272,7 +272,7 @@ router.get("/agent-loop/runs/:id", async (req: Request, res: Response): Promise<
 
 router.post("/agent-loop/runs/:id/evaluate", async (req: Request, res: Response): Promise<void> => {
   try {
-    const trace = await tracer.getRunTrace(req.params.id);
+    const trace = await tracer.getRunTrace(req.params.id as string);
     if (!trace.run) {
       res.status(404).json({ error: `Run "${req.params.id}" not found` });
       return;
@@ -280,7 +280,7 @@ router.post("/agent-loop/runs/:id/evaluate", async (req: Request, res: Response)
 
     const evaluator = new LoopEvaluator(memoryService.semantic);
     const evaluation = evaluator.scoreRun(trace.steps, trace.run.result || { action: "no_action", confidence: 0, narrative: "" });
-    await evaluator.persistEvaluation(evaluation, req.params.id);
+    await evaluator.persistEvaluation(evaluation, req.params.id as string);
 
     res.json({ evaluation });
   } catch (err: any) {
@@ -336,7 +336,7 @@ router.post("/agent-loop/memory", async (req: Request, res: Response): Promise<v
 
 router.delete("/agent-loop/memory/:id", async (req: Request, res: Response): Promise<void> => {
   try {
-    await memoryService.semantic.deleteEntry(req.params.id);
+    await memoryService.semantic.deleteEntry(req.params.id as string);
     res.json({ status: "deleted" });
   } catch (err: any) {
     res.status(500).json({ error: (err as Error).message });
@@ -512,7 +512,7 @@ router.post("/agent-loop/tv-draw", async (req, res) => {
       // Also call removeAllDrawingTools via evaluate
       await tv.evaluate(() => {
         try {
-          const w = window._exposed_chartWidgetCollection;
+          const w = (window as any)._exposed_chartWidgetCollection;
           if (w?._chartWidgetsDefs?.[0]?.chartWidget?.model) {
             w._chartWidgetsDefs[0].chartWidget.model().removeAllDrawingTools();
           }
@@ -525,11 +525,11 @@ router.post("/agent-loop/tv-draw", async (req, res) => {
       // Compute and draw BSL/SSL/Current
       const coords = await tv.evaluate(() => {
         try {
-          const cw = window._exposed_chartWidgetCollection._chartWidgetsDefs[0].chartWidget;
+          const cw = (window as any)._exposed_chartWidgetCollection._chartWidgetsDefs[0].chartWidget;
           const pane = cw.model().model().mainPane();
           const ps = pane.defaultPriceScale();
           const ts = cw.model().timeScale();
-          const src = window._exposed_chartWidgetCollection.activeChartWidget._value
+          const src = (window as any)._exposed_chartWidgetCollection.activeChartWidget._value
             ._paneWidgets._value[0]._legendWidget._mainSeriesViewModel._source;
           const items = src.bars()._items.map((i: any) => i.value);
           const cur = items[items.length - 1][4];
@@ -581,11 +581,11 @@ router.post("/agent-loop/tv-draw", async (req, res) => {
       // Compute and draw FVG boxes
       const fvgData = await tv.evaluate(() => {
         try {
-          const cw = window._exposed_chartWidgetCollection._chartWidgetsDefs[0].chartWidget;
+          const cw = (window as any)._exposed_chartWidgetCollection._chartWidgetsDefs[0].chartWidget;
           const pane = cw.model().model().mainPane();
           const ps = pane.defaultPriceScale();
           const ts = cw.model().timeScale();
-          const src = window._exposed_chartWidgetCollection.activeChartWidget._value
+          const src = (window as any)._exposed_chartWidgetCollection.activeChartWidget._value
             ._paneWidgets._value[0]._legendWidget._mainSeriesViewModel._source;
           const items = src.bars()._items.map((i: any) => i.value);
           const r = items.slice(-40);
@@ -630,11 +630,11 @@ router.post("/agent-loop/tv-draw", async (req, res) => {
       // Draw session killzone boxes
       const kzData = await tv.evaluate(() => {
         try {
-          const cw = window._exposed_chartWidgetCollection._chartWidgetsDefs[0].chartWidget;
+          const cw = (window as any)._exposed_chartWidgetCollection._chartWidgetsDefs[0].chartWidget;
           const pane = cw.model().model().mainPane();
           const ps = pane.defaultPriceScale();
           const ts = cw.model().timeScale();
-          const src = window._exposed_chartWidgetCollection.activeChartWidget._value
+          const src = (window as any)._exposed_chartWidgetCollection.activeChartWidget._value
             ._paneWidgets._value[0]._legendWidget._mainSeriesViewModel._source;
           const items = src.bars()._items.map((i: any) => i.value);
 

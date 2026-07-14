@@ -34,8 +34,9 @@ export class PdfParser {
     logger.info({ filename }, "Parsing PDF document");
 
     try {
-      const { default: pdfParse } = await import("pdf-parse");
-      const dataBuffer = fs.readFileSync(filePath);
+    // @ts-expect-error — pdf-parse v2.4.x ESM export mismatches types
+    const { default: pdfParse } = await import("pdf-parse");
+    const dataBuffer = fs.readFileSync(filePath);
       const data = await pdfParse(dataBuffer);
 
       return {
@@ -68,6 +69,7 @@ export class PdfParser {
       if (!res.ok) throw new Error(`HTTP ${res.status} fetching PDF`);
 
       const buffer = Buffer.from(await res.arrayBuffer());
+      // @ts-expect-error — pdf-parse v2.4.x ESM export mismatches types
       const { default: pdfParse } = await import("pdf-parse");
       const data = await pdfParse(buffer);
 

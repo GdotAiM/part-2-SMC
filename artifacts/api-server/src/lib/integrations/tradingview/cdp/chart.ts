@@ -170,7 +170,8 @@ export async function getIndicators(): Promise<string[]> {
  * Returns null if CDP is not connected or the chart has no data.
  */
 export async function getBars(limit: number = 500): Promise<Array<{ time: number; open: number; high: number; low: number; close: number; volume: number }> | null> {
-  return evaluate((maxBars: number) => {
+  return evaluate(() => {
+    const maxBars = limit;
     try {
       const coll = (window as any)._exposed_chartWidgetCollection;
       if (!coll?.activeChartWidget?._value) return null;
@@ -190,7 +191,7 @@ export async function getBars(limit: number = 500): Promise<Array<{ time: number
         volume: item.value[5],
       }));
     } catch { return null; }
-  }, limit);
+  });
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────
