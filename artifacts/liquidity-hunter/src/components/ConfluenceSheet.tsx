@@ -39,7 +39,7 @@ function deriveMultiTfSetup(
   anchorBias: string,
   market: Market,
 ) {
-  const direction = anchorBias === "bullish" ? "long" : anchorBias === "bearish" ? "short" : null;
+  const direction: "long" | "short" | null = anchorBias === "bullish" ? "long" : anchorBias === "bearish" ? "short" : null;
   if (!direction) return null;
 
   /* Entry zone from ENTRY TRIGGER (lowest TF) */

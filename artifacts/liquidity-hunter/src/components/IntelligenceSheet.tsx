@@ -40,7 +40,7 @@ function Section({ title, icon: Icon, children }: { title: string; icon: React.E
 /* ─── Trade Setup derivation ─── */
 function deriveSetup(report: SmcReport) {
   const bias = report.structure.bias !== "neutral" ? report.structure.bias : report.dailyBias.bias;
-  const direction = bias === "bullish" ? "long" : bias === "bearish" ? "short" : null;
+  const direction: "long" | "short" | null = bias === "bullish" ? "long" : bias === "bearish" ? "short" : null;
 
   const liveOBs      = report.orderBlocks.filter(ob => ob.valid && !ob.isMitigated);
   const unfilledFVGs = report.fvg.filter(g => g.fillFraction < 0.5);
