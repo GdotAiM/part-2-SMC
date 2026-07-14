@@ -1,0 +1,22 @@
+{
+  "attachmentFolderPath": "./attachments",
+  "baseFontSize": 15,
+  "communityPluginSortOrder": "download",
+  "defaultViewMode": "source",
+  "alwaysUpdateLinks": true,
+  "newFileLocation": "current",
+  "newFileFolderPath": "knowledge",
+  "showLineNumber": true,
+  "spellcheck": false,
+  "tabSize": 2,
+  "userIgnoreFilters": [
+    "node_modules/",
+    "dist/",
+    ".git/"
+  ],
+  "vimMode": false,
+  "readableLineLength": true,
+  "strictLineBreaks": false,
+  "showFrontmatter": true,
+  "livePreview": true
+}

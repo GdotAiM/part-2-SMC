@@ -1,0 +1,14 @@
+{
+  "accentColor": "",
+  "baseFontSize": 15,
+  "cssTheme": "",
+  "enabledPlugins": [
+    "obsidian-git",
+    "obsidian-kanban"
+  ],
+  "theme": "obsidian",
+  "vault": {
+    "displayName": "SMC Pulse Predict",
+    "icon": "chart-line"
+  }
+}

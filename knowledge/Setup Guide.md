@@ -1,0 +1,90 @@
+---
+tags: [setup, onboarding, development]
+aliases: [Setup Guide, Onboarding]
+---
+
+# Setup Guide
+
+## Prerequisites
+- Node.js 22+
+- pnpm 9
+- Docker Desktop (for PostgreSQL)
+- (Optional) Fireworks AI API key
+- (Optional) TradingView Desktop with CDP
+
+## One-Time Setup
+
+```powershell
+# 1. Clone and install
+cd part-2-SMC
+pnpm install
+
+# 2. Configure environment
+cp .env.example .env
+# Edit .env: set FIREWORKS_API_KEY, DATABASE_URL
+
+# 3. Start PostgreSQL
+cd deploy/local
+docker compose up -d db
+
+# 4. Apply trust auth (Windows Docker workaround)
+docker compose exec db sh -c "echo 'host all all all trust' >> /var/lib/postgresql/data/pg_hba.conf && psql -U smc -d smc_liquidity -c 'SELECT pg_reload_conf();'"
+
+# 5. Run migration
+docker compose exec db psql -U smc -d smc_liquidity < docs/migrations/003_learning_framework.sql
+
+cd ../..
+
+# 6. Build and start
+pnpm --filter @workspace/api-server run build
+node artifacts/api-server/dist/index.mjs
+
+# 7. Verify
+curl http://localhost:3001/api/healthz
+curl http://localhost:3001/api/learning/dashboard
+```
+
+## Starting TV Desktop
+
+```powershell
+# Launch TV Desktop with CDP debugging
+# Find the package:
+Get-AppxPackage -Name "*TradingView*"
+# Launch:
+Start-Process "shell:AppsFolder\TradingView.Desktop_<family>!TradingView.Desktop" -ArgumentList "--remote-debugging-port=9222"
+```
+
+## Running the AI
+
+Set `FIREWORKS_API_KEY` in `.env`:
+```env
+LLM_PROVIDER=fireworks
+FIREWORKS_API_KEY=fw_xxxxxxxxxxxxxxxxxxx
+```
+
+## Quick Reference Commands
+
+```bash
+# Build
+pnpm --filter @workspace/api-server run build
+
+# Start server
+node artifacts/api-server/dist/index.mjs
+
+# Run comparison cycle
+curl -X POST http://localhost:3001/api/learning/comparisons/analyze \
+  -H "Content-Type: application/json" \
+  -d '{"symbol":"EURUSD","timeframe":"15m","market":"forex"}'
+
+# View learning dashboard
+curl http://localhost:3001/api/learning/dashboard
+
+# Health check
+curl http://localhost:3001/api/healthz
+
+# MCP tools
+curl -s -X POST http://localhost:3002/mcp \
+  -H "Accept: application/json, text/event-stream" \
+  -H "Content-Type: application/json" \
+  -d '{"jsonrpc":"2.0","method":"initialize","params":{"protocolVersion":"2025-03-26","capabilities":{},"clientInfo":{"name":"cli","version":"1.0"}},"id":"1"}'
+```

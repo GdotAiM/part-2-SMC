@@ -47,6 +47,8 @@ Thumbs.db
 # Environment secrets
 .env
 .env.local
+.obsidian/workspace
+.obsidian/workspace.json
 
 # Replit
 .cache/
