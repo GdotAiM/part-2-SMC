@@ -14,7 +14,7 @@
  *   Sessions: 98%
  */
 
-import { logger } from "../../logger.js";
+import { logger } from "../logger.js";
 
 // ─── Types ──────────────────────────────────────────────────────────────
 

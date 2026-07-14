@@ -18,7 +18,7 @@
  *   — not a comparison to figure out.
  */
 
-import { logger } from "../../logger.js";
+import { logger } from "../logger.js";
 import type { FusedDecision } from "../fusion/EvidenceFusionLayer.js";
 
 // ─── Truth Verdict — what the AI actually needs ────────────────────────

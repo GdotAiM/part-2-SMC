@@ -108,8 +108,8 @@ export const dataTools: ToolDef[] = [
 
       if (symbol) {
         // Get current symbol, switch, read, restore
-        const original = await evaluate(`${CHART_API}.symbol()`);
-        const bare = (s: string) => (s || "").toString().split(":").pop().toUpperCase();
+        const original = (await evaluate(`${CHART_API}.symbol()`)) ?? "";
+        const bare = (s: string) => s.toString().split(":").pop()?.toUpperCase() ?? "";
         if (bare(original) !== bare(symbol)) {
           await evaluateAsync(`
             (function() { var chart = ${CHART_API}; return new Promise(function(r) { chart.setSymbol(${safeString(symbol)}, {}); setTimeout(r, 500); }); })()

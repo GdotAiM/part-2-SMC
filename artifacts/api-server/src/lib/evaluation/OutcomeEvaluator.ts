@@ -13,7 +13,7 @@
  *   - Winner: TV / Engine / Both / Neither
  */
 
-import { logger } from "../../logger.js";
+import { logger } from "../logger.js";
 import { candleStore } from "../realtime/candle-store.js";
 import { reliabilityEngine } from "../reliability/ReliabilityEngine.js";
 import { learningService } from "../learning/LearningService.js";
@@ -123,7 +123,8 @@ export class OutcomeEvaluator {
 
       // Determine which source was correct
       let correctSource: "TV" | "ENGINE" | "BOTH" | "NEITHER" = "NEITHER";
-      const noOutcome = outcome === "IGNORED" || outcome === "PENDING";
+      const o = outcome as string;
+      const noOutcome = o === "IGNORED" || o === "PENDING";
 
       if (noOutcome) {
         correctSource = "NEITHER";
@@ -136,9 +137,9 @@ export class OutcomeEvaluator {
       }
 
       // Win if level was respected or reversed
-      const wouldWin = outcome === "RESPECTED" || outcome === "REVERSAL" || outcome === "FILLED";
+      const wouldWin = o === "RESPECTED" || o === "REVERSAL" || o === "FILLED";
       const pnlPct = wouldWin
-        ? (outcome === "REVERSAL" ? 0.02 : 0.01)  // hypothetical 1-2% move
+        ? (o === "REVERSAL" ? 0.02 : 0.01)  // hypothetical 1-2% move
         : (outcome === "SWEPT" ? -0.01 : 0);       // swept for -1%
 
       results.push({

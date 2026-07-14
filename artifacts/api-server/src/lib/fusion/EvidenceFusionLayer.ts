@@ -9,7 +9,7 @@
  * Decision Explanation, Supporting Evidence, Contradicting Evidence, Unknown Factors.
  */
 
-import { logger } from "../../logger.js";
+import { logger } from "../logger.js";
 import type { ComparisonRecord } from "../comparison/ComparisonEngine.js";
 
 // ─── Fusion Result ─────────────────────────────────────────────────────

@@ -82,7 +82,7 @@ router.post("/agent-loop/run", async (req: Request, res: Response): Promise<void
       logger.info({ symbol: sym, timeframe: tf, count: candles.length, source: "yahoo" }, "Fetched candles from Yahoo");
     }
   } catch (fetchErr) {
-    logger.warn({ err: fetchErr.message, symbol: sym, tf }, "Direct fetch failed, trying candle store");
+    logger.warn({ err: (fetchErr as Error).message, symbol: sym, tf }, "Direct fetch failed, trying candle store");
     candles = candleStore.getCandles(sym, tf);
     if (candles.length >= 10) {
       logger.info({ symbol: sym, timeframe: tf, count: candles.length, source: "candle_store" }, "Using candle store fallback");

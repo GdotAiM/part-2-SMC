@@ -35,7 +35,7 @@ export const replayTools: ToolDef[] = [
       } else {
         await evaluate(`${RP}.selectFirstAvailableDate()`);
       }
-      let started = false, currentDate = null;
+      let started: boolean | null = false, currentDate: number | null = null;
       for (let i = 0; i < 30; i++) {
         started = await evaluate(wv(`${RP}.isReplayStarted()`));
         currentDate = await evaluate(wv(`${RP}.currentDate()`));

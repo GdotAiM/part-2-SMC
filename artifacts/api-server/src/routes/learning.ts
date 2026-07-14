@@ -133,7 +133,7 @@ router.post("/comparisons/analyze", async (req, res) => {
         : report.sessionState?.toLowerCase().includes("pm") ? "overlap"
         : "offHours",
       volatilityPct: candles.length > 50
-        ? (Math.max(...candles.slice(-20).map(c => c.high)) - Math.min(...candles.slice(-20).map(c => c.low))) / candles[candles.length - 1].close
+        ? (Math.max(...candles.slice(-20).map((c: any) => c.high)) - Math.min(...candles.slice(-20).map((c: any) => c.low))) / (candles[candles.length - 1] as any).close
         : 0.005,
     };
     const arbitrated = truthEngine.arbitrateAll(decisions, relByType, { tv: { correct: 0, total: 0 }, engine: { correct: 0, total: 0 } }, context);

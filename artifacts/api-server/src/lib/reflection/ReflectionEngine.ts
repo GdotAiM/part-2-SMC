@@ -12,7 +12,7 @@
  *   - Should new rules be proposed?
  */
 
-import { logger } from "../../logger.js";
+import { logger } from "../logger.js";
 import { reliabilityEngine } from "../reliability/ReliabilityEngine.js";
 import { learningService } from "../learning/LearningService.js";
 import type { OutcomeEval } from "../evaluation/OutcomeEvaluator.js";
