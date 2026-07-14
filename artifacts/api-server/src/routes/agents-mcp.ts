@@ -32,7 +32,11 @@ CRITICAL RULES:
 
 Available tools:
 [SMC Analysis] analyze_structure, analyze_liquidity, analyze_order_blocks, analyze_fvg, analyze_pd_array, get_daily_bias, detect_smt, get_draw_targets, build_full_report, get_live_candles, scan_all_timeframes
-[TV Desktop] tv_connect, tv_status, tv_chart_get_state, tv_chart_set_symbol, tv_chart_set_timeframe, tv_draw_shape, tv_ui_click, tv_ui_find_element, tv_ui_open_panel, tv_ui_keyboard, tv_data_get_quote, tv_data_get_depth, read_tv_indicator_levels, compare_engine_vs_tv, get_reliability_report, evaluate_outcomes`;
+[Chart Control] tv_chart_get_state, tv_chart_set_symbol, tv_chart_set_timeframe
+[Chart Drawing] tv_draw_shape
+[TV Data] tv_data_get_ohlcv, tv_data_get_quote, tv_data_get_depth
+[TV UI] tv_ui_click, tv_ui_find_element, tv_ui_open_panel, tv_ui_keyboard
+[TV Comparison] read_tv_indicator_levels, compare_engine_vs_tv, get_reliability_report, evaluate_outcomes`;
 
   if (context?.symbol) {
     const parts = [`\n\nDASHBOARD CONTEXT (the user is currently viewing this market):`];
@@ -495,6 +499,36 @@ const MCP_TOOLS = [
       },
     },
   },
+  {
+    type: "function" as const,
+    function: {
+      name: "tv_data_get_ohlcv",
+      description: "READ THIS FIRST: Read OHLCV bar data from the current TradingView chart. IMPORTANT USAGE: After reading bars with this tool, call the 'analyze_from_tv_bars' tool to run SMC analysis on them. This is the only reliable way to get SMC analysis on this machine because the internal data pipeline (Binance/Yahoo) is DNS-blocked — TV Desktop is the only working data source.",
+      parameters: {
+        type: "object",
+        properties: {
+          count: { type: "number", description: "Number of recent bars to return (max 500, default 200)" },
+        },
+        required: [],
+      },
+    },
+  },
+  {
+    type: "function" as const,
+    function: {
+      name: "analyze_from_tv_bars",
+      description: "CRITICAL: Run SMC analysis on bars read from the TradingView chart. Call tv_data_get_ohlcv first to read bars, then pass the bars to this tool. Returns a full SMC report (structure, liquidity, OBs, FVGs, PD array, daily bias, SMT, draw targets, narrative). This is the PRIMARY analysis path when Binance/Yahoo APIs are unreachable.",
+      parameters: {
+        type: "object",
+        properties: {
+          symbol: { type: "string", description: "Trading symbol, e.g. BTCUSDT" },
+          timeframe: { type: "string", enum: ["1m","5m","15m","1h","4h","1d","1w"], description: "Timeframe of the bars" },
+          market: { type: "string", enum: ["crypto", "forex"], description: "Market type" },
+        },
+        required: ["symbol", "timeframe", "market"],
+      },
+    },
+  },
 ];
 
 // ── Tool executor — routes tool calls to the tool registry ──────────────────
@@ -623,7 +657,9 @@ async function executeToolCall(name: string, args: Record<string, unknown>): Pro
       case "tv_ui_find_element":
       case "tv_ui_keyboard":
       case "tv_data_get_quote":
-      case "tv_data_get_depth": {
+      case "tv_data_get_depth":
+      case "tv_data_get_ohlcv":
+      case "analyze_from_tv_bars": {
         // Ensure TV is connected first
         await fetch(`${API_BASE}/api/agent-loop/tv-connect`, { method: "POST", headers: { "Content-Type": "application/json" } });
 
@@ -765,6 +801,32 @@ async function executeToolCall(name: string, args: Record<string, unknown>): Pro
                 return {found:true,bids:bids.slice(0,20),asks:asks.slice(0,20),spread:spread};
               })()`);
               break;
+
+            case "tv_data_get_ohlcv": {
+              const ohlcvLimit = Math.min((args.count as number) || 200, 500);
+              const rawBars = await E(`(function() {
+                var bars = window.TradingViewApi._activeChartWidgetWV.value()._chartWidget.model().mainSeries().bars();
+                if (!bars || typeof bars.lastIndex !== 'function') return null;
+                var result = []; var end = bars.lastIndex(); var start = Math.max(bars.firstIndex(), end - ${ohlcvLimit} + 1);
+                for (var i = start; i <= end; i++) { var v = bars.valueAt(i); if (v) result.push({ time: v[0], open: v[1], high: v[2], low: v[3], close: v[4], volume: v[5] || 0 }); }
+                return JSON.stringify(result);
+              })()`);
+              const parsedBars = rawBars ? JSON.parse(rawBars) : [];
+              result = { bar_count: parsedBars.length, bars: parsedBars };
+              break;
+            }
+
+            case "analyze_from_tv_bars": {
+              // Uses GET /api/analysis/from-tv which handles everything:
+              // connect TV, switch symbol/timeframe, read bars, run SMC report
+              const tvSym = String(args.symbol || "BTCUSDT");
+              const tvTf2 = String(args.timeframe || "15m");
+              const tvMkt = String(args.market || (tvSym.includes("=X") ? "forex" : "crypto"));
+              const resp2 = await fetch(`${API_BASE}/api/analysis/from-tv?symbol=${tvSym}&timeframe=${tvTf2}&market=${tvMkt}`);
+              const data2 = await resp2.json();
+              result = data2;
+              break;
+            }
           }
         } finally {
           await client.close();
