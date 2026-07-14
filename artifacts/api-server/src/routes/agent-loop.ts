@@ -157,7 +157,7 @@ router.post("/agent-loop/run", async (req: Request, res: Response): Promise<void
 
   loop.on("error", (err) => {
     try {
-      res.write(`data: ${JSON.stringify({ type: "loop_error", error: err.message })}\n\n`);
+      res.write(`data: ${JSON.stringify({ type: "loop_error", error: (err as Error).message })}\n\n`);
       res.write(`data: ${JSON.stringify({ type: "loop_complete", result: { action: "error" } })}\n\n`);
       res.end();
     } catch { /* ignore */ }
@@ -176,7 +176,7 @@ router.post("/agent-loop/run", async (req: Request, res: Response): Promise<void
   } catch (err: any) {
     logger.error({ err }, "Agent loop run failed");
     try {
-      res.write(`data: ${JSON.stringify({ type: "loop_error", error: err.message })}\n\n`);
+      res.write(`data: ${JSON.stringify({ type: "loop_error", error: (err as Error).message })}\n\n`);
       res.write(`data: ${JSON.stringify({ type: "done" })}\n\n`);
       res.end();
     } catch { /* ignore */ }
@@ -249,7 +249,7 @@ router.get("/agent-loop/runs", async (req: Request, res: Response): Promise<void
     });
     res.json({ runs });
   } catch (err: any) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: (err as Error).message });
   }
 });
 
@@ -264,7 +264,7 @@ router.get("/agent-loop/runs/:id", async (req: Request, res: Response): Promise<
     }
     res.json(trace);
   } catch (err: any) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: (err as Error).message });
   }
 });
 
@@ -284,7 +284,7 @@ router.post("/agent-loop/runs/:id/evaluate", async (req: Request, res: Response)
 
     res.json({ evaluation });
   } catch (err: any) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: (err as Error).message });
   }
 });
 
@@ -297,7 +297,7 @@ router.get("/agent-loop/memory", async (req: Request, res: Response): Promise<vo
     const entries = await memoryService.semantic.query(tagsArr, key as string | undefined);
     res.json({ entries: limit ? entries.slice(0, parseInt(limit as string)) : entries });
   } catch (err: any) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: (err as Error).message });
   }
 });
 
@@ -328,7 +328,7 @@ router.post("/agent-loop/memory", async (req: Request, res: Response): Promise<v
     });
     res.json({ status: "stored", key });
   } catch (err: any) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: (err as Error).message });
   }
 });
 
@@ -339,7 +339,7 @@ router.delete("/agent-loop/memory/:id", async (req: Request, res: Response): Pro
     await memoryService.semantic.deleteEntry(req.params.id);
     res.json({ status: "deleted" });
   } catch (err: any) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: (err as Error).message });
   }
 });
 
@@ -362,7 +362,7 @@ router.post("/agent-loop/optimize", async (req: Request, res: Response): Promise
     res.json(result);
   } catch (err: any) {
     logger.error({ err }, "Prompt optimization failed");
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: (err as Error).message });
   }
 });
 
@@ -381,7 +381,7 @@ router.get("/agent-loop/optimize/variants", async (req: Request, res: Response):
     const variants = await optimizer.getVariants(agentName);
     res.json({ variants });
   } catch (err: any) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: (err as Error).message });
   }
 });
 
@@ -407,7 +407,7 @@ router.get("/agent-loop/tv-status", async (_req, res) => {
     const connected = await tv.isConnected();
     res.json({ connected, config: tv.getTvConfig(), url: connected ? await tv.getPageUrl() : null });
   } catch (err) {
-    res.json({ connected: false, error: err.message });
+    res.json({ connected: false, error: (err as Error).message });
   }
 });
 
@@ -418,7 +418,7 @@ router.post("/agent-loop/tv-config", async (req, res) => {
     setTvConfig(req.body);
     res.json({ config: getTvConfig() });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: (err as Error).message });
   }
 });
 
@@ -429,7 +429,7 @@ router.post("/agent-loop/tv-connect", async (_req, res) => {
     const ok = await tv.connect();
     res.json({ connected: ok });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: (err as Error).message });
   }
 });
 
@@ -442,7 +442,7 @@ router.post("/agent-loop/tv-sync", async (req, res) => {
     const count = await tv.syncSmcLevels(report);
     res.json({ synced: count });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: (err as Error).message });
   }
 });
 
@@ -453,7 +453,7 @@ router.get("/agent-loop/tv-read", async (_req, res) => {
     const state = await tv.getChartState();
     res.json({ state });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: (err as Error).message });
   }
 });
 
@@ -688,7 +688,7 @@ router.post("/agent-loop/tv-draw", async (req, res) => {
     await tv.keyboardPress("Escape");
     res.json(result);
   } catch (err: any) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: (err as Error).message });
   }
 });
 
@@ -707,7 +707,7 @@ router.get("/agent-loop/news", async (req: Request, res: Response): Promise<void
     const articles = await newsFetcher.fetchNews(symbol, limit ? parseInt(limit) : 5);
     res.json({ articles });
   } catch (err: any) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: (err as Error).message });
   }
 });
 
@@ -718,7 +718,7 @@ router.get("/agent-loop/news/macro", async (_req: Request, res: Response): Promi
     const events = await newsFetcher.fetchMacroEvents(10);
     res.json({ events });
   } catch (err: any) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: (err as Error).message });
   }
 });
 
@@ -735,7 +735,7 @@ router.post("/agent-loop/similar-setups", async (req: Request, res: Response): P
     );
     res.json({ results });
   } catch (err: any) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: (err as Error).message });
   }
 });
 
@@ -762,6 +762,6 @@ router.get("/agent-loop/news-context", async (req: Request, res: Response): Prom
     const context = await buildNewsContext(symbol);
     res.json({ context });
   } catch (err: any) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: (err as Error).message });
   }
 });

@@ -223,18 +223,18 @@ toolRegistry.set("scan_all_timeframes", async (args) => {
 import { getChartState, getSymbol, getTimeframe, getDrawings, isConnected, connect } from "../integrations/tradingview/index.js";
 import { changeSymbol, changeTimeframe, drawHorizontalLine, drawFibRetracement, drawLabel, deleteDrawings, setAlert } from "../integrations/tradingview/index.js";
 
-async function tvExec(args, fn) {
+async function tvExec(args: Record<string, unknown>, fn: (args: Record<string, unknown>, tv: any) => Promise<any>): Promise<string> {
   try {
     if (!(await isConnected())) await connect();
     const tv = { getChartState, getSymbol, getTimeframe, getDrawings, changeSymbol, changeTimeframe, drawHorizontalLine, drawFibRetracement, drawLabel, deleteDrawings, setAlert };
     return JSON.stringify(await fn(args, tv));
   } catch (err) {
-    return JSON.stringify({ error: err.message || "TV tool failed" });
+    return JSON.stringify({ error: (err as Error).message || "TV tool failed" });
   }
 }
 
-function rt(name, fn) {
-  toolRegistry.set(name, (args) => tvExec(args, fn));
+function rt(name: string, fn: (args: Record<string, unknown>, tv: any) => Promise<any>): void {
+  toolRegistry.set(name, (args: Record<string, unknown>) => tvExec(args, fn));
 }
 
 rt("tv_get_chart_state", async (args, tv) => { const state = await tv.getChartState(); return { chartState: state }; });
