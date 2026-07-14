@@ -221,7 +221,7 @@ export class SignalGenerator {
     }
   ): UnifiedTradeSignal | null {
     const bias = deriveBias(report);
-    const direction = bias === "BULLISH" ? "long" : bias === "BEARISH" ? "short" : null;
+    const direction: "long" | "short" | null = bias === "BULLISH" ? "long" : bias === "BEARISH" ? "short" : null;
     if (!direction) return null;
 
     const liveOBs = report.orderBlocks.filter((ob) => ob.valid && !ob.isMitigated);
@@ -404,7 +404,7 @@ export class SignalGenerator {
       sortedReports[sortedReports.length - 1];
 
     const anchorBias = deriveBias(anchorItem.report);
-    const direction = anchorBias === "BULLISH" ? "long" : anchorBias === "BEARISH" ? "short" : null;
+    const direction: "long" | "short" | null = anchorBias === "BULLISH" ? "long" : anchorBias === "BEARISH" ? "short" : null;
     if (!direction) return null;
 
     const entryReport = entryItem.report;
