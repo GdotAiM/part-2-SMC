@@ -45,6 +45,7 @@ SMC Pulse Predict is an AI Trading Operating System that applies ICT (Inner Circ
 - Autonomous Agent Loop with memory, guardrails, and observability
 - TradingView Desktop CDP integration (86 MCP tools)
 - Learning & Validation Framework comparing internal engine vs TV indicators
+- **Truth Engine** — decision arbitration layer that resolves "who do I trust?" by combining reliability, outcome history, and market context into one authoritative answer per level
 - Trade ledger with 7-dimension performance matrix
 - Backtesting with sliding-window SMC simulation
 - Broker-agnostic execution (MockBroker / Alpaca paper trading)
@@ -406,6 +407,7 @@ For the Agent Loop, step 3 (Reason) uses the same streaming pattern but with a m
 | **MCP** | `src/lib/mcp/` | server.ts + tool-registry + tools/ + resources/ + prompts/ |
 | **Learning** | `src/lib/comparison/` | ComparisonEngine |
 | | `src/lib/fusion/` | EvidenceFusionLayer |
+| | `src/lib/truth/` | TruthEngine (Decision Arbitration) |
 | | `src/lib/learning/` | LearningService |
 | | `src/lib/reliability/` | ReliabilityEngine |
 | | `src/lib/reflection/` | ReflectionEngine |
@@ -864,6 +866,9 @@ Browser/CLI                    API Server                  TV Desktop CDP       
 | `Decision` | `loop/types` | LLM-generated decision: action type, reason, confidence |
 | `ComparisonRecord` | `comparison/ComparisonEngine` | TV vs Engine comparison for one detection point |
 | `FusedDecision` | `fusion/EvidenceFusionLayer` | Fused evidence: composite confidence, explanation, supporting/contradicting evidence |
+| `TruthVerdict` | `truth/TruthEngine` | Single authoritative verdict: chosen source, adopted price, final confidence, selection rationale |
+| `ArbitratedMarketView` | `truth/TruthEngine` | Complete arbitrated market picture handed to the AI: all verdicts, overall confidence, market summary string |
+| `ArbitrationStrategy` | `truth/TruthEngine` | Enum: BOTH_AGREE, TRUST_HIGHER_RELIABILITY, TV_FALLBACK, ENGINE_FALLBACK, FALLBACK_COMPOSITE, INSUFFICIENT_DATA |
 | `DetectionPoint` | `comparison/ComparisonEngine` | `{ detectionType, price, confidence, metadata }` |
 | `OutcomeEval` | `evaluation/OutcomeEvaluator` | Market outcome for a detection: respected/swept/ignored, correct source |
 | `TradeReflection` | `reflection/ReflectionEngine` | Post-trade analysis: disagreements, who was correct, rules proposed |
