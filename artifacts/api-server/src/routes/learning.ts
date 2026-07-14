@@ -18,6 +18,7 @@ import { fetchYahooCandles } from "../lib/fetchers/yahoo.js";
 import { compareDetections, extractEngineDetections, readPineDetections, calculateComparisonMetrics } from "../lib/comparison/ComparisonEngine.js";
 import { evidenceFusionLayer } from "../lib/fusion/EvidenceFusionLayer.js";
 import { OutcomeEvaluator } from "../lib/evaluation/OutcomeEvaluator.js";
+import { truthEngine } from "../lib/truth/TruthEngine.js";
 
 const router: IRouter = Router();
 // Lazy pool — created only when DATABASE_URL is set
@@ -118,10 +119,30 @@ router.post("/comparisons/analyze", async (req, res) => {
     const count = await learningService.storeComparisons(comparisons);
     const decisions = evidenceFusionLayer.fuseAll(comparisons);
 
+    // ── Truth Engine arbitration ──────────────────────────────────────────────
+    const relReport = reliabilityEngine.getReport();
+    const relByType = relReport.byTypeBySource;
+    const context = {
+      marketRegime: report.structure.phase === "expansion" ? "trending"
+        : report.structure.phase === "distribution" ? "trending"
+        : report.structure.phase === "accumulation" ? "ranging"
+        : "volatile",
+      session: report.sessionState?.toLowerCase().includes("london") ? "london"
+        : report.sessionState?.toLowerCase().includes("new york") || report.sessionState?.toLowerCase().includes("ny") ? "newYork"
+        : report.sessionState?.toLowerCase().includes("asia") ? "asia"
+        : report.sessionState?.toLowerCase().includes("pm") ? "overlap"
+        : "offHours",
+      volatilityPct: candles.length > 50
+        ? (Math.max(...candles.slice(-20).map(c => c.high)) - Math.min(...candles.slice(-20).map(c => c.low))) / candles[candles.length - 1].close
+        : 0.005,
+    };
+    const arbitrated = truthEngine.arbitrateAll(decisions, relByType, { tv: { correct: 0, total: 0 }, engine: { correct: 0, total: 0 } }, context);
+
     res.json({
       comparisonsCount: count,
       comparisons: comparisons.slice(0, 20),
       fusedDecisions: decisions.slice(0, 20),
+      arbitratedMarketView: arbitrated,
       metrics: calculateComparisonMetrics(comparisons),
       report: {
         symbol: report.symbol, timeframe: report.timeframe,
@@ -172,6 +193,29 @@ router.post("/evaluate-outcomes", async (req, res) => {
     const outcomes = evaluator.evaluate(comparisons, candles, lookbackBars || 20);
     await evaluator.processOutcomes(outcomes, comparisons);
     res.json({ outcomes, count: outcomes.length });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+/**
+ * POST /api/learning/arbitrate
+ * Accept fused decisions and market context, return an arbitrated market view.
+ * This is the endpoint AIs call to get a single authoritative answer.
+ */
+router.post("/arbitrate", async (req, res) => {
+  try {
+    const { fusedDecisions, marketContext } = req.body;
+    if (!fusedDecisions || !Array.isArray(fusedDecisions)) {
+      res.status(400).json({ error: "fusedDecisions array required" });
+      return;
+    }
+
+    const relReport = reliabilityEngine.getReport();
+    const context = marketContext || { marketRegime: "unknown", session: "offHours", volatilityPct: 0.005 };
+    const arbitrated = truthEngine.arbitrateAll(fusedDecisions, relReport.byTypeBySource, { tv: { correct: 0, total: 0 }, engine: { correct: 0, total: 0 } }, context);
+
+    res.json({ arbitratedMarketView: arbitrated });
   } catch (err: any) {
     res.status(500).json({ error: err.message });
   }
