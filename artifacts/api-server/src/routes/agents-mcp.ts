@@ -85,7 +85,7 @@ FULL TRADINGVIEW DESKTOP CAPABILITIES (70+ tools across 13 categories):
 
 KEY INSIGHT ABOUT TRADING:
 - This system has an Alpaca Paper Trading integration configured via ALPACA_API_KEY env vars — trades execute through Alpaca, not TV.
-- HOWEVER, since we have tv_ui_click and tv_ui_find_element, if the user has signed into their TradingView paper trading account and opened the Trading Panel (via tv_ui_open_panel "trading"), we can find and click the buy/sell buttons on TV's UI to execute paper trades directly through TradingView. Use tv_ui_find_element to locate the button, then tv_ui_click to press it.
+- However, the TV Desktop chart already has Buy/Sell buttons visible on the chart. Click them directly via: tv_ui_click by: "data-name" value: "buy-order-button" or "sell-order-button". The trading panel toggle button has text "Trade". Use tv_ui_find_element first to discover what buttons your TV version has.
 - There is also tv_replay_trade for trading in replay/backtesting mode (buy/sell/close).
 
 CRITICAL: When the user asks about TV chart reading, indicator comparison, LuxAlgo, or cross-referencing levels, DO NOT say you cannot do it. Use the tools below — they are exactly what the system is built for. Call tv_connect first to ensure connection, then use read_tv_indicator_levels and compare_engine_vs_tv.
@@ -432,12 +432,12 @@ const MCP_TOOLS = [
     type: "function" as const,
     function: {
       name: "tv_ui_click",
-      description: "Click a button or UI element on the TradingView interface. Can click buy/sell buttons, toolbar buttons, menu items, etc. Use tv_ui_find_element first to locate the element.",
+      description: "Click a button or UI element on the TradingView interface. Trading buttons use data-name: 'buy-order-button' (Buy), 'sell-order-button' (Sell). Other: data-name='header-toolbar-fullscreen'. Use tv_ui_find_element first to discover what's on your TV version.",
       parameters: {
         type: "object",
         properties: {
-          by: { type: "string", enum: ["aria-label", "data-name", "text", "class-contains"], description: "How to find the element: by aria-label, data-name attribute, visible text content, or class name" },
-          value: { type: "string", description: "The value to match (e.g. 'Buy', 'Sell', 'Market', 'Trading Panel', 'Order type')" },
+          by: { type: "string", enum: ["aria-label", "data-name", "text", "class-contains"], description: "Selector strategy. Best for trading: data-name (buy-order-button, sell-order-button). Also supports text, aria-label, class-contains." },
+          value: { type: "string", description: "The value to match e.g. 'buy-order-button', 'Buy', 'Sell', 'Trade'." },
         },
         required: ["by", "value"],
       },
@@ -733,13 +733,31 @@ async function executeToolCall(name: string, args: Record<string, unknown>): Pro
                   else { var ba = document.querySelector('[class*="layout__area--bottom"]'); var isOpen = ba && ba.offsetHeight > 50; if (isOpen) bwb.hideWidget(widgetName); else bwb.showWidget(widgetName); }
                   return { success: true, panel: panel, action: action };
                 }
-                var sel = { trading: 'trading-button', watchlist: 'base-watchlist-widget-button', alerts: 'alerts-button' };
-                var dn = sel[panel];
-                if (!dn) return { error: 'Unknown panel: ' + panel };
-                var btn = document.querySelector('[data-name="' + dn + '"]') || document.querySelector('[aria-label="' + panel.charAt(0).toUpperCase() + panel.slice(1) + '"]');
-                if (!btn) return { error: 'Button not found for ' + panel };
-                btn.click();
-                return { success: true, panel: panel, action: 'toggled' };
+                // Try multiple selectors for right-side panels
+                var selMap = {
+                  trading: ['trading-button', 'tv-trading-button', 'header-toolbar-trading'],
+                  watchlist: ['base-watchlist-widget-button', 'watchlist'],
+                  alerts: ['alerts-button', 'alerts']
+                };
+                var selList = selMap[panel] || [];
+                for (var si = 0; si < selList.length; si++) {
+                  var btn = document.querySelector('[data-name="' + selList[si] + '"]');
+                  if (btn) { btn.click(); return { success: true, panel: panel, selector: selList[si] }; }
+                }
+                // Fallback: search buttons by text
+                var keywords = { trading: ['Trading', 'Trading Panel', 'Orders'], watchlist: ['Watchlist'], alerts: ['Alerts'] };
+                var kw = keywords[panel] || [];
+                var allBtns = document.querySelectorAll('button, [role="button"]');
+                for (var ki = 0; ki < kw.length; ki++) {
+                  for (var bi = 0; bi < allBtns.length; bi++) {
+                    var txt = (allBtns[bi].textContent || '').trim().toLowerCase();
+                    if (txt === kw[ki].toLowerCase() || txt.indexOf(kw[ki].toLowerCase()) !== -1) {
+                      allBtns[bi].click();
+                      return { success: true, panel: panel, method: 'text_fallback', text: kw[ki] };
+                    }
+                  }
+                }
+                return { error: 'Button not found for ' + panel + ' — try different panel name' };
               })()`);
               break;
 
@@ -885,10 +903,14 @@ router.post("/agents/ask-mcp", async (req: Request, res: Response): Promise<void
 
   try {
     // ── Agent loop: AI can make multiple tool call rounds ──────────────────
-    let maxRounds = 3; // prevent infinite loops
+    let maxRounds = 10; // prevent infinite loops (was 3 — too low for complex analysis)
     let streamedContent = "";
 
     while (maxRounds-- > 0) {
+      // Add timeout to LLM API call — 30s per round
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30000);
+
       const response = await fetch(`${llmConfig.baseUrl}/chat/completions`, {
         method: "POST",
         headers: {
@@ -897,6 +919,7 @@ router.post("/agents/ask-mcp", async (req: Request, res: Response): Promise<void
             ? { Authorization: `Bearer ${llmConfig.apiKey}` }
             : {}),
         },
+        signal: controller.signal,
         body: JSON.stringify({
           model: llmConfig.model,
           stream: true,
@@ -905,11 +928,17 @@ router.post("/agents/ask-mcp", async (req: Request, res: Response): Promise<void
           tools: MCP_TOOLS,
           tool_choice: "auto",
         }),
-      });
+      }).finally(() => clearTimeout(timeoutId));
 
       if (!response.ok || !response.body) {
         const text = await response.text();
-        res.write(`data: ${JSON.stringify({ error: `AI error: ${response.status} ${text}` })}\n\n`);
+        // Send error to stream but don't end — let the agent retry
+        if (response.status === 429) {
+          res.write(`data: ${JSON.stringify({ content: "\n\n[Rate limited by AI provider — waiting 2 seconds...]\n\n" })}\n\n`);
+          await new Promise(r => setTimeout(r, 2000));
+          continue; // retry
+        }
+        res.write(`data: ${JSON.stringify({ error: `AI error: ${response.status} ${text.slice(0, 200)}` })}\n\n`);
         res.end();
         return;
       }
@@ -971,7 +1000,6 @@ router.post("/agents/ask-mcp", async (req: Request, res: Response): Promise<void
 
       // If the model made tool calls, execute them and feed results back
       if (toolCalls.length > 0) {
-        // Add assistant message with tool calls
         messages.push({
           role: "assistant",
           content: assistantContent || null,
@@ -982,7 +1010,6 @@ router.post("/agents/ask-mcp", async (req: Request, res: Response): Promise<void
           })),
         });
 
-        // Execute each tool and add results
         for (const tc of toolCalls) {
           res.write(`data: ${JSON.stringify({ tool_start: tc.name })}\n\n`);
 
@@ -990,33 +1017,38 @@ router.post("/agents/ask-mcp", async (req: Request, res: Response): Promise<void
           try { parsedArgs = JSON.parse(tc.arguments); } catch { /* use empty */ }
 
           const result = await executeToolCall(tc.name, parsedArgs);
-
-          res.write(`data: ${JSON.stringify({ tool_result: tc.name, content: result.slice(0, 200) + (result.length > 200 ? "..." : "") })}\n\n`);
+          const displayResult = result.length > 400 ? result.slice(0, 400) + "..." : result;
+          res.write(`data: ${JSON.stringify({ tool_result: tc.name, content: displayResult })}\n\n`);
 
           messages.push({
             role: "tool",
             tool_call_id: tc.id,
             content: result,
           });
-
         }
 
-        // Continue loop — AI will process tool results and respond
         continue;
       }
 
-      // No tool calls — final response sent, done
+      // No tool calls — final response (or empty fallback)
+      if (!assistantContent && !streamedContent) {
+        res.write(`data: ${JSON.stringify({ content: "Let me synthesize what I've gathered so far..." })}\n\n`);
+      }
       res.write(`data: ${JSON.stringify({ done: true })}\n\n`);
       res.end();
       return;
     }
 
     // Max rounds exceeded
-    res.write(`data: ${JSON.stringify({ done: true, note: "max tool-call rounds reached" })}\n\n`);
+    res.write(`data: ${JSON.stringify({ done: true, note: "max analysis rounds reached", partial: streamedContent })}\n\n`);
     res.end();
-  } catch (err) {
+  } catch (err: any) {
     logger.error({ err }, "MCP agent ask failed");
-    res.write(`data: ${JSON.stringify({ error: "Stream error" })}\n\n`);
+    if (err?.name === 'AbortError') {
+      res.write(`data: ${JSON.stringify({ error: "AI provider request timed out — the connection may be slow. Please try a simpler question or try again." })}\n\n`);
+    } else {
+      res.write(`data: ${JSON.stringify({ error: `Stream error: ${err?.message || "Unknown"}` })}\n\n`);
+    }
     res.end();
   }
 });
