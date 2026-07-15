@@ -55,7 +55,8 @@ IMPORTANT: READ the indicators on the user's TV chart. Use read_tv_indicator_lev
 [Chart Drawing] tv_draw_shape
 [TV Data] tv_data_get_ohlcv, tv_data_get_quote, tv_data_get_depth
 [TV UI] tv_ui_click, tv_ui_find_element, tv_ui_open_panel, tv_ui_keyboard
-[TV Comparison] read_tv_indicator_levels, compare_engine_vs_tv, get_reliability_report, evaluate_outcomes`;
+[TV Comparison] read_tv_indicator_levels, compare_engine_vs_tv, get_reliability_report, evaluate_outcomes
+[TV Generic] tv_call (any TV tool by name), tv_evaluate_js (arbitrary JS on TV page)`;
 
   if (context?.symbol) {
     const parts = [`\n\nDASHBOARD CONTEXT (the user is currently viewing this market):`];
@@ -548,6 +549,36 @@ const MCP_TOOLS = [
       },
     },
   },
+  // ── Generic TV tool call — access all 70+ TV Desktop tools ──────────
+  {
+    type: "function" as const,
+    function: {
+      name: "tv_call",
+      description: "Call ANY TradingView Desktop tool by name with its parameters. Use this to access tools not listed individually above. Examples: tv_indicator_add (add indicator), tv_indicator_get (inspect), tv_alert_create (create price alert), tv_data_get_pine_lines/boxes/labels (read Pine drawings), tv_data_get_strategy_results (backtest stats), tv_data_get_trades (trade list), tv_replay_start/stop/autoplay (replay mode), tv_pane_set_layout (split panes), tv_capture_screenshot, tv_chart_search_symbol, tv_draw_remove, tv_draw_list, tv_draw_clear_all, tv_ui_hover, tv_ui_scroll, tv_ui_type_text, tv_ui_find_element, tv_watchlist_get/add/remove, tv_tab_switch/close, tv_pine_get_source/set_source/compile, tv_ui_layout_list/switch. See the FULL TRADINGVIEW DESKTOP CAPABILITIES section in the system prompt for descriptions.",
+      parameters: {
+        type: "object",
+        properties: {
+          tool_name: { type: "string", description: "The exact TV Desktop tool name, e.g. tv_indicator_add, tv_data_get_pine_lines, tv_alert_create, tv_replay_start, tv_pane_set_layout, tv_capture_screenshot, tv_draw_remove, tv_watchlist_add, tv_pine_compile, tv_tab_switch" },
+          parameters: { type: "object", description: "Tool-specific parameters as a JSON object. Check the tool's description in the system prompt for what params it needs." },
+        },
+        required: ["tool_name", "parameters"],
+      },
+    },
+  },
+  {
+    type: "function" as const,
+    function: {
+      name: "tv_evaluate_js",
+      description: "Execute arbitrary JavaScript in the TradingView page context and return the result. Use with caution — this is a universal escape hatch for anything not covered by other tools. Example: access chart model directly, read internal state, trigger UI actions.",
+      parameters: {
+        type: "object",
+        properties: {
+          expression: { type: "string", description: "JavaScript expression to evaluate in the TV page context" },
+        },
+        required: ["expression"],
+      },
+    },
+  },
 ];
 
 // ── Tool executor — routes tool calls to the tool registry ──────────────────
@@ -678,7 +709,9 @@ async function executeToolCall(name: string, args: Record<string, unknown>): Pro
       case "tv_data_get_quote":
       case "tv_data_get_depth":
       case "tv_data_get_ohlcv":
-      case "analyze_from_tv_bars": {
+      case "analyze_from_tv_bars":
+      case "tv_call":
+      case "tv_evaluate_js": {
         // Ensure TV is connected first
         await fetch(`${API_BASE}/api/agent-loop/tv-connect`, { method: "POST", headers: { "Content-Type": "application/json" } });
 
@@ -862,6 +895,30 @@ async function executeToolCall(name: string, args: Record<string, unknown>): Pro
               const resp2 = await fetch(`${API_BASE}/api/analysis/from-tv?symbol=${tvSym}&timeframe=${tvTf2}&market=${tvMkt}`);
               const data2 = await resp2.json();
               result = data2;
+              break;
+            }
+
+            case "tv_call": {
+              // Generic TV tool call — dynamically import and run any registered TV tool
+              const toolName = String((args as any).tool_name || "");
+              const toolArgs = ((args as any).parameters || {}) as Record<string, unknown>;
+              if (!toolName) { result = { error: "tool_name is required" }; break; }
+              try {
+                const { getAllToolDefs } = await import("../lib/integrations/tradingview-desktop/register-all.js");
+                const allTools = getAllToolDefs();
+                const match = allTools.find((t: any) => t.name === toolName);
+                if (!match) { result = { error: `TV tool "${toolName}" not found. Available: ${allTools.map((t: any) => t.name).slice(0, 20).join(", ")}...` }; break; }
+                const executeResult = await match.execute(toolArgs);
+                result = { success: true, tool: toolName, result: executeResult };
+              } catch (e: any) { result = { error: `tv_call ${toolName} failed: ${e.message}` }; }
+              break;
+            }
+
+            case "tv_evaluate_js": {
+              const expr = String((args as any).expression || "");
+              if (!expr) { result = { error: "expression is required" }; break; }
+              const evalResult = await E(expr);
+              result = { expression: expr.substring(0, 100), result: evalResult };
               break;
             }
           }
