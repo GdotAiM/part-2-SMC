@@ -41,17 +41,15 @@ workspace/
 │   │   │   │   ├── evaluation/      # LLM-as-Judge evaluator (Ragas-equivalent)
 │   │   │   │   ├── news/            # NewsFetcher, TextChunker, PdfParser
 │   │   │   │   ├── integrations/
-│   │   │   │   │   └── tradingview/  # TV Desktop CDP integration
-│   │   │   │   │       ├── types.ts          # Connection config, chart state types
-│   │   │   │   │       ├── config.ts         # Env-var seeded config singleton
-│   │   │   │   │       ├── index.ts          # Barrel exports
-│   │   │   │   │       ├── reconciliation.ts # SMC vs TV data comparison
-│   │   │   │   │       ├── mcp-tools.ts      # 11 TV MCP tools
-│   │   │   │   │       ├── cdp/
-│   │   │   │   │       │   ├── connection.ts # Puppeteer CDP singleton, keyboardPress/mouseClick
-│   │   │   │   │       │   ├── chart.ts      # getBars, getSymbol, getTimeframe
-│   │   │   │   │       │   └── actions.ts    # changeSymbol/Timeframe, draw*, syncSmcLevels
-│   │   │   │   │       └── tv-data-fallback.ts # getCandlesWithFallback helper
+│   │   │   │   │   ├── tradingview/     # TV Desktop CDP (Legacy Puppeteer)
+│   │   │   │   │   │   ├── cdp/connection.ts, chart.ts, actions.ts
+│   │   │   │   │   │   ├── mcp-tools.ts, reconciliation.ts, config.ts
+│   │   │   │   │   │   └── tv-data-fallback.ts
+│   │   │   │   │   └── tradingview-desktop/ # TV Desktop CDP (chrome-remote-interface, 70+ tools)
+│   │   │   │   │       ├── core/connection.ts, chart.ts, drawing.ts, alerts.ts
+│   │   │   │   │       ├── indicators.ts, data.ts, pane.ts, replay.ts
+│   │   │   │   │       ├── tab.ts, ui.ts, pine.ts, capture.ts, watchlist.ts, health.ts
+│   │   │   │   │       └── register-all.ts
 │   │   │   │   ├── observability/   # Langfuse tracing wrapper
 │   │   │   │   ├── optimization/    # Prompt optimizer (DSPy-equivalent)
 │   │   │   │   └── smc/
@@ -67,10 +65,12 @@ workspace/
 │   │   │   │       └── report.ts       # Orchestrator — assembles all modules
 │   │   │   └── routes/
 │   │   │       ├── index.ts            # Router mount
-│   │   │       ├── analysis.ts         # GET /api/analysis/{crypto,forex} + cache
-│   │   │       ├── agents.ts           # POST /api/agents/{ask,pipeline} + Fireworks AI
-│   │   │       ├── agent-loop.ts      # POST /api/agent-loop/{run,start/stop-monitoring}
-│   │   │       │                      # GET  /api/agent-loop/{status,runs,memory}
+│   │   │       ├── analysis.ts         # GET /api/analysis/{crypto,forex,from-tv,from-bars}
+│   │   │       ├── agents.ts           # POST /api/agents/{ask,pipeline} (TV-aware prompt)
+│   │   │       ├── agents-mcp.ts       # POST /api/agents/ask-mcp (27 tools)
+│   │   │       ├── agent-loop.ts      # TV connect/status/draw + loop endpoints
+│   │   │       ├── learning.ts         # TV level reader, comparison, reliability
+│   │   │       ├── ledger.ts           # Signals, broker, backtest
 │   │   │       ├── stream.ts           # GET /api/stream/:symbol (SSE real-time)
 │   │   │       ├── symbols.ts          # GET /api/symbols
 │   │   │       └── health.ts           # GET /api/healthz

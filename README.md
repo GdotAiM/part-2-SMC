@@ -25,10 +25,12 @@ Most retail traders lose because they see charts the wrong way. Institutions don
 | **SMT Divergence** | Correlated-pair divergence detection (BTC/ETH, EUR/GBP) with magnitude + timing scoring |
 | **Draw on Liquidity** | Confluence-boosted target scoring that ranks BSL/SSL/OB/FVG as next price objectives |
 | **Visual Chart Layer** | TradingView Lightweight Charts (v5) with session backgrounds, OB/FVG rectangles, BOS/CHoCH markers, KZO lines |
-| **TradingView Desktop Integration** | CDP-based Puppeteer connection to TradingView Desktop app — reads live chart bars, auto-draws SMC levels (BSL/SSL/FVGs/killzones) via keyboard shortcuts. Used as data fallback when Binance/Yahoo are unreachable |
-| **TV Drawing Controls** | Contextual [TV] buttons on each timeframe card — switches TV Desktop to that symbol/timeframe, draws BSL/SSL/Current rays. Full drawing panel with FVG boxes and session killzones |
-| **AI Agent System** | Fireworks AI (DeepSeek V4 Pro) — streaming Q&A + 4-agent sequential analysis pipeline + MCP tool-calling agent (11 autonomous tools) |
-| **Agent Loop Engine** | Autonomous Observe → Interpret → Reason → Decide → Act → Evaluate → Update cycle with background monitoring, memory tiers, guardrails, and run evaluation |
+| **TradingView Desktop CDP Integration** | Dual-path CDP connection to TV Desktop App: **(1)** Legacy Puppeteer path for drawing SMC levels (BSL/SSL/FVGs/killzones) via keyboard shortcuts, used as data fallback. **(2)** New chrome-remote-interface path with 70+ MCP tools for full chart control — switch symbol/timeframe, draw shapes, read OHLCV bars, read indicator levels (LuxAlgo), add indicators, create alerts, read Depth of Market, control replay mode. Used as primary data source when Binance/Yahoo are DNS-blocked |
+| **TV Desktop Agent Awareness** | Both AI agents (`POST /api/agents/ask` and `POST /api/agents/ask-mcp`) are fully aware of all 70+ TV Desktop capabilities. They can read your TV indicators (LuxAlgo ICT tools), cross-reference against the internal SMC engine, draw levels, open/close panels, and click Buy/Sell buttons for paper trading |
+| **LuxAlgo / Pine Indicator Comparison** | Reads horizontal line levels from ANY Pine Script indicator on your TV chart (LuxAlgo ICT Concepts, Smart Money Concepts, etc.), auto-classifies into OB/FVG/BOS/CHoCH/liquidity sweep types, and cross-references against the internal SMC engine via the Comparison Engine. Produces agreement rates, price discrepancies, and Truth Engine arbitrated verdicts per detection type |
+| **Chart Bar Reader (TV Fallback)** | `GET /api/analysis/from-tv` reads OHLCV bars directly from TV Desktop via CDP and runs the full SMC analysis (300+ candles). Seeds the candle store so all SMC tools work seamlessly. Essential on machines where Binance/Yahoo APIs are DNS-blocked |
+| **TV UI Trading** | The MCP agent can click Buy/Sell buttons on your TV Desktop chart (via `tv_ui_click` with data-name selectors) if you're signed into your paper trading account. Also supports Alpaca paper trading via env vars |
+| **AI Agent System** | Fireworks AI (DeepSeek V4 Pro) — streaming Q&A (`/api/agents/ask`) with full TV/comparison capability awareness + MCP tool-calling agent (`/api/agents/ask-mcp`) with 27 autonomous tools (11 SMC + 10 TV Desktop + 6 Comparison Engine) |
 | **Langfuse Observability** | LLM call tracing, cost tracking, and run scoring via Langfuse (configurable via env vars, graceful fallback) |
 | **Prompt Optimization** | LLM-as-judge evaluation and improvement of agent prompts (DSPy-equivalent) for ongoing performance gains |
 | **RAG / News / Vector Memory** | News fetching (RSS + CoinMarketCap), text chunking, PDF parsing, and Qdrant vector database for long-term setup memory with "find similar past setups" |
@@ -122,10 +124,11 @@ Run locally (see Installation below) then visit `http://localhost:5173`.
 | Data (Crypto) | Binance REST + WebSocket (no key required) |
 | Data (Forex) | Yahoo Finance REST + Finnhub WebSocket (optional) |
 | AI | Multi-provider LLM abstraction — Fireworks AI (DeepSeek V4 Pro, default), OpenAI (GPT-4o), self-hosted vLLM (AMD GPU), or custom OpenAI-compatible endpoints |
-| MCP | FastMCP v4.3.2 on port 3002 — 11 tools, 2 resources, 1 prompt |
+| MCP | FastMCP v4.3.2 on port 3002 — 73 TV Desktop tools + 12 SMC tools, 4 resources, 2 prompts |
 | Execution | BrokerAdapter interface — MockBroker (file-based) + AlpacaAdapter (paper API) |
 | Database | PostgreSQL via Drizzle ORM (optional — server runs without it) |
 | Cache | In-process Map, 60s TTL |
+| CDP | `chrome-remote-interface` + `puppeteer` — dual-path TradingView Desktop integration |
 
 ### Frontend
 | Layer | Technology |
@@ -171,7 +174,9 @@ Sequential agent loop (SSE streaming):
 Frontend streams each agent token-by-token into AgentPipeline panel
 ```
 
-Also supports: `POST /api/agents/ask` — single-turn Q&A with full report context and conversation history (last 8 turns).
+Also supports:
+- `POST /api/agents/ask` — single-turn Q&A with full report context and conversation history (last 8 turns). Agent is fully aware of TV Desktop CDP, LuxAlgo comparison, reliability scoring, and trading capabilities
+- `POST /api/agents/ask-mcp` — tool-calling agent with 27 autonomous tools (11 SMC analysis + 10 TV Desktop chart/UI + 6 Comparison Engine). Autonomously chains TV connect → read bars → SMC analysis → LuxAlgo compare → reliability check → draw on chart
 
 ---
 
@@ -396,11 +401,37 @@ curl "http://localhost:3001/api/stream/status"
 
 ## TradingView Desktop Integration
 
-The app connects to your local TradingView Desktop app via Chrome DevTools Protocol (CDP) for:
+The app connects to your local TradingView Desktop app via Chrome DevTools Protocol (CDP) using two complementary paths:
 
-1. **Live chart data fallback** — reads 300+ bars directly from TV Desktop when Binance/Yahoo APIs are DNS-blocked
-2. **SMC level drawing** — draws BSL/SSL/Current/FVG/killzones directly on your TV Desktop chart from the frontend
-3. **Contextual switching** — click the **[TV]** button on any timeframe card → it switches TV Desktop to that symbol/timeframe and draws liquidity levels
+### Path 1: Legacy Puppeteer (chart drawing + data fallback)
+- Draws BSL/SSL/Current/FVG/killzones directly on your TV Desktop chart from the frontend
+- **Contextual switching** — click the **[TV]** button on any timeframe card → switches TV Desktop to that symbol/timeframe and draws liquidity levels
+- Reads 300+ bars as data fallback when Binance/Yahoo APIs are DNS-blocked
+
+### Path 2: New chrome-remote-interface (70+ MCP tools — FULL control)
+- **Chart control**: switch symbol, timeframe, chart type, scroll to date, search symbols
+- **Drawing**: horizontal lines, trend lines, Fibonacci, rectangles, rays, text, arrows
+- **Data reading**: OHLCV bars (for SMC analysis via `/api/analysis/from-tv`), real-time quotes, Depth of Market / order book, indicator values, strategy backtest results
+- **Indicator management**: add, remove, inspect any indicator (LuxAlgo ICT tools, etc.)
+- **Pine Script**: get/set source, compile, publish, library management
+- **Alerts**: create price alerts with crossing/above/below conditions, list, delete
+- **UI automation**: click elements, open/close panels (trading, alerts, watchlist), keyboard shortcuts, type text, mouse clicks
+- **Replay mode**: start/stop replay, autoplay, step forward, trade in replay
+- **Trading**: click Buy/Sell buttons on the chart (data-name="buy-order-button" / "sell-order-button") if signed into paper trading account
+- **Capture**: screenshot the chart
+
+### AI Agent Awareness
+Both AI agents (`/api/agents/ask` and `/api/agents/ask-mcp`) are fully aware of all TV Desktop capabilities. When asked "can you read LuxAlgo levels?" or "can you place a trade?", they respond with the correct tools and endpoints rather than "I can't do that."
+
+The MCP tool-calling agent (`/api/agents/ask-mcp`) autonomously chains: `tv_connect` → `tv_data_get_ohlcv` → `analyze_from_tv_bars` → `read_tv_indicator_levels` → `compare_engine_vs_tv` → `tv_draw_shape` → `tv_ui_click`
+
+### LuxAlgo / TV Indicator Comparison Pipeline
+- Reads horizontal line levels from ANY Pine Script indicator (LuxAlgo ICT Concepts, Smart Money Concepts, custom scripts)
+- Auto-classifies levels into detection types: OB, FVG, BOS, CHOCH, LIQUIDITY_SWEEP, SMT
+- Cross-references TV indicator levels against the internal SMC engine via `/api/learning/comparisons/analyze`
+- Produces agreement rates, price discrepancies, confidence gaps per detection type
+- Truth Engine arbitrates between TV and engine based on historical reliability
+- Reliability scores built over time via outcome evaluation (`/api/learning/evaluate-outcomes`)
 
 ### Quick Start (Windows)
 
@@ -430,7 +461,10 @@ scripts\launch-tv.bat
 Agent Loop or SMC tool needs candles
   └─ 1. Candle Store (in-memory cache)
   └─ 2. Binance Direct API / Yahoo Finance
-  └─ 3. TradingView Desktop CDP ← reads live bars from open chart ✅
+  └─ 3. TradingView Desktop CDP (chrome-remote-interface)
+       └─ GET /api/analysis/from-tv?symbol=X&timeframe=Y
+           └─ Reads 500 bars from TV chart → runs buildReport()
+           └─ Seeds candle store → subsequent SMC tools hit cache
 ```
 
 ### Architecture
@@ -438,16 +472,38 @@ Agent Loop or SMC tool needs candles
 ```
 TradingView Desktop (Electron, --remote-debugging-port=9222)
     │
-    ├── Puppeteer CDP → chart.ts (getBars, getSymbol, getTimeframe)
-    ├── Puppeteer CDP → connection.ts (keyboardPress, mouseClick)
-    └── Used by: tool-registry (data fallback), agent-loop route (bars)
+    ├── Path 1: Puppeteer CDP (legacy)
+    │   ├── chart.ts (getBars, getSymbol, getTimeframe)
+    │   ├── connection.ts (keyboardPress, mouseClick)
+    │   └── Used by: tool-registry data fallback, agent-loop route
+    │
+    ├── Path 2: chrome-remote-interface (new, active)
+    │   ├── /api/analysis/from-tv — read bars → SMC report
+    │   ├── /api/learning/read-tv-indicator-levels — LuxAlgo levels
+    │   ├── /api/agents/ask-mcp — 27 tools (SMC + TV + Comparison)
+    │   ├── /api/learning/comparisons/analyze — TV vs Engine
+    │   └── 70+ FastMCP tools for external AI agents (Claude Desktop)
+    │
+    └── AI Agent (POST /api/agents/ask-mcp)
+        └── Autonomously chains: connect → read bars → analyze → compare → draw → trade
 ```
+
+### Key API Endpoints (New)
+
+| Method | Path | Purpose |
+|--------|------|---------|
+| `GET` | `/api/analysis/from-tv` | Read bars from TV Desktop CDP → run full SMC report |
+| `POST` | `/api/analysis/from-bars` | Accept external OHLCV bars → run SMC analysis |
+| `GET` | `/api/learning/read-tv-indicator-levels` | Read LuxAlgo/indicator levels from TV chart |
+| `GET` | `/api/agent-loop/tv-status` | Check TV Desktop CDP connection status |
+| `POST` | `/api/agent-loop/tv-connect` | Force re-connect to TV Desktop |
 
 ### Windows MSIX Notes
 
 - TV Desktop is an MSIX package installed in `WindowsApps`
-- Launch with CDP: `Start-Process "shell:AppsFolder\TradingView.Desktop_...!TradingView.Desktop" -ArgumentList "--remote-debugging-port=9222"`
+- Launch with CDP: `Start-Process "shell:AppsFolder\31178TradingViewInc.TradingView_q4jpyh43s5mv6!TradingView.Desktop" -ArgumentList "--remote-debugging-port=9222"`
 - Page matching uses `tradingview.com` (not `tradingview`) to avoid matching MSIX path
+- The chrome-remote-interface path works with MSIX; the legacy Puppeteer path may not
 
 ---
 
@@ -455,10 +511,13 @@ TradingView Desktop (Electron, --remote-debugging-port=9222)
 
 - [x] WebSocket live price feed (Binance US for crypto, Finnhub/Yahoo for forex)
 - [x] Real-time candle-close SMC report rebuild with SSE push to browser
-- [x] TV Desktop CDP integration — live chart data fallback + drawing
+- [x] TV Desktop CDP integration — dual-path (Puppeteer + chrome-remote-interface, 70+ tools)
 - [x] Contextual TV drawing — [TV] button on each timeframe card
-- [x] AI agent system — streaming Q&A + 4-agent pipeline + MCP tool-calling
-- [x] MCP Tier 3 server — 11 SMC tools, 2 resources, 1 prompt for external AI agents
+- [x] AI agent system — streaming Q&A + 4-agent pipeline + MCP tool-calling (27 tools)
+- [x] MCP Tier 3 server — 73 TV Desktop tools + 12 SMC tools for external AI agents
+- [x] Agent TV Desktop awareness — agents know all 70+ TV capabilities, LuxAlgo comparison, trading
+- [x] LuxAlgo / TV Indicator Comparison Engine — read, classify, compare, arbitrate
+- [x] TV bar reading for SMC analysis — `GET /api/analysis/from-tv` works when Binance/Yahoo are down
 - [x] Broker abstraction — MockBroker + AlpacaAdapter with REVIEW/LIVE mode toggle
 - [x] Broker dashboard — `/broker` page with account overview, orders, mode switch
 - [x] Backtesting — sliding-window backtest runner using real SMC engine
