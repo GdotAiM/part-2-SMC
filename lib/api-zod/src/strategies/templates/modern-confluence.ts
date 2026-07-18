@@ -47,6 +47,8 @@ const model1: StrategyDefinition = {
   description:
     "Foundational confluence model. HTF bias setter with LTF MSS + FVG on entry timeframe.",
   version: "1.0.0",
+  ontology: "EXECUTION_MODEL",
+  priority: "PRIMARY",
   rule: andRules(
     predicateRule("hasBias", { timeframe: "4h" }),
     predicateRule("hasMarketStructureShift", { timeframe: "5m" }),
@@ -64,6 +66,8 @@ const model2: StrategyDefinition = {
   description:
     "Adds an inducement (IDM) filter. Price must first sweep internal inducement liquidity before entering at the FVG.",
   version: "1.0.0",
+  ontology: "EXECUTION_MODEL",
+  priority: "PRIMARY",
   rule: andRules(
     predicateRule("hasBias", { timeframe: "4h" }),
     predicateRule("hasMarketStructureShift", { timeframe: "5m" }),
@@ -82,6 +86,8 @@ const model3: StrategyDefinition = {
   description:
     "Integrates OTE zone with Model 1. Entry only when an unfilled FVG overlaps the 62%–79% retracement level.",
   version: "1.0.0",
+  ontology: "EXECUTION_MODEL",
+  priority: "PRIMARY",
   rule: andRules(
     predicateRule("hasBias", { timeframe: "4h" }),
     predicateRule("hasMarketStructureShift", { timeframe: "5m" }),
@@ -100,6 +106,8 @@ const model4: StrategyDefinition = {
   description:
     "Highest confluence: inducement sweep + FVG + OTE. Lowest frequency, highest win-rate.",
   version: "1.0.0",
+  ontology: "EXECUTION_MODEL",
+  priority: "PRIMARY",
   rule: andRules(
     predicateRule("hasBias", { timeframe: "4h" }),
     predicateRule("hasMarketStructureShift", { timeframe: "5m" }),
@@ -119,6 +127,8 @@ const model5: StrategyDefinition = {
   description:
     "Multi-stage session model. Consolidation → engineered equal highs/lows → sweep → rejection → entry.",
   version: "1.0.0",
+  ontology: "EXECUTION_MODEL",
+  priority: "PRIMARY",
   rule: andRules(
     predicateRule("hasBias", { timeframe: "4h" }),
     predicateRule("hasConsolidationZone", { timeframe: "4h" }),

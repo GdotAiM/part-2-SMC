@@ -959,13 +959,10 @@ export function hasBreakerBlock(report: SmcReport): PredicateResult {
 }
 
 /**
- * Checks whether the report's session state aligns with a named trading
- * session.
+ * Checks whether the report aligns with a named trading session.
  *
- * Unlike `isWithinSession` (which checks liquidity pool tags), this
- * predicate evaluates the report's derived `sessionState` field against
- * known session patterns.  It also considers the structure phase to
- * determine whether price action is behaving appropriately for the session.
+ * Uses liquidity pool session tags as the primary signal, with a
+ * timeframe-based contextual fallback.
  *
  * @param report   The SMC analysis report.
  * @param session  Session name: "ASIAN", "LONDON", "NY_AM", "NY_PM".
@@ -975,37 +972,39 @@ export function hasSessionAlignment(
   session: string,
 ): PredicateResult {
   const sess = session.toUpperCase();
-  const state = report.sessionState ?? "";
+  const ev: string[] = [];
 
-  // Match session name against the derived session state
-  const sessionKeywords: Record<string, string[]> = {
-    ASIAN: ["asian"],
-    LONDON: ["london"],
-    NY_AM: ["ny open", "ny continuation", "london close", "pm distribution"],
-    NY_PM: ["pm distribution", "late session", "ny retracement"],
-  };
+  // Primary: check session tags on liquidity pools
+  const poolSessions = new Set(
+    report.liquidity.pools
+      .map((p) => p.session?.toUpperCase())
+      .filter((s): s is string => s != null),
+  );
 
-  const keywords = sessionKeywords[sess];
-  const matchesState = keywords
-    ? keywords.some((kw) => state.toLowerCase().includes(kw))
-    : false;
-
-  if (matchesState) {
-    return result(true, [
-      `Session state "${state}" matches "${sess}" session.`,
-    ]);
+  if (poolSessions.size > 0) {
+    const matched = [...poolSessions].filter((s) => s.includes(sess));
+    if (matched.length > 0) {
+      ev.push(
+        `${matched.length} liquidity pool(s) tagged with session "${sess}" (${matched.join(", ")}).`,
+      );
+      return result(true, ev, Math.min(1, matched.length / 3));
+    }
+    ev.push(
+      `Pool sessions found: [${[...poolSessions].join(", ")}] — none match "${sess}".`,
+    );
   }
 
   // Fallback: check the report timeframe as a contextual hint
   const tf = report.timeframe?.toLowerCase();
   if (tf && ["5m", "15m", "1h"].includes(tf) && (sess === "LONDON" || sess === "NY_AM" || sess === "NY_PM")) {
-    return result(true, [
-      `Timeframe "${tf}" is typical for ${sess} even though sessionState is "${state || "unset"}".`,
-    ], 0.3);
+    ev.push(
+      `Timeframe "${tf}" is typical for ${sess} execution.`,
+    );
+    return result(true, ev, 0.3);
   }
 
   return result(false, [
-    `Session state "${state || "unset"}" does not match "${sess}".`,
+    `No pool sessions match "${sess}" and timeframe "${tf ?? "unknown"}" provides no contextual alignment.`,
   ]);
 }
 
@@ -1013,9 +1012,9 @@ export function hasSessionAlignment(
  * Detects whether the market is in a directional range expansion phase.
  *
  * Range expansion is indicated by:
- *   1. `structure.phase === "expansion"` or `"continuation"`
- *   2. `structure.trend !== "ranging"` and `structure.bias !== "neutral"`
- *   3. Multiple recent BOS breaks in the same direction
+ *   1. `structure.trend !== "ranging"` and `structure.bias !== "neutral"`
+ *   2. Multiple recent BOS breaks in the same direction
+ *   3. Structure confidence above threshold
  *
  * @param report     The SMC analysis report.
  * @param minBreaks  Minimum consecutive same-direction BOS breaks (default 1).
@@ -1027,21 +1026,14 @@ export function hasRangeExpansion(
   const ev: string[] = [];
   let factors = 0;
 
-  // Factor 1: phase is expansion or continuation
-  const phase = report.structure.phase?.toLowerCase();
-  if (phase === "expansion" || phase === "continuation") {
-    factors++;
-    ev.push(`Market phase is ${phase.toUpperCase()} — active range expansion.`);
-  }
-
-  // Factor 2: trend is directional
+  // Factor 1: trend is directional
   const trend = report.structure.trend?.toLowerCase();
   if (trend && trend !== "ranging") {
     factors++;
     ev.push(`Trend is ${trend.toUpperCase()} — directional expansion underway.`);
   }
 
-  // Factor 3: consecutive BOS breaks in the same direction
+  // Factor 2: consecutive BOS breaks in the same direction
   const bias = report.structure.bias?.toLowerCase();
   const breaks = report.structure.breaks;
   const bosBreaks = breaks.filter((b) => b.type === "BOS" && b.direction?.toLowerCase() === bias);
@@ -1050,9 +1042,15 @@ export function hasRangeExpansion(
     ev.push(`${bosBreaks.length} BOS break(s) aligned with ${bias} bias.`);
   }
 
+  // Factor 3: structure confidence indicates strong direction
+  if (report.structure.confidence >= 0.5) {
+    factors++;
+    ev.push(`Structure confidence at ${(report.structure.confidence * 100).toFixed(0)}% supports directional conviction.`);
+  }
+
   if (factors === 0) {
     return result(false, [
-      `Trend is "${trend ?? "unknown"}", phase is "${phase ?? "unknown"}" — no range expansion detected.`,
+      `Trend is "${trend ?? "unknown"}" with no BOS breaks — no range expansion detected.`,
     ]);
   }
 
@@ -1064,8 +1062,7 @@ export function hasRangeExpansion(
  *
  * Weekly expansion context means the report is operating on a timeframe
  * suitable for weekly analysis (1d or 1w) and there is evidence of
- * directional expiry — the market is expected to reach the opposite end
- * of the weekly range before Friday's close.
+ * directional momentum.
  *
  * @param report   The SMC analysis report.
  */
@@ -1096,17 +1093,16 @@ export function hasWeeklyExpansionContext(report: SmcReport): PredicateResult {
     ev.push(`Structure trend is ${trend.toUpperCase()} — directionally aligned for weekly expansion.`);
   }
 
-  // Check market phase
-  const phase = report.structure.phase?.toLowerCase();
-  if (phase === "expansion" || phase === "continuation") {
+  // Check structure confidence
+  if (report.structure.confidence >= 0.5) {
     factors++;
-    ev.push(`Phase is ${phase.toUpperCase()} — mid-cycle for weekly completion.`);
+    ev.push(`Structure confidence at ${(report.structure.confidence * 100).toFixed(0)}% — strong directional conviction.`);
   }
 
   if (factors === 0) {
     return result(false, [
       `${report.timeframe} timeframe but no directional conviction: ` +
-        `daily bias is "${db.bias}", trend is "${trend ?? "unknown"}", phase is "${phase ?? "unknown"}".`,
+        `daily bias is "${db.bias}", trend is "${trend ?? "unknown"}".`,
     ]);
   }
 

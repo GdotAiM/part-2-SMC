@@ -13,7 +13,7 @@
 
 import { Router, type IRouter } from "express";
 import { StrategyRegistry } from "@workspace/api-zod/strategies";
-import type { DetectionResult } from "@workspace/api-zod/strategies";
+import type { DetectionResult, DetectOptions } from "@workspace/api-zod/strategies";
 import { fetchBinanceCandles } from "../lib/fetchers/binance.js";
 import { fetchYahooCandles } from "../lib/fetchers/yahoo.js";
 import { buildReport } from "../lib/smc/report.js";
@@ -166,21 +166,12 @@ router.post("/strategies/detect", async (req, res): Promise<void> => {
 
   // 3. Run strategy detection
   const registry = getRegistry();
-  const results = registry.detectAll(reportMap as Map<string, any>, "4h");
+  const results = registry.detectAll(reportMap as Map<string, any>, {
+    defaultTf: "4h",
+  });
 
-  // 4. Sort: matched first (desc score), then failed, then error
-  const orderMap: Record<string, number> = { matched: 0, failed: 1, error: 2 };
-  const ranked: Array<DetectionResult & { rank: number }> = [...results.values()]
-    .sort((a, b) => {
-      const ao = orderMap[a.status] ?? 3;
-      const bo = orderMap[b.status] ?? 3;
-      if (ao !== bo) return ao - bo;
-      // Within same status: higher score first (null scores sort last)
-      const sa = a.score ?? -1;
-      const sb = b.score ?? -1;
-      if (sa !== sb) return sb - sa;
-      return a.strategyId.localeCompare(b.strategyId);
-    })
+  // 4. Rank using priority-aware ranking
+  const ranked: Array<DetectionResult & { rank: number }> = registry.rankResults(results)
     .map((r, i) => ({ ...r, rank: i + 1 }));
 
   // 5. Build response

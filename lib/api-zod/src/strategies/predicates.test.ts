@@ -919,27 +919,38 @@ describe("hasBreakerBlock", () => {
 // ═══════════════════════════════════════════════════════════════════════════════
 
 describe("hasSessionAlignment", () => {
-  it("returns matched=true when sessionState matches LONDON", () => {
-    const report = baseReport({ sessionState: "London Expansion — Bullish" });
+  it("returns matched=true when liquidity pools carry matching session tags", () => {
+    const report = baseReport({
+      liquidity: {
+        pools: [
+          { price: 64500, type: "BSL", score: 0.8, touches: 2, wasSwept: false, time: 1, index: 10, session: "LONDON_OPEN" },
+        ],
+        nearestBSL: null, nearestSSL: null,
+      },
+    });
     const r = hasSessionAlignment(report, "LONDON");
     expect(r.matched).toBe(true);
     expect(r.evidence[0]).toMatch(/london/i);
   });
 
-  it("returns matched=true when sessionState matches NY_PM", () => {
-    const report = baseReport({ sessionState: "PM Distribution" });
-    const r = hasSessionAlignment(report, "NY_PM");
-    expect(r.matched).toBe(true);
-  });
-
-  it("returns matched=false when sessionState does not match", () => {
-    const report = baseReport({ sessionState: "Asian Range Formation" });
+  it("returns matched=false when pool sessions do not match", () => {
+    const report = baseReport({
+      liquidity: {
+        pools: [
+          { price: 64500, type: "BSL", score: 0.8, touches: 2, wasSwept: false, time: 1, index: 10, session: "ASIAN" },
+        ],
+        nearestBSL: null, nearestSSL: null,
+      },
+    });
     const r = hasSessionAlignment(report, "NY_AM");
     expect(r.matched).toBe(false);
   });
 
-  it("falls back to timeframe match when sessionState is unset", () => {
-    const report = baseReport({ sessionState: "", timeframe: "15m" });
+  it("falls back to timeframe match when no pool sessions exist", () => {
+    const report = baseReport({
+      liquidity: { pools: [], nearestBSL: null, nearestSSL: null },
+      timeframe: "15m",
+    });
     const r = hasSessionAlignment(report, "LONDON");
     expect(r.matched).toBe(true);
     expect(r.score).toBe(0.3);
@@ -951,20 +962,20 @@ describe("hasSessionAlignment", () => {
 // ═══════════════════════════════════════════════════════════════════════════════
 
 describe("hasRangeExpansion", () => {
-  it("returns matched=true when phase is expansion", () => {
+  it("returns matched=true when trend is directional with high confidence", () => {
     const report = baseReport({
-      structure: { trend: "bullish", bias: "bullish", confidence: 0.8, pivots: [], breaks: [], phase: "expansion" },
+      structure: { trend: "bullish", bias: "bullish", confidence: 0.8, pivots: [], breaks: [] },
     });
     const r = hasRangeExpansion(report);
     expect(r.matched).toBe(true);
-    expect(r.evidence[0]).toMatch(/EXPANSION/i);
+    expect(r.evidence.some((e) => /directional expansion/i.test(e))).toBe(true);
   });
 
   it("returns matched=true when multiple aligned BOS breaks exist", () => {
     const report = baseReport({
       structure: {
         trend: "bullish", bias: "bullish", confidence: 0.75,
-        pivots: [], phase: "continuation",
+        pivots: [],
         breaks: [
           { index: 10, price: 64000, type: "BOS", direction: "bullish", time: 100 },
           { index: 15, price: 64500, type: "BOS", direction: "bullish", time: 101 },
@@ -978,7 +989,7 @@ describe("hasRangeExpansion", () => {
 
   it("returns matched=false when ranging with no breaks", () => {
     const report = baseReport({
-      structure: { trend: "ranging", bias: "neutral", confidence: 0.1, pivots: [], breaks: [], phase: "unknown" },
+      structure: { trend: "ranging", bias: "neutral", confidence: 0.1, pivots: [], breaks: [] },
     });
     const r = hasRangeExpansion(report);
     expect(r.matched).toBe(false);
@@ -994,7 +1005,7 @@ describe("hasWeeklyExpansionContext", () => {
     const report = baseReport({
       timeframe: "1d",
       dailyBias: { bias: "bullish", strength: 0.7, consecutiveDays: 4 },
-      structure: { trend: "bullish", bias: "bullish", confidence: 0.8, pivots: [], breaks: [], phase: "expansion" },
+      structure: { trend: "bullish", bias: "bullish", confidence: 0.8, pivots: [], breaks: [] },
     });
     const r = hasWeeklyExpansionContext(report);
     expect(r.matched).toBe(true);
@@ -1012,7 +1023,7 @@ describe("hasWeeklyExpansionContext", () => {
     const report = baseReport({
       timeframe: "1d",
       dailyBias: { bias: "neutral", strength: 0.1, consecutiveDays: 0 },
-      structure: { trend: "ranging", bias: "neutral", confidence: 0.1, pivots: [], breaks: [], phase: "unknown" },
+      structure: { trend: "ranging", bias: "neutral", confidence: 0.1, pivots: [], breaks: [] },
     });
     const r = hasWeeklyExpansionContext(report);
     expect(r.matched).toBe(false);

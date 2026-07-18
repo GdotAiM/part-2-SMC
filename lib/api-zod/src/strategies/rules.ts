@@ -4,6 +4,10 @@
  * Defines the Rule discriminated union for composing ICT/SMC predicates
  * into complex boolean trees, and the StrategyDefinition envelope that
  * wraps a rule tree with metadata for persistence in model_definitions.
+ *
+ * Taxonomy v2: Extended with SMC-EVAL ontology classification, priority,
+ * invalidation rules, temporal constraints, confusion guards, and
+ * prerequisite metadata.
  */
 
 import { z } from "zod";
@@ -62,14 +66,63 @@ export type Rule = {
   rule: Rule;
 };
 
-// ─── StrategyDefinition Schema ────────────────────────────────────────────────
+// ─── SMC-EVAL Taxonomy v2 types ─────────────────────────────────────────────
+
+export const ONTOLOGY_CATEGORIES = [
+  "CONCEPT",
+  "STRUCTURAL_PATTERN",
+  "EXECUTION_MODEL",
+  "TEMPORAL_MODEL",
+  "MARKET_CYCLE",
+  "TRADING_HORIZON",
+  "CURRICULUM",
+] as const;
+
+export type OntologyCategory = typeof ONTOLOGY_CATEGORIES[number];
+
+export const MODEL_PRIORITIES = ["PRIMARY", "ALTERNATIVE", "INFORMATIONAL"] as const;
+export type ModelPriority = typeof MODEL_PRIORITIES[number];
+
+export const ontologyCategorySchema = z.enum(ONTOLOGY_CATEGORIES);
+export const modelPrioritySchema = z.enum(MODEL_PRIORITIES);
+
+// ─── Invalidation Rule ──────────────────────────────────────────────────────
+
+export const invalidationRuleSchema = z.object({
+  predicate: z.string().min(1),
+  timeframe: z.string().optional(),
+  args: z.array(z.unknown()).optional(),
+  reason: z.string(),
+});
+
+export type InvalidationRule = z.infer<typeof invalidationRuleSchema>;
+
+// ─── Confusion Guard ─────────────────────────────────────────────────────────
+
+export const confusionGuardSchema = z.object({
+  similarTo: z.string(),
+  discriminator: z.string(),
+  discriminatorArgs: z.array(z.unknown()).optional(),
+});
+
+export type ConfusionGuard = z.infer<typeof confusionGuardSchema>;
+
+// ─── Temporal Rules ─────────────────────────────────────────────────────────
+
+export const temporalRulesSchema = z.object({
+  session: z.array(z.string()).optional(),
+  window: z.object({ before: z.number(), after: z.number() }).optional(),
+});
+
+export type TemporalRules = z.infer<typeof temporalRulesSchema>;
+
+// ─── StrategyDefinition Schema (Taxonomy v2) ───────────────────────────────
 
 /**
  * StrategyDefinition — a named, versioned rule tree with metadata.
  *
- * This schema maps to the model_definitions table in the DB but exists
- * here as a standalone Zod schema so it can be validated at runtime
- * without a database connection.
+ * Maps to the model_definitions table in the DB. All Taxonomy v2 fields
+ * are optional — existing definitions without these fields remain valid.
  */
 export const strategyDefinitionSchema = z.object({
   id: z.string().min(1),
@@ -82,6 +135,20 @@ export const strategyDefinitionSchema = z.object({
   tags: z.array(z.string()).default([]),
   /** Which timeframes this strategy expects in the report map. */
   requiredTimeframes: z.array(z.string()).default([]),
+
+  // ── SMC-EVAL Taxonomy v2 (all optional) ─────────────────────────────────
+  /** Ontology classification layer. */
+  ontology: ontologyCategorySchema.optional(),
+  /** Model priority for ranking. */
+  priority: modelPrioritySchema.optional(),
+  /** Invalidation rules — conditions that must not match. */
+  invalidation: z.array(invalidationRuleSchema).optional(),
+  /** Temporal/session constraints. */
+  temporalRules: temporalRulesSchema.optional(),
+  /** Confusion guards for discrimination. */
+  confusionGuards: z.array(confusionGuardSchema).optional(),
+  /** Prerequisite concept/predicate IDs. */
+  prerequisites: z.array(z.string()).optional(),
 });
 
 export type StrategyDefinition = z.infer<typeof strategyDefinitionSchema>;

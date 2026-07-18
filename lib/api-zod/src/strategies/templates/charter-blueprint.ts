@@ -22,6 +22,8 @@ const model1: StrategyDefinition = {
     "Foundational mechanics of price delivery — swing point identification, HH/HL/LH/LL mapping. " +
     "Trains the analyst to read market structure as the primary filter.",
   version: "1.0.0",
+  ontology: "CURRICULUM",
+  priority: "INFORMATIONAL",
   rule: andRules(
     predicateRule("hasBias", { timeframe: "4h" }),
     predicateRule("hasMarketStructureShift", { timeframe: "4h" }),
@@ -39,6 +41,8 @@ const model2: StrategyDefinition = {
     "Mechanics of FVGs — imbalance identification, fill fraction analysis, inversion mechanics. " +
     "Seed also requires hasDisplacement (not yet implemented).",
   version: "1.0.0",
+  ontology: "CURRICULUM",
+  priority: "INFORMATIONAL",
   rule: predicateRule("hasFVG", { timeframe: "4h" }),
   tags: ["charter-blueprint", "foundations", "fvg"],
   requiredTimeframes: ["4h"],
@@ -53,6 +57,8 @@ const model3: StrategyDefinition = {
     "Structural identification of OBs as institutional footprint zones. Covers valid vs mitigated, " +
     "breaker blocks, strength scoring, and OB+FVG overlap.",
   version: "1.0.0",
+  ontology: "CURRICULUM",
+  priority: "INFORMATIONAL",
   rule: predicateRule("hasOrderBlock", { timeframe: "4h" }),
   tags: ["charter-blueprint", "foundations", "order-block"],
   requiredTimeframes: ["4h"],
@@ -67,6 +73,8 @@ const model4: StrategyDefinition = {
     "Synthesis of structure + liquidity — how institutions target BSL above swing highs and SSL " +
     "below swing lows. Uses hasLiquiditySweep as a proxy for hasLiquiditySweep (not yet implemented).",
   version: "1.0.0",
+  ontology: "CURRICULUM",
+  priority: "INFORMATIONAL",
   rule: andRules(
     predicateRule("hasLiquiditySweep", { timeframe: "4h" }),
     predicateRule("hasMarketStructureShift", { timeframe: "4h" }),
@@ -84,6 +92,8 @@ const model5: StrategyDefinition = {
     "Daily and weekly bias determination using HTF structure, PD Array positioning, daily bias strength, " +
     "and session context. Primary filter for all lower-timeframe entries.",
   version: "1.0.0",
+  ontology: "CURRICULUM",
+  priority: "INFORMATIONAL",
   rule: orRules(
     predicateRule("hasDailyBias", { timeframe: "1d" }),
     predicateRule("hasBias", { timeframe: "4h" }),
@@ -101,6 +111,8 @@ const model6: StrategyDefinition = {
     "Aligns trades with the broader weekly cycle using weekly open anchor and Monday/Tuesday bias. " +
     "Seed also requires hasRangeExpansion and hasWeeklyExpansionContext (not yet implemented).",
   version: "1.0.0",
+  ontology: "CURRICULUM",
+  priority: "INFORMATIONAL",
   rule: predicateRule("hasBias", { timeframe: "4h" }),
   tags: ["charter-blueprint", "weekly", "range-expansion"],
   requiredTimeframes: ["4h"],
@@ -116,6 +128,8 @@ const model7: StrategyDefinition = {
     "Aligns intraday entry triggers with daily bias. Uses hasSessionAlignment as a proxy " +
     "for hasSessionAlignment.",
   version: "1.0.0",
+  ontology: "CURRICULUM",
+  priority: "INFORMATIONAL",
   rule: andRules(
     predicateRule("hasBias", { timeframe: "1h" }),
     predicateRule("hasMarketStructureShift", { timeframe: "15m" }),
@@ -134,6 +148,8 @@ const model8: StrategyDefinition = {
     "High-probability confluence stacking: FVGs within OBs, OBs within PD Array zones, " +
     "liquidity sweeps tapping multiple POI levels simultaneously.",
   version: "1.0.0",
+  ontology: "CURRICULUM",
+  priority: "INFORMATIONAL",
   rule: andRules(
     predicateRule("hasBias", { timeframe: "4h" }),
     predicateRule("hasMarketStructureShift", { timeframe: "15m" }),
@@ -153,6 +169,8 @@ const model9: StrategyDefinition = {
     "Single highest-conviction setup per day/week. HTF bias + LTF liquidity sweep + MSS + displacement. " +
     "Minimum 1:3 R:R. Uses hasLiquiditySweep as proxy for hasLiquiditySweep (not yet implemented).",
   version: "1.0.0",
+  ontology: "CURRICULUM",
+  priority: "INFORMATIONAL",
   rule: andRules(
     predicateRule("hasBias", { timeframe: "1d" }),
     predicateRule("hasMarketStructureShift", { timeframe: "1h" }),
@@ -171,6 +189,8 @@ const model10: StrategyDefinition = {
     "PD Array matrix discipline: buy only in discount (below equilibrium), sell only in premium " +
     "(above equilibrium). Uses dealing range high/low and equilibrium as reference.",
   version: "1.0.0",
+  ontology: "CURRICULUM",
+  priority: "INFORMATIONAL",
   rule: predicateRule("hasBias", { timeframe: "1d" }),
   tags: ["charter-blueprint", "pd-array", "premium-discount"],
   requiredTimeframes: ["1d"],
@@ -185,6 +205,8 @@ const model11: StrategyDefinition = {
     "Scalping within daily range boundaries using micro-structure shifts in session killzones. " +
     "Seed also requires hasRangeExpansion and hasSessionAlignment (not yet implemented).",
   version: "1.0.0",
+  ontology: "CURRICULUM",
+  priority: "INFORMATIONAL",
   rule: andRules(
     predicateRule("hasBias", { timeframe: "1h" }),
     predicateRule("hasMarketStructureShift", { timeframe: "5m" }),
@@ -202,6 +224,8 @@ const model12: StrategyDefinition = {
     "Unified market narrative framework — IPDA time-based price delivery cycles of accumulation, " +
     "manipulation, and distribution across all timeframes simultaneously.",
   version: "1.0.0",
+  ontology: "CURRICULUM",
+  priority: "INFORMATIONAL",
   rule: andRules(
     predicateRule("hasBias", { timeframe: "1d" }),
     predicateRule("hasMarketStructureShift", { timeframe: "4h" }),

@@ -23,6 +23,8 @@ const mmsm: StrategyDefinition = {
     "Full lifecycle from bullish to bearish: consolidation → engineering liquidity → " +
     "SMR at HTF bearish PD Array → sell program → terminal distribution. SMT confirms distribution.",
   version: "1.0.0",
+  ontology: "MARKET_CYCLE",
+  priority: "PRIMARY",
   rule: andRules(
     predicateRule("hasBias", { timeframe: "1d" }),
     predicateRule("hasMarketStructureShift", { timeframe: "1h" }),
@@ -40,6 +42,8 @@ const mmbm: StrategyDefinition = {
     "Full lifecycle from bearish to bullish: consolidation → engineering liquidity → " +
     "SMR at HTF bullish PD Array → buy program → terminal distribution. SMT confirms accumulation.",
   version: "1.0.0",
+  ontology: "MARKET_CYCLE",
+  priority: "PRIMARY",
   rule: andRules(
     predicateRule("hasBias", { timeframe: "1d" }),
     predicateRule("hasMarketStructureShift", { timeframe: "1h" }),
@@ -61,6 +65,8 @@ const silverBulletLondon: StrategyDefinition = {
     "Time-dependent execution 03:00–04:00 EST. 15m parent chart, LTF entry on sweep+MSS+FVG. " +
     "Target 20–30 pips, 1:2 R:R. Skips setup during high-impact news blackout windows.",
   version: "1.0.0",
+  ontology: "EXECUTION_MODEL",
+  priority: "PRIMARY",
   rule: andRules(
     predicateRule("hasBias", { timeframe: "15m" }),
     predicateRule("hasMarketStructureShift", { timeframe: "5m" }),
@@ -81,6 +87,8 @@ const silverBulletNyam: StrategyDefinition = {
     "Time-dependent execution 10:00–11:00 EST. Highest volume window — London tail + NY open. " +
     "Identical mechanical rules to London Silver Bullet.",
   version: "1.0.0",
+  ontology: "EXECUTION_MODEL",
+  priority: "PRIMARY",
   rule: andRules(
     predicateRule("hasBias", { timeframe: "15m" }),
     predicateRule("hasMarketStructureShift", { timeframe: "5m" }),
@@ -97,6 +105,8 @@ const silverBulletNypm: StrategyDefinition = {
     "Time-dependent execution 14:00–15:00 EST. Afternoon trend continuation / late-session expansions. " +
     "Identical mechanical rules to London Silver Bullet.",
   version: "1.0.0",
+  ontology: "EXECUTION_MODEL",
+  priority: "PRIMARY",
   rule: andRules(
     predicateRule("hasBias", { timeframe: "15m" }),
     predicateRule("hasMarketStructureShift", { timeframe: "5m" }),
@@ -114,6 +124,8 @@ const judasSwing: StrategyDefinition = {
     "sweeps liquidity, then true expansion leg fires. Uses hasSessionAlignment as proxy for " +
     "hasSessionAlignment; hasLiquiditySweep as proxy for hasLiquiditySweep.",
   version: "1.0.0",
+  ontology: "EXECUTION_MODEL",
+  priority: "PRIMARY",
   rule: andRules(
     predicateRule("hasBias", { timeframe: "1h" }),
     predicateRule("hasMarketStructureShift", { timeframe: "5m" }),
@@ -130,6 +142,8 @@ const powerOfThree: StrategyDefinition = {
     "Candle lifecycle: accumulation → manipulation (Judas) → distribution in true direction. " +
     "Entry same as daily bias after manipulation completes.",
   version: "1.0.0",
+  ontology: "MARKET_CYCLE",
+  priority: "PRIMARY",
   rule: andRules(
     predicateRule("hasBias", { timeframe: "1d" }),
     predicateRule("hasMarketStructureShift", { timeframe: "15m" }),
@@ -149,6 +163,8 @@ const turtleSoup: StrategyDefinition = {
     "Counter-trend reversal at failed breakouts. Sweep of swing high/low with wick rejection, " +
     "entry just inside broken level. Uses hasLiquiditySweep as proxy for hasLiquiditySweep.",
   version: "1.0.0",
+  ontology: "EXECUTION_MODEL",
+  priority: "PRIMARY",
   rule: andRules(
     predicateRule("hasMarketStructureShift", { timeframe: "5m" }),
     predicateRule("hasLiquiditySweep", { timeframe: "5m" }),
@@ -164,6 +180,8 @@ const unicorn: StrategyDefinition = {
     "Precision setup at Breaker Block + FVG overlap. Entry at midpoint/boundary of overlapping zone. " +
     "Seed requires hasBreakerBlock (not yet implemented) — currently checks hasFVG + hasMSS.",
   version: "1.0.0",
+  ontology: "EXECUTION_MODEL",
+  priority: "PRIMARY",
   rule: andRules(
     predicateRule("hasFVG", { timeframe: "5m" }),
     predicateRule("hasMarketStructureShift", { timeframe: "5m" }),
@@ -179,6 +197,8 @@ const scob: StrategyDefinition = {
     "Micro-refinement inside HTF POI. First LTF candle tapping HTF POI must sweep prior candle " +
     "high/low and close back within range. Limit entry at sweep candle extreme.",
   version: "1.0.0",
+  ontology: "EXECUTION_MODEL",
+  priority: "PRIMARY",
   rule: andRules(
     predicateRule("hasBias", { timeframe: "1h" }),
     predicateRule("hasMarketStructureShift", { timeframe: "5m" }),
@@ -195,6 +215,8 @@ const sharpTurn: StrategyDefinition = {
     "Two-timeframe alignment for high-velocity reversals. Context 2 tiers up from entry. " +
     "SL beyond extreme swing of first reversal leg.",
   version: "1.0.0",
+  ontology: "EXECUTION_MODEL",
+  priority: "PRIMARY",
   rule: andRules(
     predicateRule("hasBias", { timeframe: "4h" }),
     predicateRule("hasMarketStructureShift", { timeframe: "1h" }),
@@ -211,6 +233,8 @@ const twoFvg: StrategyDefinition = {
     "Three-timeframe alignment. Ignore first impulsive MSS leg; execute on retest of the second " +
     "consecutive FVG from secondary expansion. More insulated risk than Sharp Turn.",
   version: "1.0.0",
+  ontology: "EXECUTION_MODEL",
+  priority: "PRIMARY",
   rule: andRules(
     predicateRule("hasBias", { timeframe: "1w" }),
     predicateRule("hasMarketStructureShift", { timeframe: "4h" }),

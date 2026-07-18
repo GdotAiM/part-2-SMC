@@ -5,14 +5,17 @@
  * StrategyDefinition objects with rule trees.  Corresponds 1:1 with the
  * seed data (ids classical-01 through classical-12).
  *
- * All predicates referenced by the seed are now implemented.
- * See predicates.ts for the full list of 21 functions.
+ * Taxonomy v2 classification:
+ *   - Models 1-4: TRADING_HORIZON (holding-period classifiers)
+ *   - Models 5-7, 9-11: EXECUTION_MODEL (actual execution setups)
+ *   - Model 8: TEMPORAL_MODEL (weekly-specific)
+ *   - Model 12: CONCEPT (pure FVG-after-displacement pattern)
  */
 
 import type { StrategyDefinition } from "../rules";
 import { andRules, predicateRule } from "../rules";
 
-// ─── Model 1: Intraday Scalping ─────────────────────────────────────────────
+// ─── Model 1: Intraday Scalping (TRADING_HORIZON) ──────────────────────────
 
 const model1: StrategyDefinition = {
   id: "classical-01",
@@ -21,6 +24,8 @@ const model1: StrategyDefinition = {
     "High-frequency intraday scalping, 20-day lookback on M5–M1. Targets session high/low " +
     "liquidity sweeps within NY/London open windows. Execution on fresh FVGs after displacement.",
   version: "1.0.0",
+  ontology: "TRADING_HORIZON",
+  priority: "INFORMATIONAL",
   rule: andRules(
     predicateRule("hasBias", { timeframe: "1h" }),
     predicateRule("hasFVG", { timeframe: "5m" }),
@@ -29,7 +34,7 @@ const model1: StrategyDefinition = {
   requiredTimeframes: ["1h", "5m"],
 };
 
-// ─── Model 2: Short-Term Trading ─────────────────────────────────────────────
+// ─── Model 2: Short-Term Trading (TRADING_HORIZON) ────────────────────────────
 
 const model2: StrategyDefinition = {
   id: "classical-02",
@@ -38,6 +43,8 @@ const model2: StrategyDefinition = {
     "Short-term trading on major forex and indices. H1 bias, M15–M5 entries at daily/4h " +
     "unmitigated POI zones targeting premium/discount inefficiencies.",
   version: "1.0.0",
+  ontology: "TRADING_HORIZON",
+  priority: "INFORMATIONAL",
   rule: andRules(
     predicateRule("hasBias", { timeframe: "1h" }),
     predicateRule("hasMarketStructureShift", { timeframe: "15m" }),
@@ -47,7 +54,7 @@ const model2: StrategyDefinition = {
   requiredTimeframes: ["1h", "15m"],
 };
 
-// ─── Model 3: Swing Trading ──────────────────────────────────────────────────
+// ─── Model 3: Swing Trading (TRADING_HORIZON) ─────────────────────────────────
 
 const model3: StrategyDefinition = {
   id: "classical-03",
@@ -56,6 +63,8 @@ const model3: StrategyDefinition = {
     "Swing trading commodities and major forex. Combines COT data with daily liquidity setups " +
     "and OTE zones. Daily/H4 bias with H1 entry.",
   version: "1.0.0",
+  ontology: "TRADING_HORIZON",
+  priority: "INFORMATIONAL",
   rule: andRules(
     predicateRule("hasBias", { timeframe: "1d" }),
     predicateRule("hasLiquiditySweep", { timeframe: "1d" }),
@@ -65,7 +74,7 @@ const model3: StrategyDefinition = {
   requiredTimeframes: ["1d", "1h"],
 };
 
-// ─── Model 4: Position Trading ───────────────────────────────────────────────
+// ─── Model 4: Position Trading (TRADING_HORIZON) ──────────────────────────────
 
 const model4: StrategyDefinition = {
   id: "classical-04",
@@ -74,12 +83,14 @@ const model4: StrategyDefinition = {
     "Multi-month position trading. Quarterly structural shifts, seasonal tendencies, " +
     "intermarket correlation matrices. Monthly/weekly bias with daily entry.",
   version: "1.0.0",
+  ontology: "TRADING_HORIZON",
+  priority: "INFORMATIONAL",
   rule: predicateRule("hasBias", { timeframe: "1w" }),
   tags: ["classical-horizon", "position", "macro"],
   requiredTimeframes: ["1w"],
 };
 
-// ─── Model 5: Advanced Session Setup ─────────────────────────────────────────
+// ─── Model 5: Advanced Session Setup (EXECUTION_MODEL) ────────────────────────
 
 const model5: StrategyDefinition = {
   id: "classical-05",
@@ -88,6 +99,8 @@ const model5: StrategyDefinition = {
     "Day trading weekdays only. Std dev extensions of daily manipulation leg targeting " +
     "precise expansion points. M15–M5 entry within session killzones.",
   version: "1.0.0",
+  ontology: "EXECUTION_MODEL",
+  priority: "ALTERNATIVE",
   rule: andRules(
     predicateRule("hasBias", { timeframe: "1h" }),
     predicateRule("hasMarketStructureShift", { timeframe: "15m" }),
@@ -96,15 +109,16 @@ const model5: StrategyDefinition = {
   requiredTimeframes: ["1h", "15m"],
 };
 
-// ─── Model 6: Universal Buy Model ────────────────────────────────────────────
+// ─── Model 6: Universal Buy Model (EXECUTION_MODEL) ───────────────────────────
 
 const model6: StrategyDefinition = {
   id: "classical-06",
   name: "Model 6 — Universal Buy Model",
   description:
-    "Multi-asset buyside expansion. Discount-zone entries after sellside liquidity sweeps. " +
-    "Uses hasLiquiditySweep as proxy for hasLiquiditySweep.",
+    "Multi-asset buyside expansion. Discount-zone entries after sellside liquidity sweeps.",
   version: "1.0.0",
+  ontology: "EXECUTION_MODEL",
+  priority: "ALTERNATIVE",
   rule: andRules(
     predicateRule("hasBias", { timeframe: "4h" }),
     predicateRule("hasLiquiditySweep", { timeframe: "4h" }),
@@ -114,15 +128,16 @@ const model6: StrategyDefinition = {
   requiredTimeframes: ["4h", "15m"],
 };
 
-// ─── Model 7: Universal Sell Model ───────────────────────────────────────────
+// ─── Model 7: Universal Sell Model (EXECUTION_MODEL) ──────────────────────────
 
 const model7: StrategyDefinition = {
   id: "classical-07",
   name: "Model 7 — Universal Sell Model",
   description:
-    "Multi-asset sellside expansion. Premium-zone entries after buyside liquidity sweeps. " +
-    "Uses hasLiquiditySweep as proxy for hasLiquiditySweep.",
+    "Multi-asset sellside expansion. Premium-zone entries after buyside liquidity sweeps.",
   version: "1.0.0",
+  ontology: "EXECUTION_MODEL",
+  priority: "ALTERNATIVE",
   rule: andRules(
     predicateRule("hasBias", { timeframe: "4h" }),
     predicateRule("hasLiquiditySweep", { timeframe: "4h" }),
@@ -132,21 +147,23 @@ const model7: StrategyDefinition = {
   requiredTimeframes: ["4h", "15m"],
 };
 
-// ─── Model 8: Weekly Range Strategy ──────────────────────────────────────────
+// ─── Model 8: Weekly Range Strategy (TEMPORAL_MODEL) ──────────────────────────
 
 const model8: StrategyDefinition = {
   id: "classical-08",
   name: "Model 8 — Weekly Range Strategy",
   description:
     "Major forex pairs. Captures weekly expansions by anticipating weekly high/low between " +
-    "Mon–Wed. Weekly context. Seed also requires hasRangeExpansion, hasWeeklyExpansionContext.",
+    "Mon–Wed. Weekly context with H1 entry.",
   version: "1.0.0",
+  ontology: "TEMPORAL_MODEL",
+  priority: "ALTERNATIVE",
   rule: predicateRule("hasBias", { timeframe: "4h" }),
   tags: ["classical-horizon", "weekly", "range"],
   requiredTimeframes: ["4h"],
 };
 
-// ─── Model 9: One Shot One Kill (OSOK) ───────────────────────────────────────
+// ─── Model 9: One Shot One Kill (EXECUTION_MODEL) ─────────────────────────────
 
 const model9: StrategyDefinition = {
   id: "classical-09",
@@ -155,6 +172,8 @@ const model9: StrategyDefinition = {
     "Weekly position trading — single largest high-probability leg of the week. " +
     "Daily bias, H1/M15 entry, minimum 1:3 R:R.",
   version: "1.0.0",
+  ontology: "EXECUTION_MODEL",
+  priority: "PRIMARY",
   rule: andRules(
     predicateRule("hasBias", { timeframe: "1d" }),
     predicateRule("hasMarketStructureShift", { timeframe: "1h" }),
@@ -164,15 +183,16 @@ const model9: StrategyDefinition = {
   requiredTimeframes: ["1d", "1h"],
 };
 
-// ─── Model 10: Swing Stalking ────────────────────────────────────────────────
+// ─── Model 10: Swing Stalking (EXECUTION_MODEL) ───────────────────────────────
 
 const model10: StrategyDefinition = {
   id: "classical-10",
   name: "Model 10 — Swing Stalking",
   description:
-    "Day-to-swing trading — 50–75 pips/week by exploiting external range liquidity runs. " +
-    "Seed also requires hasLiquiditySweep and hasRangeExpansion (not yet implemented).",
+    "Day-to-swing trading — 50–75 pips/week by exploiting external range liquidity runs.",
   version: "1.0.0",
+  ontology: "EXECUTION_MODEL",
+  priority: "ALTERNATIVE",
   rule: andRules(
     predicateRule("hasBias", { timeframe: "1d" }),
     predicateRule("hasLiquiditySweep", { timeframe: "1h" }),
@@ -181,15 +201,16 @@ const model10: StrategyDefinition = {
   requiredTimeframes: ["1d", "1h"],
 };
 
-// ─── Model 11: Daily Range Scalping ──────────────────────────────────────────
+// ─── Model 11: Daily Range Scalping (EXECUTION_MODEL) ─────────────────────────
 
 const model11: StrategyDefinition = {
   id: "classical-11",
   name: "Model 11 — Daily Range Scalping",
   description:
-    "Scalping indices and forex on M15–M5. Daily range expansion + OB retests in session " +
-    "killzones. Seed also requires hasSessionAlignment (not yet implemented).",
+    "Scalping indices and forex on M15–M5. Daily range expansion + OB retests in session killzones.",
   version: "1.0.0",
+  ontology: "EXECUTION_MODEL",
+  priority: "ALTERNATIVE",
   rule: andRules(
     predicateRule("hasBias", { timeframe: "1h" }),
     predicateRule("hasOrderBlock", { timeframe: "15m" }),
@@ -198,15 +219,17 @@ const model11: StrategyDefinition = {
   requiredTimeframes: ["1h", "15m"],
 };
 
-// ─── Model 12: Core Scalping Model ───────────────────────────────────────────
+// ─── Model 12: Core Scalping Model (CONCEPT) ─────────────────────────────────
 
 const model12: StrategyDefinition = {
   id: "classical-12",
   name: "Model 12 — Core Scalping Model",
   description:
     "Scalping highly liquid assets on M5–M1. Fixed 20 pip target by entering fresh FVGs " +
-    "after displacement. Seed also requires hasDisplacement (not yet implemented).",
+    "after displacement.",
   version: "1.0.0",
+  ontology: "CONCEPT",
+  priority: "INFORMATIONAL",
   rule: predicateRule("hasFVG", { timeframe: "5m" }),
   tags: ["classical-horizon", "scalping", "fvg"],
   requiredTimeframes: ["5m"],
