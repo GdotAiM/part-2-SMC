@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { X, TrendingUp, TrendingDown, Minus, Layers, BarChart2, Activity, Zap, ChevronUp, ChevronDown, Target, Check, AlertTriangle, Copy, ClipboardCheck, Radio, BrainCircuit, ExternalLink } from "lucide-react";
+import { X, TrendingUp, TrendingDown, Minus, Layers, BarChart2, Activity, Zap, ChevronUp, ChevronDown, Target, Check, AlertTriangle, Copy, ClipboardCheck, Play, Radio, BrainCircuit, ExternalLink } from "lucide-react";
 import { isChartable } from "@/lib/alpaca-url";
 import { TradingViewChart } from "./TradingViewChart";
 import type { SmcReport } from "@workspace/api-client-react";
@@ -8,6 +8,7 @@ import { AgentChat } from "./AgentChat";
 import { AgentLoopSection } from "./AgentLoopSection";
 import { TradeActions } from "./TradeActions";
 import { MarketIntelligence } from "./MarketIntelligence";
+import { OSOutputPanel } from "./OSOutputPanel";
 import { BiasChip } from "@/components/ui/bias-chip";
 import { ConfBar } from "@/components/ui/conf-bar";
 import { fmtPrice, getBias, TF_LABEL_MAP, type Market } from "@/lib/smc-display";
@@ -19,6 +20,12 @@ type Props = {
   anchorTf?: string;
   anchorBias?: string;
   role?: string;
+  /** Optional strategy context from the detection engine. */
+  strategyContext?: { name: string; score: number };
+  /** Optional narrative from the strategy evaluation engine. */
+  narrative?: string;
+  /** Optional LLM reasoning assessment. */
+  reasoning?: { reasoning: string; confidenceScore: number };
 };
 
 function fmtRR(n: number): string {
@@ -132,7 +139,7 @@ function deriveSetup(report: SmcReport) {
   return { direction, entryLow, entryHigh, entrySource, stopLoss, slSource, tp1, tp2, rrRatio, checklist, passCount, grade };
 }
 
-export function IntelligenceSheet({ report, market, onClose, anchorTf, anchorBias, role }: Props) {
+export function IntelligenceSheet({ report, market, onClose, anchorTf, anchorBias, role, strategyContext, narrative, reasoning }: Props) {
   const bias      = getBias(report);
   const lastBreak = report.structure.breaks.slice(-1)[0];
   const liveOBs   = report.orderBlocks.filter(ob => ob.valid && !ob.isMitigated);
@@ -257,6 +264,12 @@ export function IntelligenceSheet({ report, market, onClose, anchorTf, anchorBia
                   <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-sm border border-primary/25 bg-primary/8 text-[10px] text-primary font-medium">
                     <Radio className="w-2 h-2" />
                     {report.sessionState}
+                  </span>
+                )}
+                {strategyContext && (
+                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-sm border border-[hsl(var(--bullish))]/30 bg-[hsl(var(--bullish))]/10 text-[10px] text-[hsl(var(--bullish))] font-bold">
+                    <Zap className="w-2.5 h-2.5" />
+                    {strategyContext.name} · {Math.round(strategyContext.score * 100)}%
                   </span>
                 )}
               </div>
@@ -653,7 +666,10 @@ export function IntelligenceSheet({ report, market, onClose, anchorTf, anchorBia
               </div>
             </Section>
 
-            {/* ══ 6. Agent Pipeline ══ */}
+            {/* ══ 6. OS Output Panel (narrative + reasoning) ══ */}
+            <OSOutputPanel narrative={narrative} reasoning={reasoning} />
+
+            {/* ══ 7. Agent Pipeline ══ */}
             <Section title="Agent Pipeline" icon={Zap}>
               <AgentPipeline report={report} />
             </Section>

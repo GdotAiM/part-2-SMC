@@ -1,4 +1,5 @@
-import { ArrowRight, ChevronRight, Minus, TrendingDown, TrendingUp } from "lucide-react";
+import { useState } from "react";
+import { ArrowRight, ChevronDown, ChevronRight, ChevronUp, Minus, Play, TrendingDown, TrendingUp, Zap } from "lucide-react";
 import type { SmcReport } from "@workspace/api-client-react";
 import { getBias, getConfidence, fmtPrice, TF_LABEL_MAP, TF_WEIGHT } from "@/lib/smc-display";
 
@@ -8,20 +9,110 @@ const ROLE_LABELS: Record<string, string> = {
   "ENTRY TRIGGER":  "Entry",
 };
 
+/* ─── Strategy Detection Section ─── */
+
+function StrategySection({
+  primary,
+  alternatives,
+  onExecute,
+}: {
+  primary: StrategyInfo;
+  alternatives: StrategyInfo[];
+  onExecute?: () => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const isHighConviction = primary.score >= 0.6;
+
+  return (
+    <div className="px-4 pb-2 border-t border-border/20 pt-2">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2 min-w-0">
+          <Zap className={`w-3.5 h-3.5 shrink-0 ${isHighConviction ? "text-[hsl(var(--bullish))]" : "text-primary"}`} />
+          <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground shrink-0">
+            Strategy
+          </span>
+          <span className={`text-[10px] font-bold truncate ${isHighConviction ? "text-[hsl(var(--bullish))]" : "text-primary"}`}>
+            {primary.name}
+          </span>
+          <span className={`text-[9px] px-1.5 py-0.5 rounded-sm font-bold border ${
+            isHighConviction
+              ? "bg-[hsl(var(--bullish))]/15 border-[hsl(var(--bullish))]/30 text-[hsl(var(--bullish))]"
+              : "bg-primary/10 border-primary/30 text-primary"
+          }`}>
+            {Math.round(primary.score * 100)}%
+          </span>
+          {onExecute && (
+            <button
+              onClick={(e) => { e.stopPropagation(); onExecute(); }}
+              className="flex items-center gap-1 px-2 py-0.5 rounded-sm text-[9px] font-bold border
+                bg-emerald-500/15 border-emerald-500/30 text-emerald-400
+                hover:bg-emerald-500/25 hover:border-emerald-500/50 transition-all shrink-0"
+              title="Open Intelligence Sheet on entry TF with strategy context"
+            >
+              <Play className="w-2.5 h-2.5" />
+              Execute Now
+            </button>
+          )}
+        </div>
+
+        {alternatives.length > 0 && (
+          <button
+            onClick={(e) => { e.stopPropagation(); setOpen(!open); }}
+            className="flex items-center gap-1 text-[9px] text-muted-foreground hover:text-foreground transition-colors shrink-0"
+          >
+            <span>{open ? "Hide" : `${alternatives.length} alt`}</span>
+            {open ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+          </button>
+        )}
+      </div>
+
+      {/* Collapsible alternatives */}
+      {open && alternatives.length > 0 && (
+        <div className="mt-1.5 space-y-1">
+          <p className="text-[8px] text-muted-foreground uppercase tracking-wider">Alternatives</p>
+          {alternatives.map((alt) => (
+            <div key={alt.id} className="flex items-center justify-between text-[10px]">
+              <span className="text-muted-foreground truncate mr-2">{alt.name}</span>
+              <span className="text-[9px] px-1.5 py-0.5 rounded-sm font-bold bg-muted border border-border text-muted-foreground shrink-0">
+                {Math.round(alt.score * 100)}%
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 type CascadeInfo = {
   roles: Record<string, string>;
   anchorTf: string;
   anchorBias: string;
 };
 
+export interface StrategyInfo {
+  id: string;
+  name: string;
+  score: number;
+}
+
 type Props = {
   reports: Array<{ tf: string; report: SmcReport }>;
   cascade: CascadeInfo;
   onSelect: (tf: string) => void;
   onOpenConfluence: () => void;
+  /** Optional: matched strategy info from the strategy detection engine. */
+  primaryStrategy?: StrategyInfo | null;
+  /** Optional: alternative runners-up (shown in a collapsible list). */
+  alternativeStrategies?: StrategyInfo[];
+  /** Called when user clicks "Execute Now" on the primary strategy. */
+  onExecute?: (strategy: StrategyInfo) => void;
 };
 
-export function ConfluenceCard({ reports, cascade, onSelect, onOpenConfluence }: Props) {
+export function ConfluenceCard({
+  reports, cascade, onSelect, onOpenConfluence,
+  primaryStrategy, alternativeStrategies, onExecute,
+}: Props) {
   if (reports.length === 0) return null;
 
   /* Sort high → low for cascade display */
@@ -107,6 +198,15 @@ export function ConfluenceCard({ reports, cascade, onSelect, onOpenConfluence }:
           </div>
         </div>
       </button>
+
+      {/* ── Strategy Detection ── */}
+      {primaryStrategy && (
+        <StrategySection
+          primary={primaryStrategy}
+          alternatives={alternativeStrategies ?? []}
+          onExecute={onExecute ? () => onExecute(primaryStrategy) : undefined}
+        />
+      )}
 
       {/* ── Cascade Flow ── */}
       {sortedReports.length > 1 && (

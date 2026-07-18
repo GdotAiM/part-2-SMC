@@ -1,5 +1,49 @@
 const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
 
+export interface StrategyDetectionResult {
+  rank: number;
+  strategyId: string;
+  strategyName: string;
+  status: "matched" | "failed" | "error";
+  matched: boolean;
+  score: number;
+  evidence: string[];
+}
+
+export interface StrategyDetectionResponse {
+  symbol: string;
+  market: string;
+  timeframes: string[];
+  totalStrategies: number;
+  matched: number;
+  failed: number;
+  errors: number;
+  results: StrategyDetectionResult[];
+  /** Deterministic narrative (only present when ?reason=true). */
+  narrative?: string;
+  /** LLM reasoning output (only present when ?reason=true). */
+  reasoning?: { reasoning: string; confidenceScore: number };
+}
+
+export async function detectStrategies(
+  symbol: string,
+  market: string,
+  timeframes?: string[],
+  includeReason?: boolean,
+): Promise<StrategyDetectionResponse> {
+  const qs = includeReason ? "?reason=true" : "";
+  const res = await fetch(apiUrl("/strategies/detect") + qs, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ symbol, market, timeframes }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: res.statusText }));
+    throw new Error(err.error ?? `HTTP ${res.status}`);
+  }
+  return res.json();
+}
+
 export function apiUrl(path: string): string {
   return `${BASE}/api${path}`;
 }
@@ -284,6 +328,23 @@ export async function findSimilarSetups(params: {
 
 export async function getNewsContext(symbol: string): Promise<{ context: string }> {
   const res = await fetch(apiUrl(`/agent-loop/news-context?symbol=${symbol}`));
+  return res.json();
+}
+
+// ── External Intelligence endpoints ─────────────────────────────────────────
+
+export interface RefreshCalendarResult {
+  scraped: boolean;
+  structured: number;
+  upserted: number;
+  source: string;
+  durationMs: number;
+  error?: string;
+}
+
+export async function refreshEconomicCalendar(): Promise<RefreshCalendarResult> {
+  const res = await fetch(apiUrl("/external-intel/refresh"));
+  if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`);
   return res.json();
 }
 

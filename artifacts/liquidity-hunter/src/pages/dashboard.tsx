@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useLocation } from "wouter";
-import { Activity, AlertCircle, BarChart2, BarChart3, ChevronDown, ChevronUp, Landmark, Minus, Radio, RefreshCw, TrendingDown, TrendingUp, Zap, Bell, Newspaper } from "lucide-react";
-import { getLoopStatus } from "@/lib/api";
+import { Activity, AlertCircle, BarChart2, BarChart3, CalendarDays, ChevronDown, ChevronUp, Landmark, Minus, Radio, RefreshCw, TrendingDown, TrendingUp, Zap, Bell, Newspaper } from "lucide-react";
+import { getLoopStatus, refreshEconomicCalendar } from "@/lib/api";
 import {
   getAnalyzeCryptoQueryKey,
   getAnalyzeForexQueryKey,
@@ -20,6 +20,7 @@ import { TvStatus } from "@/components/TvStatus";
 import { TvCardControl } from "@/components/TvCardControl";
 import { useRealtimeStream } from "@/lib/realtime";
 import { fmtPrice, getBias, getConfidence, TF_LABEL_MAP, TF_WEIGHT, type Market } from "@/lib/smc-display";
+import { useCascadeStrategy } from "@/hooks/useCascadeStrategy";
 
 const ALL_TFS = ["1m", "5m", "15m", "1h", "4h", "1d", "1w"] as const;
 type Tf = (typeof ALL_TFS)[number];
@@ -268,11 +269,13 @@ export default function Dashboard() {
   const [corrSym,     setCorrSym]     = useState("ETHUSDT");
   const [smtOn,       setSmtOn]       = useState(true);
   const [styleIdx,    setStyleIdx]    = useState(1);
-  const [sheet,             setSheet]             = useState<{ tf: Tf; report: SmcReport } | null>(null);
+  const [sheet,             setSheet]             = useState<{ tf: Tf; report: SmcReport; strategy?: { name: string; score: number } } | null>(null);
   const [confluenceSheetOpen, setConfluenceSheetOpen] = useState(false);
   const [chartOpen,   setChartOpen]   = useState(false);
   const [countdown,   setCountdown]   = useState(60);
   const [refreshing,  setRefreshing]  = useState(false);
+  const [calLoading,  setCalLoading]  = useState(false);
+  const [calResult,   setCalResult]   = useState<{ ok: boolean; detail: string } | null>(null);
 
   const queryClient = useQueryClient();
   const [, setLocation] = useLocation();
@@ -283,6 +286,19 @@ export default function Dashboard() {
     await queryClient.refetchQueries({ type: "active" });
     setRefreshing(false);
   }, [queryClient]);
+
+  const doCalendarRefresh = useCallback(async () => {
+    setCalLoading(true);
+    setCalResult(null);
+    try {
+      const r = await refreshEconomicCalendar();
+      setCalResult({ ok: !r.error, detail: r.error ?? `${r.upserted} upserted, ${r.structured} structured in ${r.durationMs}ms` });
+    } catch (err: any) {
+      setCalResult({ ok: false, detail: err.message ?? "Unknown error" });
+    }
+    setCalLoading(false);
+    setTimeout(() => setCalResult(null), 8000);
+  }, []);
 
   useEffect(() => {
     const id = setInterval(() => {
@@ -323,6 +339,16 @@ export default function Dashboard() {
   const r4h  = useTfData(market, symbol, "4h",  corrParam, activeStyle.timeframes.includes("4h"));
   const r1d  = useTfData(market, symbol, "1d",  corrParam, activeStyle.timeframes.includes("1d"));
   const r1w  = useTfData(market, symbol, "1w",  corrParam, activeStyle.timeframes.includes("1w"));
+
+  /* ── Strategy detection (with narrative + reasoning) ── */
+  const cascadeStrategy = useCascadeStrategy(symbol, market, activeStyle.timeframes, true);
+  const strategyProps = useMemo(() => {
+    if (!cascadeStrategy.primary) return { primaryStrategy: null as null, alternativeStrategies: [] };
+    return {
+      primaryStrategy: { id: cascadeStrategy.primary.strategyId, name: cascadeStrategy.primary.strategyName, score: cascadeStrategy.primary.score },
+      alternativeStrategies: cascadeStrategy.alternatives.map(a => ({ id: a.strategyId, name: a.strategyName, score: a.score })),
+    };
+  }, [cascadeStrategy.primary, cascadeStrategy.alternatives]);
 
   const tfMap: Record<Tf, typeof r1h> = {
     "1m": r1m, "5m": r5m, "15m": r15m, "1h": r1h, "4h": r4h, "1d": r1d, "1w": r1w,
@@ -511,6 +537,40 @@ export default function Dashboard() {
             <span className="hidden sm:inline">INTEL</span>
           </button>
 
+          {/* Economic Calendar Refresh */}
+          <div className="relative">
+            <button
+              onClick={doCalendarRefresh}
+              disabled={calLoading}
+              title="Refresh economic calendar from ForexFactory"
+              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-sm border text-xs font-bold transition-all ${
+                calLoading
+                  ? "border-border bg-muted text-muted-foreground"
+                  : calResult?.ok
+                    ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20"
+                    : calResult && !calResult.ok
+                      ? "border-destructive/30 bg-destructive/10 text-destructive hover:bg-destructive/20"
+                      : "border-border bg-muted text-muted-foreground hover:text-foreground hover:border-primary/50"
+              }`}
+            >
+              {calLoading
+                ? <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                : <CalendarDays className="w-3.5 h-3.5" />
+              }
+              <span className="hidden sm:inline">{calLoading ? "Loading…" : "CAL"}</span>
+            </button>
+            {/* Toast result */}
+            {calResult && (
+              <div className={`absolute top-full mt-1 right-0 z-50 px-2.5 py-1.5 rounded-sm text-[10px] font-medium border shadow-lg whitespace-nowrap ${
+                calResult.ok
+                  ? "bg-emerald-500/15 border-emerald-500/30 text-emerald-400"
+                  : "bg-destructive/15 border-destructive/30 text-destructive"
+              }`}>
+                {calResult.detail}
+              </div>
+            )}
+          </div>
+
           {/* Auto-refresh ring */}
           <div className="ml-auto flex items-center gap-3">
             <button
@@ -591,10 +651,23 @@ export default function Dashboard() {
           <ConfluenceCard
             reports={confluenceReports}
             cascade={cascade}
+            primaryStrategy={strategyProps.primaryStrategy}
+            alternativeStrategies={strategyProps.alternativeStrategies}
             onOpenConfluence={() => setConfluenceSheetOpen(true)}
             onSelect={tf => {
               const found = confluenceReports.find(r => r.tf === tf);
               if (found) setSheet({ tf: found.tf as Tf, report: found.report });
+            }}
+            onExecute={(strategy) => {
+              // Find the entry TF (lowest TF with data in the active style)
+              const sorted = [...activeStyle.timeframes]
+                .filter(tf => tfMap[tf].data)
+                .sort((a, b) => TF_WEIGHT[a] - TF_WEIGHT[b]);
+              const entryTf = sorted[0];
+              const entryReport = entryTf ? tfMap[entryTf].data : null;
+              if (entryReport) {
+                setSheet({ tf: entryTf as Tf, report: entryReport, strategy: { name: strategy.name, score: strategy.score } });
+              }
             }}
           />
         )}
@@ -715,6 +788,9 @@ export default function Dashboard() {
           anchorTf={cascade.anchorTf}
           anchorBias={cascade.anchorBias}
           role={cascade.roles[sheet.tf]}
+          strategyContext={sheet.strategy}
+          narrative={cascadeStrategy.narrative}
+          reasoning={cascadeStrategy.reasoning}
           onClose={() => setSheet(null)}
         />
       )}
