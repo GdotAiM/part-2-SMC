@@ -3,7 +3,7 @@
  * and structured output support.
  *
  * Supports multi-provider routing via LLM_PROVIDER env var:
- *   fireworks (default) | openai | custom | amd | ollama
+ *   fireworks (default) | openai | custom | amd | ollama | groq
  *
  * Cost tracking uses known model pricing; for unknown models it logs
  * estimated cost based on a fallback rate.
@@ -18,7 +18,7 @@ export interface LlmConfig {
   baseUrl: string;
   apiKey: string;
   model: string;
-  provider: "fireworks" | "amd" | "openai" | "custom" | "ollama";
+  provider: "fireworks" | "amd" | "openai" | "custom" | "ollama" | "groq";
 }
 
 export interface ChatMessage {
@@ -64,6 +64,13 @@ const MODEL_COST_MAP: Record<string, { input: number; output: number }> = {
   "llama-3.1-70b": { input: 0, output: 0 },
   "mistral-7b": { input: 0, output: 0 },
   "codestral-2501": { input: 0, output: 0 },
+  // Groq — fast inference, competitive pricing
+  "llama3-70b-8192": { input: 0.59, output: 0.79 },
+  "llama3-8b-8192": { input: 0.05, output: 0.08 },
+  "mixtral-8x7b-32768": { input: 0.24, output: 0.24 },
+  "gemma2-9b-it": { input: 0.08, output: 0.08 },
+  "deepseek-r1-distill-llama-70b": { input: 0.75, output: 0.99 },
+  "qwen-2.5-32b": { input: 0.35, output: 0.45 },
 };
 
 /** Fallback cost for unknown models (~Llama 3 70B pricing) */
@@ -131,6 +138,13 @@ export function resolveLlmConfig(): LlmConfig {
         baseUrl: process.env.LLM_BASE_URL || FIREWORKS_BASE,
         apiKey: process.env.LLM_API_KEY || process.env.FIREWORKS_API_KEY || "",
         model: process.env.LLM_MODEL || FIREWORKS_MODEL,
+      };
+    case "groq":
+      return {
+        provider: "groq",
+        baseUrl: process.env.LLM_BASE_URL || "https://api.groq.com/openai/v1",
+        apiKey: process.env.LLM_API_KEY || process.env.GROQ_API_KEY || "",
+        model: process.env.LLM_MODEL || "llama3-70b-8192",
       };
   }
 }
