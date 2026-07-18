@@ -6,16 +6,8 @@
  * the seed data in lib/db/seeds/model-definitions.ts (ids charter-01
  * through charter-12).
  *
- * Predicate mapping notes:
- *   - hasDisplacement, hasLiquiditySweep, hasRangeExpansion,
- *     hasWeeklyExpansionContext, hasSessionAlignment, hasEqualHighsLows
- *     are referenced by the seed but not yet implemented as predicates.
- *     Where possible the closest existing predicate is substituted (noted
- *     in comments). Once those predicates exist, the rule trees should be
- *     updated to match the seed's `requires` array exactly.
- *   - isWithinSession("INTRADAY") is a loose proxy for session alignment;
- *     refine by passing the specific killzone name when session detection
- *     is ready.
+ * All predicates referenced by the seed are now implemented.
+ * See predicates.ts for the full list of 21 functions.
  */
 
 import type { StrategyDefinition } from "../rules";
@@ -73,10 +65,10 @@ const model4: StrategyDefinition = {
   name: "Charter Model 4 — Liquidity Runs",
   description:
     "Synthesis of structure + liquidity — how institutions target BSL above swing highs and SSL " +
-    "below swing lows. Uses hasLiquidityPool as a proxy for hasLiquiditySweep (not yet implemented).",
+    "below swing lows. Uses hasLiquiditySweep as a proxy for hasLiquiditySweep (not yet implemented).",
   version: "1.0.0",
   rule: andRules(
-    predicateRule("hasLiquidityPool", { timeframe: "4h" }),
+    predicateRule("hasLiquiditySweep", { timeframe: "4h" }),
     predicateRule("hasMarketStructureShift", { timeframe: "4h" }),
   ),
   tags: ["charter-blueprint", "liquidity", "structure"],
@@ -121,13 +113,13 @@ const model7: StrategyDefinition = {
   name: "Charter Model 7 — Intraday Trading Techniques",
   description:
     "Session-based execution (Asian, London, NY overlap) with killzone identification. " +
-    "Aligns intraday entry triggers with daily bias. Uses isWithinSession as a proxy " +
+    "Aligns intraday entry triggers with daily bias. Uses hasSessionAlignment as a proxy " +
     "for hasSessionAlignment.",
   version: "1.0.0",
   rule: andRules(
     predicateRule("hasBias", { timeframe: "1h" }),
     predicateRule("hasMarketStructureShift", { timeframe: "15m" }),
-    predicateRule("isWithinSession", { timeframe: "15m", args: ["INTRADAY"] }),
+    predicateRule("hasSessionAlignment", { timeframe: "15m", args: ["LONDON"] }),
   ),
   tags: ["charter-blueprint", "intraday", "session"],
   requiredTimeframes: ["1h", "15m"],
@@ -159,12 +151,12 @@ const model9: StrategyDefinition = {
   name: "Charter Model 9 — One Shot One Kill Strategy",
   description:
     "Single highest-conviction setup per day/week. HTF bias + LTF liquidity sweep + MSS + displacement. " +
-    "Minimum 1:3 R:R. Uses hasLiquidityPool as proxy for hasLiquiditySweep (not yet implemented).",
+    "Minimum 1:3 R:R. Uses hasLiquiditySweep as proxy for hasLiquiditySweep (not yet implemented).",
   version: "1.0.0",
   rule: andRules(
     predicateRule("hasBias", { timeframe: "1d" }),
     predicateRule("hasMarketStructureShift", { timeframe: "1h" }),
-    predicateRule("hasLiquidityPool", { timeframe: "1h" }),
+    predicateRule("hasLiquiditySweep", { timeframe: "1h" }),
   ),
   tags: ["charter-blueprint", "osok", "high-conviction"],
   requiredTimeframes: ["1d", "1h"],

@@ -206,6 +206,13 @@ const htfConsolidation: SmcReport = baseReport({
     pivots: [],
     breaks: [],
   },
+  liquidity: {
+    pools: [
+      { price: 63800, type: "EQH", score: 0.7, touches: 4, wasSwept: false, time: 1, index: 5 },
+      { price: 63700, type: "EQL", score: 0.6, touches: 3, wasSwept: false, time: 2, index: 8 },
+    ],
+    nearestBSL: null, nearestSSL: null,
+  },
   pdArray: {
     currentBias: "equilibrium",
     zones: [],

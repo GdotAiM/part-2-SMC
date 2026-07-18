@@ -87,7 +87,7 @@ A complete ICT/SMC model-matching engine. Key files:
 
 | File | Role |
 |---|---|
-| `predicates.ts` | 14 pure functions (`hasBias`, `hasOrderBlock`, `hasFVG`, `hasMarketStructureShift`, `hasInducementZone`, `priceWithinOTEzone`, `hasConsolidationZone`, `isWithinSession`, `hasSMTConfirmation`, `hasHighImpactNewsWithin`, `isNewsBlackoutWindow`, etc.) returning `{ matched, evidence, score? }` — 96 vitest tests |
+| `predicates.ts` | 21 pure functions (all seed-referenced predicates now implemented: `hasDisplacement`, `hasLiquiditySweep`, `hasBreakerBlock`, `hasSessionAlignment`, `hasRangeExpansion`, `hasWeeklyExpansionContext`, `hasEqualHighsLows` added Jul 18) returning `{ matched, evidence, score? }` — ~120 vitest tests |
 | `rules.ts` | Recursive `Rule` discriminated union (`predicate`/`and`/`or`/`not`) + `StrategyDefinition` Zod schema |
 | `evaluator.ts` | `StrategyEvaluator` — walks a Rule tree against `Map<string, SmcReport>` via predicate function registry |
 | `registry.ts` | `StrategyRegistry` — auto-loads 41 templates, `detectAll(reports)` → ranked `DetectionResult[]` |
@@ -97,7 +97,7 @@ A complete ICT/SMC model-matching engine. Key files:
 
 **Frontend:** `useCascadeStrategy` hook → `ConfluenceCard` shows primary strategy name/score + Execute Now → opens `IntelligenceSheet` with `OSOutputPanel` (narrative + reasoning). `CAL` button in header triggers economic calendar refresh.
 
-**Missing predicates** (referenced by seed data, not yet implemented): `hasDisplacement`, `hasLiquiditySweep`, `hasBreakerBlock`, `hasSessionAlignment`, `hasRangeExpansion`, `hasWeeklyExpansionContext`, `hasEqualHighsLows`.
+**All 21 predicates** are implemented — the 7 previously missing functions (`hasDisplacement`, `hasLiquiditySweep`, `hasBreakerBlock`, `hasSessionAlignment`, `hasRangeExpansion`, `hasWeeklyExpansionContext`, `hasEqualHighsLows`) were added July 18. Templates that previously used proxy predicates (`hasLiquidityPool` for `hasLiquiditySweep`, etc.) now use the real functions.
 
 ## Model Definitions DB (`lib/db/src/schema/`)
 

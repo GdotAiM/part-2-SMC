@@ -10,12 +10,8 @@
  *
  * Total: 41 model definitions.
  *
- * Predicates referenced by name only — none exist as executable code yet:
- *   hasBias, hasMarketStructureShift, hasFVG, hasOrderBlock,
- *   hasInducementZone, priceWithinOTEzone, hasConsolidationZone,
- *   hasLiquiditySweep, hasDisplacement, hasSessionAlignment,
- *   hasSMTDivergence, hasBreakerBlock, hasWeeklyExpansionContext,
- *   hasRangeExpansion, hasEqualHighsLows
+ * All predicates referenced by name are now implemented as executable
+ * functions in lib/api-zod/src/strategies/predicates.ts.
  *
  * Usage:
  *   DATABASE_URL="postgresql://..." pnpm exec tsx lib/db/seeds/model-definitions.ts

@@ -800,6 +800,386 @@ export function hasSMTConfirmation(
   return result(true, ev, smt.confidence);
 }
 
+// ─── Predicates Previously Missing ──────────────────────────────────────────
+
+/**
+ * Detect whether price recently experienced a strong, high-velocity
+ * directional move (displacement).
+ *
+ * Displacement is measured by comparing the most recent candle body
+ * against the average true range of the preceding candles.  A candle
+ * whose body exceeds `bodyMultiplier × ATR` is considered a displacement
+ * candle.  Additional confirmation comes from structure breaks (BOS/CHoCH
+ * within the last `lookbackBars` candles).
+ *
+ * @param report          The SMC analysis report.
+ * @param lookbackBars    Number of candles to check (default 5).
+ * @param bodyMultiplier  ATR multiplier for the minimum body size (default 2.5).
+ */
+export function hasDisplacement(
+  report: SmcReport,
+  lookbackBars = 5,
+  bodyMultiplier = 2.5,
+): PredicateResult {
+  const candles = report.candles;
+  if (!candles || candles.length < lookbackBars + 5) {
+    return result(false, [
+      `Not enough candles to detect displacement (need ≥ ${lookbackBars + 5}, have ${candles?.length ?? 0}).`,
+    ]);
+  }
+
+  // Compute ATR over a window before the lookback window
+  const atrWindowStart = Math.max(0, candles.length - lookbackBars - 14);
+  const atrWindow = candles.slice(atrWindowStart, candles.length - lookbackBars);
+  const atrValues: number[] = [];
+  for (let i = 1; i < atrWindow.length; i++) {
+    const high = atrWindow[i].high;
+    const low = atrWindow[i].low;
+    const prevClose = atrWindow[i - 1].close;
+    atrValues.push(Math.max(high - low, Math.abs(high - prevClose), Math.abs(low - prevClose)));
+  }
+  const atr = atrValues.length > 0
+    ? atrValues.reduce((sum, v) => sum + v, 0) / atrValues.length
+    : 0;
+
+  // Check recent candles for displacement
+  const recent = candles.slice(-lookbackBars);
+  const threshold = atr * bodyMultiplier;
+  const displaced = recent.filter((c) => Math.abs(c.close - c.open) > threshold);
+
+  if (displaced.length === 0) {
+    return result(false, [
+      `No displacement detected in last ${lookbackBars} candles. ` +
+        `ATR: ${atr.toFixed(2)}, body threshold: ${threshold.toFixed(2)}.`,
+    ]);
+  }
+
+  // Check direction alignment with structure bias
+  const bias = report.structure.bias?.toLowerCase();
+  const aligned = displaced.filter((c) =>
+    bias === "bullish" ? c.close > c.open : bias === "bearish" ? c.close < c.open : true,
+  ).length;
+
+  const ev: string[] = [
+    `${displaced.length} displacement candle(s) detected in last ${lookbackBars} bars ` +
+      `(body ≥ ${bodyMultiplier}× ATR = ${threshold.toFixed(2)}).`,
+  ];
+  if (aligned > 0 && bias && bias !== "neutral") {
+    ev.push(`${aligned}/${displaced.length} aligned with ${bias} bias.`);
+  }
+
+  const score = Math.min(1, displaced.length / 3);
+  return result(true, ev, score);
+}
+
+/**
+ * Checks whether a liquidity sweep has recently occurred.
+ *
+ * A sweep happens when price pierces through a known liquidity pool
+ * (BSL/SSL/EQH/EQL) and then reverses.  The predicate checks two signals:
+ *   1. Any pool in `liquidity.pools` has `wasSwept === true` and was swept
+ *      within `lookbackMs` milliseconds.
+ *   2. The most recent structure break is a BOS/CHoCH in the opposite
+ *      direction of the prior swing (indicating a sweep-and-reversal).
+ *
+ * @param report     The SMC analysis report.
+ * @param lookbackMs Only consider pools swept within this window (default 86_400_000 = 24h).
+ */
+export function hasLiquiditySweep(
+  report: SmcReport,
+  lookbackMs = 86_400_000,
+): PredicateResult {
+  const now = report.generatedAt * 1000;
+  const ev: string[] = [];
+  let sweepCount = 0;
+
+  // Signal 1: pools with wasSwept within the lookback window
+  const recentSweeps = report.liquidity.pools.filter((p) => {
+    if (!p.wasSwept || p.sweptAt == null) return false;
+    const sweptMs = p.sweptAt * 1000;
+    return now - sweptMs <= lookbackMs;
+  });
+
+  if (recentSweeps.length > 0) {
+    sweepCount += recentSweeps.length;
+    ev.push(
+      `${recentSweeps.length} pool(s) swept within last ${(lookbackMs / 3600_000).toFixed(0)}h: ` +
+        recentSweeps
+          .slice(0, 3)
+          .map((p) => `${p.type} @ ${p.price}`)
+          .join(", "),
+    );
+  }
+
+  // Signal 2: structure breaks suggest sweep-and-reversal
+  const breaks = report.structure.breaks;
+  if (breaks.length >= 2) {
+    const last = breaks[breaks.length - 1];
+    const prev = breaks[breaks.length - 2];
+    // If the last break is in the opposite direction of the prior, it's a sweep
+    if (last.direction && prev.direction && last.direction !== prev.direction) {
+      sweepCount++;
+      ev.push(
+        `Structure shows sweep-and-reversal: ${prev.type} ${prev.direction} → ${last.type} ${last.direction}.`,
+      );
+    }
+  }
+
+  if (sweepCount === 0) {
+    return result(false, [
+      "No liquidity sweeps detected. All pools are intact and structure shows no sweep-and-reversal pattern.",
+    ]);
+  }
+
+  return result(true, ev, Math.min(1, sweepCount / 3));
+}
+
+/**
+ * Has at least one Breaker Block — an order block that has been broken
+ * with strong displacement, trapping breakout traders.
+ *
+ * Checks `report.orderBlocks` for entries where `isBreaker === true`.
+ */
+export function hasBreakerBlock(report: SmcReport): PredicateResult {
+  const breakers = report.orderBlocks.filter((ob) => ob.isBreaker && ob.valid);
+
+  if (breakers.length === 0) {
+    return result(false, [
+      "No breaker blocks found — all order blocks are intact or have no breaker flag.",
+    ]);
+  }
+
+  const score = Math.min(1, breakers.length / 3);
+  return result(true, [
+    `${breakers.length} breaker block(s) detected:`,
+    ...breakers.slice(0, 3).map(
+      (ob) => `  ${ob.type} breaker OB prox ${ob.proximal} (strength ${ob.strength})${ob.hasFvg ? " +FVG" : ""}`,
+    ),
+  ], score);
+}
+
+/**
+ * Checks whether the report's session state aligns with a named trading
+ * session.
+ *
+ * Unlike `isWithinSession` (which checks liquidity pool tags), this
+ * predicate evaluates the report's derived `sessionState` field against
+ * known session patterns.  It also considers the structure phase to
+ * determine whether price action is behaving appropriately for the session.
+ *
+ * @param report   The SMC analysis report.
+ * @param session  Session name: "ASIAN", "LONDON", "NY_AM", "NY_PM".
+ */
+export function hasSessionAlignment(
+  report: SmcReport,
+  session: string,
+): PredicateResult {
+  const sess = session.toUpperCase();
+  const state = report.sessionState ?? "";
+
+  // Match session name against the derived session state
+  const sessionKeywords: Record<string, string[]> = {
+    ASIAN: ["asian"],
+    LONDON: ["london"],
+    NY_AM: ["ny open", "ny continuation", "london close", "pm distribution"],
+    NY_PM: ["pm distribution", "late session", "ny retracement"],
+  };
+
+  const keywords = sessionKeywords[sess];
+  const matchesState = keywords
+    ? keywords.some((kw) => state.toLowerCase().includes(kw))
+    : false;
+
+  if (matchesState) {
+    return result(true, [
+      `Session state "${state}" matches "${sess}" session.`,
+    ]);
+  }
+
+  // Fallback: check the report timeframe as a contextual hint
+  const tf = report.timeframe?.toLowerCase();
+  if (tf && ["5m", "15m", "1h"].includes(tf) && (sess === "LONDON" || sess === "NY_AM" || sess === "NY_PM")) {
+    return result(true, [
+      `Timeframe "${tf}" is typical for ${sess} even though sessionState is "${state || "unset"}".`,
+    ], 0.3);
+  }
+
+  return result(false, [
+    `Session state "${state || "unset"}" does not match "${sess}".`,
+  ]);
+}
+
+/**
+ * Detects whether the market is in a directional range expansion phase.
+ *
+ * Range expansion is indicated by:
+ *   1. `structure.phase === "expansion"` or `"continuation"`
+ *   2. `structure.trend !== "ranging"` and `structure.bias !== "neutral"`
+ *   3. Multiple recent BOS breaks in the same direction
+ *
+ * @param report     The SMC analysis report.
+ * @param minBreaks  Minimum consecutive same-direction BOS breaks (default 1).
+ */
+export function hasRangeExpansion(
+  report: SmcReport,
+  minBreaks = 1,
+): PredicateResult {
+  const ev: string[] = [];
+  let factors = 0;
+
+  // Factor 1: phase is expansion or continuation
+  const phase = report.structure.phase?.toLowerCase();
+  if (phase === "expansion" || phase === "continuation") {
+    factors++;
+    ev.push(`Market phase is ${phase.toUpperCase()} — active range expansion.`);
+  }
+
+  // Factor 2: trend is directional
+  const trend = report.structure.trend?.toLowerCase();
+  if (trend && trend !== "ranging") {
+    factors++;
+    ev.push(`Trend is ${trend.toUpperCase()} — directional expansion underway.`);
+  }
+
+  // Factor 3: consecutive BOS breaks in the same direction
+  const bias = report.structure.bias?.toLowerCase();
+  const breaks = report.structure.breaks;
+  const bosBreaks = breaks.filter((b) => b.type === "BOS" && b.direction?.toLowerCase() === bias);
+  if (bosBreaks.length >= minBreaks) {
+    factors++;
+    ev.push(`${bosBreaks.length} BOS break(s) aligned with ${bias} bias.`);
+  }
+
+  if (factors === 0) {
+    return result(false, [
+      `Trend is "${trend ?? "unknown"}", phase is "${phase ?? "unknown"}" — no range expansion detected.`,
+    ]);
+  }
+
+  return result(true, ev, Math.min(1, factors / 3));
+}
+
+/**
+ * Checks whether there is a weekly-level expansion context.
+ *
+ * Weekly expansion context means the report is operating on a timeframe
+ * suitable for weekly analysis (1d or 1w) and there is evidence of
+ * directional expiry — the market is expected to reach the opposite end
+ * of the weekly range before Friday's close.
+ *
+ * @param report   The SMC analysis report.
+ */
+export function hasWeeklyExpansionContext(report: SmcReport): PredicateResult {
+  const tf = report.timeframe?.toLowerCase();
+
+  // Must be on a daily or weekly timeframe
+  if (tf !== "1d" && tf !== "1w") {
+    return result(false, [
+      `Timeframe is "${report.timeframe}" — weekly context requires 1d or 1w.`,
+    ]);
+  }
+
+  const ev: string[] = [`Timeframe is ${report.timeframe} — suitable for weekly analysis.`];
+  let factors = 0;
+
+  // Check for strong daily bias
+  const db = report.dailyBias;
+  if (db.bias !== "neutral" && db.strength >= 0.4) {
+    factors++;
+    ev.push(`Daily bias is ${db.bias.toUpperCase()} at ${(db.strength * 100).toFixed(0)}% strength (${db.consecutiveDays}d consecutive).`);
+  }
+
+  // Check structure trend
+  const trend = report.structure.trend?.toLowerCase();
+  if (trend && trend !== "ranging") {
+    factors++;
+    ev.push(`Structure trend is ${trend.toUpperCase()} — directionally aligned for weekly expansion.`);
+  }
+
+  // Check market phase
+  const phase = report.structure.phase?.toLowerCase();
+  if (phase === "expansion" || phase === "continuation") {
+    factors++;
+    ev.push(`Phase is ${phase.toUpperCase()} — mid-cycle for weekly completion.`);
+  }
+
+  if (factors === 0) {
+    return result(false, [
+      `${report.timeframe} timeframe but no directional conviction: ` +
+        `daily bias is "${db.bias}", trend is "${trend ?? "unknown"}", phase is "${phase ?? "unknown"}".`,
+    ]);
+  }
+
+  return result(true, ev, Math.min(1, factors / 3));
+}
+
+/**
+ * Detects equal highs (EQH) or equal lows (EQL) in the current structure.
+ *
+ * Equal highs/lows are engineered price levels where the market tests the
+ * same price multiple times, building a cluster of resting stop-losses.
+ * They are detected from:
+ *   1. Liquidity pools with type "EQH" or "EQL"
+ *   2. Structure pivots with approximately equal prices (within `tolerancePct`)
+ *
+ * @param report        The SMC analysis report.
+ * @param tolerancePct  Price tolerance as a fraction (default 0.001 = 0.1%).
+ */
+export function hasEqualHighsLows(
+  report: SmcReport,
+  tolerancePct = 0.001,
+): PredicateResult {
+  const ev: string[] = [];
+
+  // Signal 1: EQH/EQL liquidity pools
+  const eqPools = report.liquidity.pools.filter(
+    (p) => p.type === "EQH" || p.type === "EQL",
+  );
+  if (eqPools.length > 0) {
+    ev.push(
+      `${eqPools.length} engineered equal high/low pool(s): ` +
+        eqPools.slice(0, 3).map((p) => `${p.type} @ ${p.price} (touches ${p.touches})`).join(", "),
+    );
+  }
+
+  // Signal 2: structure pivots with equal prices
+  const pivots = report.structure.pivots;
+  const eqPairs: string[] = [];
+  if (pivots.length >= 2) {
+    for (let i = 0; i < pivots.length - 1; i++) {
+      for (let j = i + 1; j < Math.min(i + 6, pivots.length); j++) {
+        const diff = Math.abs(pivots[i].price - pivots[j].price);
+        const ref = Math.max(Math.abs(pivots[i].price), Math.abs(pivots[j].price));
+        if (ref > 0 && diff / ref <= tolerancePct) {
+          // Check they are the same type of pivot (both highs or both lows)
+          const typeI = pivots[i].type;
+          const typeJ = pivots[j].type;
+          const bothHigh = (typeI === "HH" || typeI === "LH") && (typeJ === "HH" || typeJ === "LH");
+          const bothLow = (typeI === "HL" || typeI === "LL") && (typeJ === "HL" || typeJ === "LL");
+          if (bothHigh || bothLow) {
+            eqPairs.push(`${typeI} @ ${pivots[i].price} and ${typeJ} @ ${pivots[j].price}`);
+          }
+        }
+      }
+    }
+  }
+
+  if (eqPairs.length > 0) {
+    ev.push(
+      `${eqPairs.length} pair(s) of equal pivot levels: ` +
+        eqPairs.slice(0, 3).join("; "),
+    );
+  }
+
+  if (ev.length === 0) {
+    return result(false, [
+      "No equal highs/lows detected — no EQH/EQL pools and no equal-price pivots within tolerance.",
+    ]);
+  }
+
+  return result(true, ev, Math.min(1, eqPools.length / 3 + eqPairs.length / 4));
+}
+
 // ─── Economic Calendar Predicates ───────────────────────────────────────────
 
 /**

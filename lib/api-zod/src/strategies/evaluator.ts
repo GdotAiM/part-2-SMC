@@ -34,6 +34,13 @@ import {
   hasSMTConfirmation,
   hasHighImpactNewsWithin,
   isNewsBlackoutWindow,
+  hasDisplacement,
+  hasLiquiditySweep,
+  hasBreakerBlock,
+  hasSessionAlignment,
+  hasRangeExpansion,
+  hasWeeklyExpansionContext,
+  hasEqualHighsLows,
 } from "./predicates";
 
 // ─── Predicate Registry ──────────────────────────────────────────────────────
@@ -64,6 +71,13 @@ const PREDICATE_REGISTRY: Record<string, ResolvedPredicate> = {
   hasSMTConfirmation,
   hasHighImpactNewsWithin,
   isNewsBlackoutWindow,
+  hasDisplacement,
+  hasLiquiditySweep,
+  hasBreakerBlock,
+  hasSessionAlignment,
+  hasRangeExpansion,
+  hasWeeklyExpansionContext,
+  hasEqualHighsLows,
 };
 
 // ─── Evaluator ───────────────────────────────────────────────────────────────

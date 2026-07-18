@@ -123,9 +123,7 @@ const model5: StrategyDefinition = {
     predicateRule("hasBias", { timeframe: "4h" }),
     predicateRule("hasConsolidationZone", { timeframe: "4h" }),
     predicateRule("hasMarketStructureShift", { timeframe: "5m" }),
-    // hasEqualHighsLows is referenced by the seed but not yet implemented as a predicate.
-    // It is intentionally omitted from the rule tree so this model can partially evaluate;
-    // add it as a predicateRule once the function exists.
+    predicateRule("hasEqualHighsLows", { timeframe: "4h" }),
   ),
   tags: ["modern-confluence", "reversal", "consolidation"],
   requiredTimeframes: ["4h", "5m"],

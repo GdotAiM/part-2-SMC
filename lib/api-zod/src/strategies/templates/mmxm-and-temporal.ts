@@ -5,11 +5,8 @@
  * taxonomy as StrategyDefinition objects. Corresponds 1:1 with the seed data
  * (ids mmxm-mmsm, mmxm-mmbm, temporal-*, reversal-*, framework-*).
  *
- * Predicate notes:
- *   - hasDisplacement, hasLiquiditySweep, hasBreakerBlock are NOT yet
- *     implemented.  Closest existing predicates are substituted where
- *     possible; models that depend heavily on unimplemented predicates have
- *     trimmed rule trees until those functions exist.
+ * All predicates referenced by the seed are now implemented.
+ * See predicates.ts for the full list of 21 functions.
  */
 
 import type { StrategyDefinition } from "../rules";
@@ -30,7 +27,7 @@ const mmsm: StrategyDefinition = {
     predicateRule("hasBias", { timeframe: "1d" }),
     predicateRule("hasMarketStructureShift", { timeframe: "1h" }),
     predicateRule("hasSMTConfirmation", { timeframe: "1h" }),
-    predicateRule("hasLiquidityPool", { timeframe: "1h" }),
+    predicateRule("hasLiquiditySweep", { timeframe: "1h" }),
   ),
   tags: ["market-maker-cycle", "mmsm", "distribution"],
   requiredTimeframes: ["1d", "1h"],
@@ -47,7 +44,7 @@ const mmbm: StrategyDefinition = {
     predicateRule("hasBias", { timeframe: "1d" }),
     predicateRule("hasMarketStructureShift", { timeframe: "1h" }),
     predicateRule("hasSMTConfirmation", { timeframe: "1h" }),
-    predicateRule("hasLiquidityPool", { timeframe: "1h" }),
+    predicateRule("hasLiquiditySweep", { timeframe: "1h" }),
   ),
   tags: ["market-maker-cycle", "mmbm", "accumulation"],
   requiredTimeframes: ["1d", "1h"],
@@ -114,13 +111,13 @@ const judasSwing: StrategyDefinition = {
   name: "Judas Swing",
   description:
     "Structural manipulation at major session opens. False breakout counter to daily bias " +
-    "sweeps liquidity, then true expansion leg fires. Uses isWithinSession as proxy for " +
-    "hasSessionAlignment; hasLiquidityPool as proxy for hasLiquiditySweep.",
+    "sweeps liquidity, then true expansion leg fires. Uses hasSessionAlignment as proxy for " +
+    "hasSessionAlignment; hasLiquiditySweep as proxy for hasLiquiditySweep.",
   version: "1.0.0",
   rule: andRules(
     predicateRule("hasBias", { timeframe: "1h" }),
     predicateRule("hasMarketStructureShift", { timeframe: "5m" }),
-    predicateRule("isWithinSession", { timeframe: "5m", args: ["LONDON"] }),
+    predicateRule("hasSessionAlignment", { timeframe: "5m", args: ["LONDON"] }),
   ),
   tags: ["temporal-reversal", "judas-swing", "manipulation"],
   requiredTimeframes: ["1h", "5m"],
@@ -150,11 +147,11 @@ const turtleSoup: StrategyDefinition = {
   name: "Turtle Soup",
   description:
     "Counter-trend reversal at failed breakouts. Sweep of swing high/low with wick rejection, " +
-    "entry just inside broken level. Uses hasLiquidityPool as proxy for hasLiquiditySweep.",
+    "entry just inside broken level. Uses hasLiquiditySweep as proxy for hasLiquiditySweep.",
   version: "1.0.0",
   rule: andRules(
     predicateRule("hasMarketStructureShift", { timeframe: "5m" }),
-    predicateRule("hasLiquidityPool", { timeframe: "5m" }),
+    predicateRule("hasLiquiditySweep", { timeframe: "5m" }),
   ),
   tags: ["temporal-reversal", "turtle-soup", "counter-trend"],
   requiredTimeframes: ["5m"],
@@ -185,7 +182,7 @@ const scob: StrategyDefinition = {
   rule: andRules(
     predicateRule("hasBias", { timeframe: "1h" }),
     predicateRule("hasMarketStructureShift", { timeframe: "5m" }),
-    predicateRule("hasLiquidityPool", { timeframe: "5m" }),
+    predicateRule("hasLiquiditySweep", { timeframe: "5m" }),
   ),
   tags: ["temporal-reversal", "scob", "micro-entry"],
   requiredTimeframes: ["1h", "5m"],
@@ -201,7 +198,7 @@ const sharpTurn: StrategyDefinition = {
   rule: andRules(
     predicateRule("hasBias", { timeframe: "4h" }),
     predicateRule("hasMarketStructureShift", { timeframe: "1h" }),
-    predicateRule("hasLiquidityPool", { timeframe: "1h" }),
+    predicateRule("hasLiquiditySweep", { timeframe: "1h" }),
   ),
   tags: ["temporal-reversal", "sharp-turn", "multi-tf"],
   requiredTimeframes: ["4h", "1h"],

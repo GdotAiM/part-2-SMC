@@ -24,6 +24,13 @@ import {
   hasSMTConfirmation,
   hasHighImpactNewsWithin,
   isNewsBlackoutWindow,
+  hasDisplacement,
+  hasLiquiditySweep,
+  hasBreakerBlock,
+  hasSessionAlignment,
+  hasRangeExpansion,
+  hasWeeklyExpansionContext,
+  hasEqualHighsLows,
 } from "./predicates";
 import type { EconomicEvent } from "./predicates";
 
@@ -767,6 +774,301 @@ describe("hasSMTConfirmation", () => {
     const result = hasSMTConfirmation(r);
     expect(result.matched).toBe(true);
     expect(result.evidence.some((e) => /EURUSD.*GBPUSD/i.test(e))).toBe(true);
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// hasDisplacement
+// ═══════════════════════════════════════════════════════════════════════════════
+
+describe("hasDisplacement", () => {
+  const c = (t: number, o: number, h: number, l: number, cl: number, v = 1000) =>
+    ({ time: t, open: o, high: h, low: l, close: cl, volume: v });
+
+  it("returns matched=true when recent candles show displacement", () => {
+    const candles = [
+      c(1, 64000, 64100, 63900, 64050),
+      c(2, 64050, 64150, 63950, 64100),
+      c(3, 64100, 64180, 64020, 64150),
+      c(4, 64150, 64200, 64100, 64180),
+      c(5, 64180, 64250, 64120, 64200),
+      c(6, 64200, 64300, 64150, 64250),
+      c(7, 64250, 64350, 64180, 64300),
+      c(8, 64300, 64400, 64250, 64350),
+      c(9, 64350, 64500, 64300, 64450),
+      c(10, 64450, 65100, 64400, 65050),
+    ];
+    const report = baseReport({
+      candles,
+      structure: { trend: "bullish", bias: "bullish", confidence: 0.8, pivots: [], breaks: [] },
+    });
+    const r = hasDisplacement(report, 5, 2);
+    expect(r.matched).toBe(true);
+    expect(r.evidence[0]).toMatch(/displacement/i);
+  });
+
+  it("returns matched=false when candles have small bodies", () => {
+    const candles = Array.from({ length: 20 }, (_, i) =>
+      c(i, 50000, 50030, 49980, 50010),
+    );
+    const report = baseReport({ candles });
+    const r = hasDisplacement(report, 5, 3);
+    expect(r.matched).toBe(false);
+  });
+
+  it("returns matched=false with too few candles", () => {
+    const report = baseReport({ candles: [c(1, 50000, 50100, 49900, 50050)] });
+    const r = hasDisplacement(report);
+    expect(r.matched).toBe(false);
+    expect(r.evidence[0]).toMatch(/not enough/i);
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// hasLiquiditySweep
+// ═══════════════════════════════════════════════════════════════════════════════
+
+describe("hasLiquiditySweep", () => {
+  it("returns matched=true when a pool was recently swept", () => {
+    const now = Date.now() / 1000;
+    const report = baseReport({
+      generatedAt: now,
+      liquidity: {
+        pools: [
+          { price: 64500, type: "BSL", score: 0.8, touches: 2, wasSwept: true, sweptAt: now - 300, time: 1, index: 10 },
+        ],
+        nearestBSL: null, nearestSSL: null,
+      },
+    });
+    const r = hasLiquiditySweep(report, 3600_000);
+    expect(r.matched).toBe(true);
+    expect(r.evidence[0]).toMatch(/swept/i);
+  });
+
+  it("returns matched=true when structure shows sweep-and-reversal", () => {
+    const report = baseReport({
+      structure: {
+        trend: "bearish", bias: "bearish", confidence: 0.7,
+        pivots: [],
+        breaks: [
+          { index: 10, price: 64000, type: "BOS", direction: "bullish", time: 100 },
+          { index: 15, price: 63500, type: "BOS", direction: "bearish", time: 101 },
+        ],
+      },
+    });
+    const r = hasLiquiditySweep(report);
+    expect(r.matched).toBe(true);
+  });
+
+  it("returns matched=false when no pools swept and no reversal pattern", () => {
+    const report = baseReport({ liquidity: { pools: [], nearestBSL: null, nearestSSL: null } });
+    const r = hasLiquiditySweep(report);
+    expect(r.matched).toBe(false);
+  });
+
+  it("ignores pools swept outside the lookback window", () => {
+    const now = Date.now() / 1000;
+    const report = baseReport({
+      generatedAt: now,
+      liquidity: {
+        pools: [
+          { price: 64500, type: "BSL", score: 0.8, touches: 2, wasSwept: true, sweptAt: now - 100_000, time: 1, index: 10 },
+        ],
+        nearestBSL: null, nearestSSL: null,
+      },
+    });
+    const r = hasLiquiditySweep(report, 60_000);
+    expect(r.matched).toBe(false);
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// hasBreakerBlock
+// ═══════════════════════════════════════════════════════════════════════════════
+
+describe("hasBreakerBlock", () => {
+  it("returns matched=true when breaker blocks exist", () => {
+    const report = baseReport({
+      orderBlocks: [
+        { type: "bearish", proximal: 65000, distal: 65200, time: 1, index: 10, valid: true, isMitigated: false, isBreaker: true, strength: 0.8, hasFvg: true },
+      ],
+    });
+    const r = hasBreakerBlock(report);
+    expect(r.matched).toBe(true);
+    expect(r.evidence[0]).toMatch(/breaker/i);
+  });
+
+  it("returns matched=false when no blocks have isBreaker", () => {
+    const report = baseReport({
+      orderBlocks: [
+        { type: "bullish", proximal: 64500, distal: 64200, time: 3, index: 12, valid: true, isMitigated: false, isBreaker: false, strength: 0.7, hasFvg: false },
+      ],
+    });
+    const r = hasBreakerBlock(report);
+    expect(r.matched).toBe(false);
+  });
+
+  it("returns matched=false when no order blocks exist", () => {
+    const r = hasBreakerBlock(neutralReport);
+    expect(r.matched).toBe(false);
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// hasSessionAlignment
+// ═══════════════════════════════════════════════════════════════════════════════
+
+describe("hasSessionAlignment", () => {
+  it("returns matched=true when sessionState matches LONDON", () => {
+    const report = baseReport({ sessionState: "London Expansion — Bullish" });
+    const r = hasSessionAlignment(report, "LONDON");
+    expect(r.matched).toBe(true);
+    expect(r.evidence[0]).toMatch(/london/i);
+  });
+
+  it("returns matched=true when sessionState matches NY_PM", () => {
+    const report = baseReport({ sessionState: "PM Distribution" });
+    const r = hasSessionAlignment(report, "NY_PM");
+    expect(r.matched).toBe(true);
+  });
+
+  it("returns matched=false when sessionState does not match", () => {
+    const report = baseReport({ sessionState: "Asian Range Formation" });
+    const r = hasSessionAlignment(report, "NY_AM");
+    expect(r.matched).toBe(false);
+  });
+
+  it("falls back to timeframe match when sessionState is unset", () => {
+    const report = baseReport({ sessionState: "", timeframe: "15m" });
+    const r = hasSessionAlignment(report, "LONDON");
+    expect(r.matched).toBe(true);
+    expect(r.score).toBe(0.3);
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// hasRangeExpansion
+// ═══════════════════════════════════════════════════════════════════════════════
+
+describe("hasRangeExpansion", () => {
+  it("returns matched=true when phase is expansion", () => {
+    const report = baseReport({
+      structure: { trend: "bullish", bias: "bullish", confidence: 0.8, pivots: [], breaks: [], phase: "expansion" },
+    });
+    const r = hasRangeExpansion(report);
+    expect(r.matched).toBe(true);
+    expect(r.evidence[0]).toMatch(/EXPANSION/i);
+  });
+
+  it("returns matched=true when multiple aligned BOS breaks exist", () => {
+    const report = baseReport({
+      structure: {
+        trend: "bullish", bias: "bullish", confidence: 0.75,
+        pivots: [], phase: "continuation",
+        breaks: [
+          { index: 10, price: 64000, type: "BOS", direction: "bullish", time: 100 },
+          { index: 15, price: 64500, type: "BOS", direction: "bullish", time: 101 },
+        ],
+      },
+    });
+    const r = hasRangeExpansion(report, 2);
+    expect(r.matched).toBe(true);
+    expect(r.evidence.some((e) => /BOS/i.test(e))).toBe(true);
+  });
+
+  it("returns matched=false when ranging with no breaks", () => {
+    const report = baseReport({
+      structure: { trend: "ranging", bias: "neutral", confidence: 0.1, pivots: [], breaks: [], phase: "unknown" },
+    });
+    const r = hasRangeExpansion(report);
+    expect(r.matched).toBe(false);
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// hasWeeklyExpansionContext
+// ═══════════════════════════════════════════════════════════════════════════════
+
+describe("hasWeeklyExpansionContext", () => {
+  it("returns matched=true on 1d timeframe with strong daily bias", () => {
+    const report = baseReport({
+      timeframe: "1d",
+      dailyBias: { bias: "bullish", strength: 0.7, consecutiveDays: 4 },
+      structure: { trend: "bullish", bias: "bullish", confidence: 0.8, pivots: [], breaks: [], phase: "expansion" },
+    });
+    const r = hasWeeklyExpansionContext(report);
+    expect(r.matched).toBe(true);
+    expect(r.evidence[0]).toMatch(/1d|weekly/i);
+  });
+
+  it("returns matched=false on 5m timeframe", () => {
+    const report = baseReport({ timeframe: "5m" });
+    const r = hasWeeklyExpansionContext(report);
+    expect(r.matched).toBe(false);
+    expect(r.evidence[0]).toMatch(/requires 1d or 1w/i);
+  });
+
+  it("returns matched=false on 1d with no directional conviction", () => {
+    const report = baseReport({
+      timeframe: "1d",
+      dailyBias: { bias: "neutral", strength: 0.1, consecutiveDays: 0 },
+      structure: { trend: "ranging", bias: "neutral", confidence: 0.1, pivots: [], breaks: [], phase: "unknown" },
+    });
+    const r = hasWeeklyExpansionContext(report);
+    expect(r.matched).toBe(false);
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// hasEqualHighsLows
+// ═══════════════════════════════════════════════════════════════════════════════
+
+describe("hasEqualHighsLows", () => {
+  it("returns matched=true when EQH/EQL liquidity pools exist", () => {
+    const report = baseReport({
+      liquidity: {
+        pools: [
+          { price: 64500, type: "EQH", score: 0.8, touches: 3, wasSwept: false, time: 1, index: 10 },
+          { price: 64000, type: "EQL", score: 0.6, touches: 2, wasSwept: false, time: 2, index: 15 },
+        ],
+        nearestBSL: null, nearestSSL: null,
+      },
+    });
+    const r = hasEqualHighsLows(report);
+    expect(r.matched).toBe(true);
+    expect(r.evidence[0]).toMatch(/equal/i);
+  });
+
+  it("returns matched=true when structure pivots have equal prices", () => {
+    const report = baseReport({
+      structure: {
+        trend: "bullish", bias: "bullish", confidence: 0.7,
+        pivots: [
+          { index: 10, price: 64500, type: "HH", confirmed: true, time: 100 },
+          { index: 15, price: 64502, type: "HH", confirmed: true, time: 101 },
+        ],
+        breaks: [],
+      },
+    });
+    const r = hasEqualHighsLows(report);
+    expect(r.matched).toBe(true);
+    expect(r.evidence.some((e) => /equal/i.test(e))).toBe(true);
+  });
+
+  it("returns matched=false with no equal structures", () => {
+    const report = baseReport({
+      liquidity: { pools: [], nearestBSL: null, nearestSSL: null },
+      structure: {
+        trend: "bullish", bias: "bullish", confidence: 0.7,
+        pivots: [
+          { index: 10, price: 64000, type: "HH", confirmed: true, time: 100 },
+          { index: 15, price: 64500, type: "HH", confirmed: true, time: 101 },
+        ],
+        breaks: [],
+      },
+    });
+    const r = hasEqualHighsLows(report);
+    expect(r.matched).toBe(false);
   });
 });
 

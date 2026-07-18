@@ -5,12 +5,8 @@
  * StrategyDefinition objects with rule trees.  Corresponds 1:1 with the
  * seed data (ids classical-01 through classical-12).
  *
- * Predicate notes:
- *   - hasDisplacement, hasLiquiditySweep, hasSessionAlignment,
- *     hasRangeExpansion, hasWeeklyExpansionContext are NOT yet implemented.
- *     Where possible the closest existing predicate is substituted;
- *     models 1, 5, 8, 10, 11, 12 have trimmed rule trees until those
- *     predicates exist.
+ * All predicates referenced by the seed are now implemented.
+ * See predicates.ts for the full list of 21 functions.
  */
 
 import type { StrategyDefinition } from "../rules";
@@ -62,7 +58,7 @@ const model3: StrategyDefinition = {
   version: "1.0.0",
   rule: andRules(
     predicateRule("hasBias", { timeframe: "1d" }),
-    predicateRule("hasLiquidityPool", { timeframe: "1d" }),
+    predicateRule("hasLiquiditySweep", { timeframe: "1d" }),
     predicateRule("priceWithinOTEzone", { timeframe: "1h", args: ["bullish"] }),
   ),
   tags: ["classical-horizon", "swing", "ote"],
@@ -107,11 +103,11 @@ const model6: StrategyDefinition = {
   name: "Model 6 — Universal Buy Model",
   description:
     "Multi-asset buyside expansion. Discount-zone entries after sellside liquidity sweeps. " +
-    "Uses hasLiquidityPool as proxy for hasLiquiditySweep.",
+    "Uses hasLiquiditySweep as proxy for hasLiquiditySweep.",
   version: "1.0.0",
   rule: andRules(
     predicateRule("hasBias", { timeframe: "4h" }),
-    predicateRule("hasLiquidityPool", { timeframe: "4h" }),
+    predicateRule("hasLiquiditySweep", { timeframe: "4h" }),
     predicateRule("hasMarketStructureShift", { timeframe: "15m" }),
   ),
   tags: ["classical-horizon", "universal", "buyside"],
@@ -125,11 +121,11 @@ const model7: StrategyDefinition = {
   name: "Model 7 — Universal Sell Model",
   description:
     "Multi-asset sellside expansion. Premium-zone entries after buyside liquidity sweeps. " +
-    "Uses hasLiquidityPool as proxy for hasLiquiditySweep.",
+    "Uses hasLiquiditySweep as proxy for hasLiquiditySweep.",
   version: "1.0.0",
   rule: andRules(
     predicateRule("hasBias", { timeframe: "4h" }),
-    predicateRule("hasLiquidityPool", { timeframe: "4h" }),
+    predicateRule("hasLiquiditySweep", { timeframe: "4h" }),
     predicateRule("hasMarketStructureShift", { timeframe: "15m" }),
   ),
   tags: ["classical-horizon", "universal", "sellside"],
@@ -162,7 +158,7 @@ const model9: StrategyDefinition = {
   rule: andRules(
     predicateRule("hasBias", { timeframe: "1d" }),
     predicateRule("hasMarketStructureShift", { timeframe: "1h" }),
-    predicateRule("hasLiquidityPool", { timeframe: "1h" }),
+    predicateRule("hasLiquiditySweep", { timeframe: "1h" }),
   ),
   tags: ["classical-horizon", "osok", "high-conviction"],
   requiredTimeframes: ["1d", "1h"],
@@ -179,7 +175,7 @@ const model10: StrategyDefinition = {
   version: "1.0.0",
   rule: andRules(
     predicateRule("hasBias", { timeframe: "1d" }),
-    predicateRule("hasLiquidityPool", { timeframe: "1h" }),
+    predicateRule("hasLiquiditySweep", { timeframe: "1h" }),
   ),
   tags: ["classical-horizon", "swing-stalking", "range"],
   requiredTimeframes: ["1d", "1h"],
