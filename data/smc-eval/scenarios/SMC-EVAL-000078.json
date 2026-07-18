@@ -1,0 +1,107 @@
+{
+  "scenarioId": "SMC-EVAL-000078",
+  "version": "1.0",
+  "market": "forex",
+  "asset": "AUDUSD=X",
+  "timestamp": "2026-07-25T16:00:00Z",
+  "session": "LONDON_OPEN",
+  "timeframes": [
+    "15m"
+  ],
+  "groundTruth": {
+    "scenarioId": "SMC-EVAL-000078",
+    "market": {
+      "asset": "AUDUSD=X",
+      "session": "LONDON_OPEN",
+      "timestamp": "2026-07-25T16:00:00Z"
+    },
+    "structure": {
+      "direction": "neutral",
+      "events": [
+        {
+          "type": "BOS",
+          "timeframe": "15m",
+          "direction": "bullish"
+        },
+        {
+          "type": "MSS",
+          "timeframe": "15m",
+          "direction": "bullish"
+        }
+      ]
+    },
+    "liquidity": {
+      "remaining": [
+        {
+          "type": "SSL",
+          "price": 61000
+        }
+      ]
+    },
+    "concepts": [
+      "fvg",
+      "bos",
+      "mss",
+      "liquidity"
+    ],
+    "models": {
+      "primary": {
+        "id": "smc-confluence-5",
+        "name": "Five Box Setup",
+        "ontology": "EXECUTION_MODEL",
+        "confidence": 0.76
+      },
+      "alternatives": [
+        {
+          "id": "smc-confluence-2",
+          "name": "HTF POI + BOS + IDM + FVG",
+          "ontology": "EXECUTION_MODEL",
+          "confidence": 0.63
+        }
+      ],
+      "rejected": [
+        {
+          "id": "temporal-judas-swing",
+          "name": "Judas Swing",
+          "ontology": "EXECUTION_MODEL",
+          "confidence": 0
+        },
+        {
+          "id": "mmxm-mmbm",
+          "name": "Market Maker Buy Model (MMBM)",
+          "ontology": "EXECUTION_MODEL",
+          "confidence": 0
+        }
+      ]
+    },
+    "timeframeAlignment": [],
+    "evaluation": {
+      "evaluator": "DETERMINISTIC",
+      "version": "1.0",
+      "timestamp": "2026-07-25T16:00:00Z",
+      "scenarioId": "SMC-EVAL-000078"
+    }
+  },
+  "modelCandidates": [
+    "smc-confluence-5",
+    "smc-confluence-2"
+  ],
+  "requiredConcepts": [
+    "fvg",
+    "bos",
+    "mss",
+    "liquidity"
+  ],
+  "invalidConcepts": [],
+  "evaluationRubric": {
+    "category": "adversarial",
+    "expectedPrimaryModel": "smc-confluence-5",
+    "minScore": 60,
+    "criticalErrors": [
+      "MODEL_HALLUCINATION"
+    ],
+    "trapClaim": "Bullish FVG + OB confluence, but ADR shows range exhaustion",
+    "actualModel": "smc-confluence-5",
+    "lureModel": "smc-confluence-2"
+  }
+}

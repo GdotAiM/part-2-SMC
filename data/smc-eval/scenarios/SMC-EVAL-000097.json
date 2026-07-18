@@ -1,0 +1,126 @@
+{
+  "scenarioId": "SMC-EVAL-000097",
+  "version": "1.0",
+  "market": "forex",
+  "asset": "USDJPY=X",
+  "timestamp": "2026-07-27T15:00:00Z",
+  "session": "NY_AM",
+  "timeframes": [
+    "15m"
+  ],
+  "groundTruth": {
+    "scenarioId": "SMC-EVAL-000097",
+    "market": {
+      "asset": "USDJPY=X",
+      "session": "NY_AM",
+      "timestamp": "2026-07-27T15:00:00Z"
+    },
+    "structure": {
+      "direction": "RANGE",
+      "events": [
+        {
+          "type": "BOS",
+          "timeframe": "15m",
+          "direction": "bullish"
+        },
+        {
+          "type": "MSS",
+          "timeframe": "15m",
+          "direction": "bearish"
+        }
+      ]
+    },
+    "liquidity": {
+      "remaining": [
+        {
+          "type": "SSL",
+          "price": 61000
+        }
+      ]
+    },
+    "concepts": [
+      "liquidity",
+      "session",
+      "bos"
+    ],
+    "models": {
+      "primary": {
+        "id": "reversal-turtle-soup",
+        "name": "Turtle Soup",
+        "ontology": "EXECUTION_MODEL",
+        "confidence": 0.91
+      },
+      "alternatives": [
+        {
+          "id": "classical-06",
+          "name": "Model 6 — Universal Buy Model",
+          "ontology": "EXECUTION_MODEL",
+          "confidence": 0.6
+        },
+        {
+          "id": "framework-2fvg",
+          "name": "2 FVG Model",
+          "ontology": "EXECUTION_MODEL",
+          "confidence": 0.5
+        }
+      ],
+      "rejected": [
+        {
+          "id": "classical-09",
+          "name": "Model 9 — One Shot One Kill",
+          "ontology": "EXECUTION_MODEL",
+          "confidence": 0
+        },
+        {
+          "id": "classical-05",
+          "name": "Model 5 — Advanced Session Setup",
+          "ontology": "EXECUTION_MODEL",
+          "confidence": 0
+        },
+        {
+          "id": "temporal-judas-swing",
+          "name": "Judas Swing",
+          "ontology": "EXECUTION_MODEL",
+          "confidence": 0
+        }
+      ]
+    },
+    "timeframeAlignment": [
+      {
+        "higherTf": "4h",
+        "lowerTf": "1h",
+        "alignment": "NEUTRAL"
+      },
+      {
+        "higherTf": "1h",
+        "lowerTf": "15m",
+        "alignment": "NEUTRAL"
+      }
+    ],
+    "evaluation": {
+      "evaluator": "DETERMINISTIC",
+      "version": "1.0",
+      "timestamp": "2026-07-27T15:00:00Z",
+      "scenarioId": "SMC-EVAL-000097"
+    }
+  },
+  "modelCandidates": [
+    "reversal-turtle-soup",
+    "classical-06",
+    "framework-2fvg"
+  ],
+  "requiredConcepts": [
+    "liquidity",
+    "session",
+    "bos"
+  ],
+  "invalidConcepts": [],
+  "evaluationRubric": {
+    "category": "ambiguous",
+    "expectedPrimaryModel": "reversal-turtle-soup",
+    "minScore": 40,
+    "criticalErrors": [],
+    "ambiguousContext": "Weekly open near Friday's close — gap context makes direction uncertain",
+    "expectedResponse": "ACKNOWLEDGE_UNCERTAINTY"
+  }
+}

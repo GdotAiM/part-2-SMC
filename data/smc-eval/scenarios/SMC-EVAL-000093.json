@@ -1,0 +1,126 @@
+{
+  "scenarioId": "SMC-EVAL-000093",
+  "version": "1.0",
+  "market": "forex",
+  "asset": "GBPUSD=X",
+  "timestamp": "2026-07-27T11:00:00Z",
+  "session": "NY_AM",
+  "timeframes": [
+    "15m"
+  ],
+  "groundTruth": {
+    "scenarioId": "SMC-EVAL-000093",
+    "market": {
+      "asset": "GBPUSD=X",
+      "session": "NY_AM",
+      "timestamp": "2026-07-27T11:00:00Z"
+    },
+    "structure": {
+      "direction": "RANGE",
+      "events": [
+        {
+          "type": "BOS",
+          "timeframe": "15m",
+          "direction": "bullish"
+        },
+        {
+          "type": "MSS",
+          "timeframe": "15m",
+          "direction": "bearish"
+        }
+      ]
+    },
+    "liquidity": {
+      "remaining": [
+        {
+          "type": "SSL",
+          "price": 61000
+        }
+      ]
+    },
+    "concepts": [
+      "ote",
+      "premium",
+      "discount"
+    ],
+    "models": {
+      "primary": {
+        "id": "reversal-turtle-soup",
+        "name": "Turtle Soup",
+        "ontology": "EXECUTION_MODEL",
+        "confidence": 0.85
+      },
+      "alternatives": [
+        {
+          "id": "smc-confluence-3",
+          "name": "HTF POI + BOS + FVG + OTE",
+          "ontology": "EXECUTION_MODEL",
+          "confidence": 0.51
+        },
+        {
+          "id": "framework-sharp-turn",
+          "name": "Sharp Turn (ST) Model",
+          "ontology": "EXECUTION_MODEL",
+          "confidence": 0.7
+        }
+      ],
+      "rejected": [
+        {
+          "id": "temporal-silver-bullet-nypm",
+          "name": "Silver Bullet — New York PM",
+          "ontology": "EXECUTION_MODEL",
+          "confidence": 0
+        },
+        {
+          "id": "smc-confluence-2",
+          "name": "HTF POI + BOS + IDM + FVG",
+          "ontology": "EXECUTION_MODEL",
+          "confidence": 0
+        },
+        {
+          "id": "classical-10",
+          "name": "Model 10 — Swing Stalking",
+          "ontology": "EXECUTION_MODEL",
+          "confidence": 0
+        }
+      ]
+    },
+    "timeframeAlignment": [
+      {
+        "higherTf": "4h",
+        "lowerTf": "1h",
+        "alignment": "NEUTRAL"
+      },
+      {
+        "higherTf": "1h",
+        "lowerTf": "15m",
+        "alignment": "NEUTRAL"
+      }
+    ],
+    "evaluation": {
+      "evaluator": "DETERMINISTIC",
+      "version": "1.0",
+      "timestamp": "2026-07-27T11:00:00Z",
+      "scenarioId": "SMC-EVAL-000093"
+    }
+  },
+  "modelCandidates": [
+    "reversal-turtle-soup",
+    "smc-confluence-3",
+    "framework-sharp-turn"
+  ],
+  "requiredConcepts": [
+    "ote",
+    "premium",
+    "discount"
+  ],
+  "invalidConcepts": [],
+  "evaluationRubric": {
+    "category": "ambiguous",
+    "expectedPrimaryModel": "reversal-turtle-soup",
+    "minScore": 40,
+    "criticalErrors": [],
+    "ambiguousContext": "OTEs on both sides within same dealing range — no directional edge",
+    "expectedResponse": "ACKNOWLEDGE_UNCERTAINTY"
+  }
+}

@@ -1,0 +1,124 @@
+{
+  "scenarioId": "SMC-EVAL-000083",
+  "version": "1.0",
+  "market": "crypto",
+  "asset": "ETHUSDT",
+  "timestamp": "2026-07-26T11:00:00Z",
+  "session": "ASIAN",
+  "timeframes": [
+    "15m"
+  ],
+  "groundTruth": {
+    "scenarioId": "SMC-EVAL-000083",
+    "market": {
+      "asset": "ETHUSDT",
+      "session": "ASIAN",
+      "timestamp": "2026-07-26T11:00:00Z"
+    },
+    "structure": {
+      "direction": "RANGE",
+      "events": [
+        {
+          "type": "BOS",
+          "timeframe": "15m",
+          "direction": "bullish"
+        },
+        {
+          "type": "MSS",
+          "timeframe": "15m",
+          "direction": "bearish"
+        }
+      ]
+    },
+    "liquidity": {
+      "remaining": [
+        {
+          "type": "SSL",
+          "price": 61000
+        }
+      ]
+    },
+    "concepts": [
+      "ob",
+      "liquidity"
+    ],
+    "models": {
+      "primary": {
+        "id": "classical-07",
+        "name": "Model 7 — Universal Sell Model",
+        "ontology": "EXECUTION_MODEL",
+        "confidence": 0.87
+      },
+      "alternatives": [
+        {
+          "id": "smc-confluence-1",
+          "name": "HTF POI + BOS + FVG",
+          "ontology": "EXECUTION_MODEL",
+          "confidence": 0.56
+        },
+        {
+          "id": "classical-11",
+          "name": "Model 11 — Daily Range Scalping",
+          "ontology": "EXECUTION_MODEL",
+          "confidence": 0.66
+        }
+      ],
+      "rejected": [
+        {
+          "id": "reversal-turtle-soup",
+          "name": "Turtle Soup",
+          "ontology": "EXECUTION_MODEL",
+          "confidence": 0
+        },
+        {
+          "id": "smc-confluence-4",
+          "name": "HTF POI + BOS + IDM + FVG + OTE",
+          "ontology": "EXECUTION_MODEL",
+          "confidence": 0
+        },
+        {
+          "id": "smc-confluence-5",
+          "name": "Five Box Setup",
+          "ontology": "EXECUTION_MODEL",
+          "confidence": 0
+        }
+      ]
+    },
+    "timeframeAlignment": [
+      {
+        "higherTf": "4h",
+        "lowerTf": "1h",
+        "alignment": "NEUTRAL"
+      },
+      {
+        "higherTf": "1h",
+        "lowerTf": "15m",
+        "alignment": "NEUTRAL"
+      }
+    ],
+    "evaluation": {
+      "evaluator": "DETERMINISTIC",
+      "version": "1.0",
+      "timestamp": "2026-07-26T11:00:00Z",
+      "scenarioId": "SMC-EVAL-000083"
+    }
+  },
+  "modelCandidates": [
+    "classical-07",
+    "smc-confluence-1",
+    "classical-11"
+  ],
+  "requiredConcepts": [
+    "ob",
+    "liquidity"
+  ],
+  "invalidConcepts": [],
+  "evaluationRubric": {
+    "category": "ambiguous",
+    "expectedPrimaryModel": "classical-07",
+    "minScore": 40,
+    "criticalErrors": [],
+    "ambiguousContext": "Multiple small OBs with equal strength — no clear institutional level",
+    "expectedResponse": "ACKNOWLEDGE_UNCERTAINTY"
+  }
+}

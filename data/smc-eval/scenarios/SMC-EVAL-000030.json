@@ -1,0 +1,111 @@
+{
+  "scenarioId": "SMC-EVAL-000030",
+  "version": "1.0",
+  "market": "crypto",
+  "asset": "SOLUSDT",
+  "timestamp": "2026-07-21T08:00:00Z",
+  "session": "LONDON_OPEN",
+  "timeframes": [
+    "5m"
+  ],
+  "groundTruth": {
+    "scenarioId": "SMC-EVAL-000030",
+    "market": {
+      "asset": "SOLUSDT",
+      "session": "LONDON_OPEN",
+      "timestamp": "2026-07-21T08:00:00Z"
+    },
+    "structure": {
+      "direction": "BEARISH",
+      "events": [
+        {
+          "type": "BOS",
+          "timeframe": "5m",
+          "direction": "bearish"
+        },
+        {
+          "type": "MSS",
+          "timeframe": "5m",
+          "direction": "bearish"
+        }
+      ]
+    },
+    "liquidity": {
+      "swept": "buy_side",
+      "remaining": [
+        {
+          "type": "SSL",
+          "price": 61000
+        }
+      ]
+    },
+    "concepts": [
+      "bos",
+      "mss"
+    ],
+    "models": {
+      "primary": {
+        "id": "smc-confluence-5",
+        "name": "Five Box Setup",
+        "ontology": "EXECUTION_MODEL",
+        "confidence": 0.83
+      },
+      "alternatives": [
+        {
+          "id": "framework-2fvg",
+          "name": "2 FVG Model",
+          "ontology": "EXECUTION_MODEL",
+          "confidence": 0.55
+        }
+      ],
+      "rejected": [
+        {
+          "id": "smc-confluence-2",
+          "name": "HTF POI + BOS + IDM + FVG",
+          "ontology": "EXECUTION_MODEL",
+          "confidence": 0
+        },
+        {
+          "id": "reversal-turtle-soup",
+          "name": "Turtle Soup",
+          "ontology": "EXECUTION_MODEL",
+          "confidence": 0
+        }
+      ]
+    },
+    "timeframeAlignment": [
+      {
+        "higherTf": "4h",
+        "lowerTf": "1h",
+        "alignment": "BEARISH"
+      }
+    ],
+    "evaluation": {
+      "evaluator": "DETERMINISTIC",
+      "version": "1.0",
+      "timestamp": "2026-07-21T08:00:00Z",
+      "scenarioId": "SMC-EVAL-000030"
+    }
+  },
+  "modelCandidates": [
+    "smc-confluence-5",
+    "framework-2fvg"
+  ],
+  "requiredConcepts": [
+    "bos",
+    "mss"
+  ],
+  "invalidConcepts": [
+    "induced"
+  ],
+  "evaluationRubric": {
+    "category": "false-positive",
+    "expectedPrimaryModel": "smc-confluence-5",
+    "minScore": 60,
+    "criticalErrors": [],
+    "missingConcepts": [
+      "consolidation"
+    ],
+    "falsePositiveReason": "No prior consolidation zone"
+  }
+}

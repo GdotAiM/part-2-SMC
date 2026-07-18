@@ -1,0 +1,106 @@
+{
+  "scenarioId": "SMC-EVAL-000033",
+  "version": "1.0",
+  "market": "forex",
+  "asset": "EURUSD=X",
+  "timestamp": "2026-07-21T11:00:00Z",
+  "session": "LONDON_OPEN",
+  "timeframes": [
+    "5m"
+  ],
+  "groundTruth": {
+    "scenarioId": "SMC-EVAL-000033",
+    "market": {
+      "asset": "EURUSD=X",
+      "session": "LONDON_OPEN",
+      "timestamp": "2026-07-21T11:00:00Z"
+    },
+    "structure": {
+      "direction": "BULLISH",
+      "events": [
+        {
+          "type": "FVG",
+          "timeframe": "5m",
+          "direction": "bullish"
+        },
+        {
+          "type": "MSS",
+          "timeframe": "5m",
+          "direction": "bullish"
+        }
+      ]
+    },
+    "liquidity": {
+      "swept": "sell_side",
+      "remaining": []
+    },
+    "concepts": [
+      "fvg",
+      "mss"
+    ],
+    "models": {
+      "primary": {
+        "id": "temporal-silver-bullet-nyam",
+        "name": "Silver Bullet — New York AM",
+        "ontology": "EXECUTION_MODEL",
+        "confidence": 0.92
+      },
+      "alternatives": [
+        {
+          "id": "classical-07",
+          "name": "Model 7 — Universal Sell Model",
+          "ontology": "EXECUTION_MODEL",
+          "confidence": 0.67
+        }
+      ],
+      "rejected": [
+        {
+          "id": "classical-10",
+          "name": "Model 10 — Swing Stalking",
+          "ontology": "EXECUTION_MODEL",
+          "confidence": 0
+        },
+        {
+          "id": "classical-08",
+          "name": "Model 8 — Weekly Range Strategy",
+          "ontology": "EXECUTION_MODEL",
+          "confidence": 0
+        }
+      ]
+    },
+    "timeframeAlignment": [
+      {
+        "higherTf": "4h",
+        "lowerTf": "1h",
+        "alignment": "BULLISH"
+      }
+    ],
+    "evaluation": {
+      "evaluator": "DETERMINISTIC",
+      "version": "1.0",
+      "timestamp": "2026-07-21T11:00:00Z",
+      "scenarioId": "SMC-EVAL-000033"
+    }
+  },
+  "modelCandidates": [
+    "temporal-silver-bullet-nyam",
+    "classical-07"
+  ],
+  "requiredConcepts": [
+    "fvg",
+    "mss"
+  ],
+  "invalidConcepts": [
+    "breaker"
+  ],
+  "evaluationRubric": {
+    "category": "false-positive",
+    "expectedPrimaryModel": "temporal-silver-bullet-nyam",
+    "minScore": 60,
+    "criticalErrors": [],
+    "missingConcepts": [
+      "session"
+    ],
+    "falsePositiveReason": "Outside NY AM window"
+  }
+}

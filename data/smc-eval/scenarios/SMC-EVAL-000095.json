@@ -1,0 +1,126 @@
+{
+  "scenarioId": "SMC-EVAL-000095",
+  "version": "1.0",
+  "market": "forex",
+  "asset": "USDCAD=X",
+  "timestamp": "2026-07-27T13:00:00Z",
+  "session": "LONDON_OPEN",
+  "timeframes": [
+    "15m"
+  ],
+  "groundTruth": {
+    "scenarioId": "SMC-EVAL-000095",
+    "market": {
+      "asset": "USDCAD=X",
+      "session": "LONDON_OPEN",
+      "timestamp": "2026-07-27T13:00:00Z"
+    },
+    "structure": {
+      "direction": "RANGE",
+      "events": [
+        {
+          "type": "BOS",
+          "timeframe": "15m",
+          "direction": "bullish"
+        },
+        {
+          "type": "MSS",
+          "timeframe": "15m",
+          "direction": "bearish"
+        }
+      ]
+    },
+    "liquidity": {
+      "remaining": [
+        {
+          "type": "SSL",
+          "price": 61000
+        }
+      ]
+    },
+    "concepts": [
+      "smt",
+      "bos",
+      "mss"
+    ],
+    "models": {
+      "primary": {
+        "id": "smc-confluence-2",
+        "name": "HTF POI + BOS + IDM + FVG",
+        "ontology": "EXECUTION_MODEL",
+        "confidence": 0.93
+      },
+      "alternatives": [
+        {
+          "id": "smc-confluence-4",
+          "name": "HTF POI + BOS + IDM + FVG + OTE",
+          "ontology": "EXECUTION_MODEL",
+          "confidence": 0.56
+        },
+        {
+          "id": "smc-confluence-1",
+          "name": "HTF POI + BOS + FVG",
+          "ontology": "EXECUTION_MODEL",
+          "confidence": 0.57
+        }
+      ],
+      "rejected": [
+        {
+          "id": "temporal-silver-bullet-london",
+          "name": "Silver Bullet — London Open",
+          "ontology": "EXECUTION_MODEL",
+          "confidence": 0
+        },
+        {
+          "id": "temporal-silver-bullet-nyam",
+          "name": "Silver Bullet — New York AM",
+          "ontology": "EXECUTION_MODEL",
+          "confidence": 0
+        },
+        {
+          "id": "framework-sharp-turn",
+          "name": "Sharp Turn (ST) Model",
+          "ontology": "EXECUTION_MODEL",
+          "confidence": 0
+        }
+      ]
+    },
+    "timeframeAlignment": [
+      {
+        "higherTf": "4h",
+        "lowerTf": "1h",
+        "alignment": "NEUTRAL"
+      },
+      {
+        "higherTf": "1h",
+        "lowerTf": "15m",
+        "alignment": "NEUTRAL"
+      }
+    ],
+    "evaluation": {
+      "evaluator": "DETERMINISTIC",
+      "version": "1.0",
+      "timestamp": "2026-07-27T13:00:00Z",
+      "scenarioId": "SMC-EVAL-000095"
+    }
+  },
+  "modelCandidates": [
+    "smc-confluence-2",
+    "smc-confluence-4",
+    "smc-confluence-1"
+  ],
+  "requiredConcepts": [
+    "smt",
+    "bos",
+    "mss"
+  ],
+  "invalidConcepts": [],
+  "evaluationRubric": {
+    "category": "ambiguous",
+    "expectedPrimaryModel": "smc-confluence-2",
+    "minScore": 40,
+    "criticalErrors": [],
+    "ambiguousContext": "Two correlated assets diverging but both making new highs — SMT ambiguous",
+    "expectedResponse": "ACKNOWLEDGE_UNCERTAINTY"
+  }
+}

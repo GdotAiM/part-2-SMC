@@ -1,0 +1,124 @@
+{
+  "scenarioId": "SMC-EVAL-000086",
+  "version": "1.0",
+  "market": "crypto",
+  "asset": "ETHUSDT",
+  "timestamp": "2026-07-26T14:00:00Z",
+  "session": "LONDON_OPEN",
+  "timeframes": [
+    "15m"
+  ],
+  "groundTruth": {
+    "scenarioId": "SMC-EVAL-000086",
+    "market": {
+      "asset": "ETHUSDT",
+      "session": "LONDON_OPEN",
+      "timestamp": "2026-07-26T14:00:00Z"
+    },
+    "structure": {
+      "direction": "RANGE",
+      "events": [
+        {
+          "type": "BOS",
+          "timeframe": "15m",
+          "direction": "bullish"
+        },
+        {
+          "type": "MSS",
+          "timeframe": "15m",
+          "direction": "bearish"
+        }
+      ]
+    },
+    "liquidity": {
+      "remaining": [
+        {
+          "type": "SSL",
+          "price": 61000
+        }
+      ]
+    },
+    "concepts": [
+      "bos",
+      "mss"
+    ],
+    "models": {
+      "primary": {
+        "id": "framework-2fvg",
+        "name": "2 FVG Model",
+        "ontology": "EXECUTION_MODEL",
+        "confidence": 0.84
+      },
+      "alternatives": [
+        {
+          "id": "smc-confluence-5",
+          "name": "Five Box Setup",
+          "ontology": "EXECUTION_MODEL",
+          "confidence": 0.64
+        },
+        {
+          "id": "framework-sharp-turn",
+          "name": "Sharp Turn (ST) Model",
+          "ontology": "EXECUTION_MODEL",
+          "confidence": 0.51
+        }
+      ],
+      "rejected": [
+        {
+          "id": "reversal-turtle-soup",
+          "name": "Turtle Soup",
+          "ontology": "EXECUTION_MODEL",
+          "confidence": 0
+        },
+        {
+          "id": "smc-confluence-2",
+          "name": "HTF POI + BOS + IDM + FVG",
+          "ontology": "EXECUTION_MODEL",
+          "confidence": 0
+        },
+        {
+          "id": "reversal-scob",
+          "name": "Single Candle OB (SCOB)",
+          "ontology": "EXECUTION_MODEL",
+          "confidence": 0
+        }
+      ]
+    },
+    "timeframeAlignment": [
+      {
+        "higherTf": "4h",
+        "lowerTf": "1h",
+        "alignment": "NEUTRAL"
+      },
+      {
+        "higherTf": "1h",
+        "lowerTf": "15m",
+        "alignment": "NEUTRAL"
+      }
+    ],
+    "evaluation": {
+      "evaluator": "DETERMINISTIC",
+      "version": "1.0",
+      "timestamp": "2026-07-26T14:00:00Z",
+      "scenarioId": "SMC-EVAL-000086"
+    }
+  },
+  "modelCandidates": [
+    "framework-2fvg",
+    "smc-confluence-5",
+    "framework-sharp-turn"
+  ],
+  "requiredConcepts": [
+    "bos",
+    "mss"
+  ],
+  "invalidConcepts": [],
+  "evaluationRubric": {
+    "category": "ambiguous",
+    "expectedPrimaryModel": "framework-2fvg",
+    "minScore": 40,
+    "criticalErrors": [],
+    "ambiguousContext": "Price broke structure five bars ago — retest never came, continuation unclear",
+    "expectedResponse": "ACKNOWLEDGE_UNCERTAINTY"
+  }
+}

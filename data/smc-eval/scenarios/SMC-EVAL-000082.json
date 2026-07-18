@@ -1,0 +1,124 @@
+{
+  "scenarioId": "SMC-EVAL-000082",
+  "version": "1.0",
+  "market": "crypto",
+  "asset": "ETHUSDT",
+  "timestamp": "2026-07-26T10:00:00Z",
+  "session": "ASIAN",
+  "timeframes": [
+    "15m"
+  ],
+  "groundTruth": {
+    "scenarioId": "SMC-EVAL-000082",
+    "market": {
+      "asset": "ETHUSDT",
+      "session": "ASIAN",
+      "timestamp": "2026-07-26T10:00:00Z"
+    },
+    "structure": {
+      "direction": "RANGE",
+      "events": [
+        {
+          "type": "BOS",
+          "timeframe": "15m",
+          "direction": "bullish"
+        },
+        {
+          "type": "MSS",
+          "timeframe": "15m",
+          "direction": "bearish"
+        }
+      ]
+    },
+    "liquidity": {
+      "remaining": [
+        {
+          "type": "SSL",
+          "price": 61000
+        }
+      ]
+    },
+    "concepts": [
+      "fvg",
+      "bos"
+    ],
+    "models": {
+      "primary": {
+        "id": "classical-07",
+        "name": "Model 7 — Universal Sell Model",
+        "ontology": "EXECUTION_MODEL",
+        "confidence": 0.91
+      },
+      "alternatives": [
+        {
+          "id": "classical-06",
+          "name": "Model 6 — Universal Buy Model",
+          "ontology": "EXECUTION_MODEL",
+          "confidence": 0.69
+        },
+        {
+          "id": "classical-10",
+          "name": "Model 10 — Swing Stalking",
+          "ontology": "EXECUTION_MODEL",
+          "confidence": 0.69
+        }
+      ],
+      "rejected": [
+        {
+          "id": "smc-confluence-1",
+          "name": "HTF POI + BOS + FVG",
+          "ontology": "EXECUTION_MODEL",
+          "confidence": 0
+        },
+        {
+          "id": "smc-confluence-5",
+          "name": "Five Box Setup",
+          "ontology": "EXECUTION_MODEL",
+          "confidence": 0
+        },
+        {
+          "id": "framework-2fvg",
+          "name": "2 FVG Model",
+          "ontology": "EXECUTION_MODEL",
+          "confidence": 0
+        }
+      ]
+    },
+    "timeframeAlignment": [
+      {
+        "higherTf": "4h",
+        "lowerTf": "1h",
+        "alignment": "NEUTRAL"
+      },
+      {
+        "higherTf": "1h",
+        "lowerTf": "15m",
+        "alignment": "NEUTRAL"
+      }
+    ],
+    "evaluation": {
+      "evaluator": "DETERMINISTIC",
+      "version": "1.0",
+      "timestamp": "2026-07-26T10:00:00Z",
+      "scenarioId": "SMC-EVAL-000082"
+    }
+  },
+  "modelCandidates": [
+    "classical-07",
+    "classical-06",
+    "classical-10"
+  ],
+  "requiredConcepts": [
+    "fvg",
+    "bos"
+  ],
+  "invalidConcepts": [],
+  "evaluationRubric": {
+    "category": "ambiguous",
+    "expectedPrimaryModel": "classical-07",
+    "minScore": 40,
+    "criticalErrors": [],
+    "ambiguousContext": "Partial FVG formed but barely touched — not clearly filled nor rejected",
+    "expectedResponse": "ACKNOWLEDGE_UNCERTAINTY"
+  }
+}

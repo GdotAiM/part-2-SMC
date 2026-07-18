@@ -1,0 +1,107 @@
+{
+  "scenarioId": "SMC-EVAL-000061",
+  "version": "1.0",
+  "market": "crypto",
+  "asset": "BTCUSDT",
+  "timestamp": "2026-07-24T09:00:00Z",
+  "session": "NY_AM",
+  "timeframes": [
+    "15m"
+  ],
+  "groundTruth": {
+    "scenarioId": "SMC-EVAL-000061",
+    "market": {
+      "asset": "BTCUSDT",
+      "session": "NY_AM",
+      "timestamp": "2026-07-24T09:00:00Z"
+    },
+    "structure": {
+      "direction": "bearish",
+      "events": [
+        {
+          "type": "BOS",
+          "timeframe": "15m",
+          "direction": "bullish"
+        },
+        {
+          "type": "MSS",
+          "timeframe": "15m",
+          "direction": "bearish"
+        }
+      ]
+    },
+    "liquidity": {
+      "remaining": [
+        {
+          "type": "SSL",
+          "price": 61000
+        }
+      ]
+    },
+    "concepts": [
+      "fvg",
+      "bos",
+      "mss",
+      "liquidity"
+    ],
+    "models": {
+      "primary": {
+        "id": "mmxm-mmsm",
+        "name": "Market Maker Sell Model (MMSM)",
+        "ontology": "EXECUTION_MODEL",
+        "confidence": 0.9
+      },
+      "alternatives": [
+        {
+          "id": "smc-confluence-1",
+          "name": "HTF POI + BOS + FVG",
+          "ontology": "EXECUTION_MODEL",
+          "confidence": 0.59
+        }
+      ],
+      "rejected": [
+        {
+          "id": "temporal-power-of-three",
+          "name": "Power of Three (PO3)",
+          "ontology": "EXECUTION_MODEL",
+          "confidence": 0
+        },
+        {
+          "id": "smc-confluence-2",
+          "name": "HTF POI + BOS + IDM + FVG",
+          "ontology": "EXECUTION_MODEL",
+          "confidence": 0
+        }
+      ]
+    },
+    "timeframeAlignment": [],
+    "evaluation": {
+      "evaluator": "DETERMINISTIC",
+      "version": "1.0",
+      "timestamp": "2026-07-24T09:00:00Z",
+      "scenarioId": "SMC-EVAL-000061"
+    }
+  },
+  "modelCandidates": [
+    "mmxm-mmsm",
+    "smc-confluence-1"
+  ],
+  "requiredConcepts": [
+    "fvg",
+    "bos",
+    "mss",
+    "liquidity"
+  ],
+  "invalidConcepts": [],
+  "evaluationRubric": {
+    "category": "adversarial",
+    "expectedPrimaryModel": "mmxm-mmsm",
+    "minScore": 60,
+    "criticalErrors": [
+      "MODEL_HALLUCINATION"
+    ],
+    "trapClaim": "Breakout looks bullish but sweeps buy-side liquidity",
+    "actualModel": "mmxm-mmsm",
+    "lureModel": "smc-confluence-1"
+  }
+}

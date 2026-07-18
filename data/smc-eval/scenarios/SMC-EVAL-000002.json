@@ -1,0 +1,144 @@
+{
+  "scenarioId": "SMC-EVAL-000002",
+  "version": "1.0",
+  "market": "crypto",
+  "asset": "XRPUSDT",
+  "timestamp": "2026-07-18T10:00:00Z",
+  "session": "LONDON_OPEN",
+  "timeframes": [
+    "5m",
+    "1h"
+  ],
+  "groundTruth": {
+    "scenarioId": "SMC-EVAL-000002",
+    "market": {
+      "asset": "XRPUSDT",
+      "session": "LONDON_OPEN",
+      "timestamp": "2026-07-18T10:00:00Z"
+    },
+    "structure": {
+      "direction": "BULLISH",
+      "events": [
+        {
+          "type": "LIQUIDITY_SWEEP",
+          "timeframe": "5m",
+          "direction": "bearish"
+        },
+        {
+          "type": "MSS",
+          "timeframe": "5m",
+          "direction": "bullish"
+        },
+        {
+          "type": "BOS",
+          "timeframe": "1h",
+          "direction": "bullish"
+        },
+        {
+          "type": "FVG",
+          "timeframe": "5m",
+          "direction": "bullish"
+        }
+      ]
+    },
+    "liquidity": {
+      "swept": "sell_side",
+      "remaining": [
+        {
+          "type": "BSL",
+          "price": 65000
+        },
+        {
+          "type": "BSL",
+          "price": 65400
+        }
+      ]
+    },
+    "concepts": [
+      "fvg",
+      "bos",
+      "mss",
+      "inducement"
+    ],
+    "models": {
+      "primary": {
+        "id": "smc-confluence-2",
+        "name": "HTF POI + BOS + IDM + FVG",
+        "ontology": "EXECUTION_MODEL",
+        "confidence": 0.81
+      },
+      "alternatives": [
+        {
+          "id": "classical-06",
+          "name": "Model 6 — Universal Buy Model",
+          "ontology": "EXECUTION_MODEL",
+          "confidence": 0.6
+        },
+        {
+          "id": "classical-11",
+          "name": "Model 11 — Daily Range Scalping",
+          "ontology": "EXECUTION_MODEL",
+          "confidence": 0.65
+        }
+      ],
+      "rejected": [
+        {
+          "id": "classical-05",
+          "name": "Model 5 — Advanced Session Setup",
+          "ontology": "EXECUTION_MODEL",
+          "confidence": 0
+        },
+        {
+          "id": "smc-confluence-1",
+          "name": "HTF POI + BOS + FVG",
+          "ontology": "EXECUTION_MODEL",
+          "confidence": 0
+        }
+      ]
+    },
+    "timeframeAlignment": [
+      {
+        "higherTf": "4h",
+        "lowerTf": "1h",
+        "alignment": "BULLISH"
+      },
+      {
+        "higherTf": "1h",
+        "lowerTf": "5m",
+        "alignment": "BULLISH"
+      }
+    ],
+    "execution": {
+      "direction": "LONG",
+      "entryTrigger": "FVG retest",
+      "stopLevel": "below sweep low",
+      "targetLevel": "next liquidity pool",
+      "minimumRR": 2,
+      "invalidation": "close beyond sweep"
+    },
+    "evaluation": {
+      "evaluator": "DETERMINISTIC",
+      "version": "1.0",
+      "timestamp": "2026-07-18T10:00:00Z",
+      "scenarioId": "SMC-EVAL-000002"
+    }
+  },
+  "modelCandidates": [
+    "smc-confluence-2",
+    "classical-06",
+    "classical-11"
+  ],
+  "requiredConcepts": [
+    "fvg",
+    "bos",
+    "mss",
+    "inducement"
+  ],
+  "invalidConcepts": [],
+  "evaluationRubric": {
+    "category": "clear",
+    "expectedPrimaryModel": "smc-confluence-2",
+    "minScore": 75,
+    "criticalErrors": []
+  }
+}

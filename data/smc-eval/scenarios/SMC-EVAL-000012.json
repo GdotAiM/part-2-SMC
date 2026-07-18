@@ -1,0 +1,127 @@
+{
+  "scenarioId": "SMC-EVAL-000012",
+  "version": "1.0",
+  "market": "forex",
+  "asset": "USDJPY=X",
+  "timestamp": "2026-07-19T10:00:00Z",
+  "session": "NY_PM",
+  "timeframes": [
+    "5m"
+  ],
+  "groundTruth": {
+    "scenarioId": "SMC-EVAL-000012",
+    "market": {
+      "asset": "USDJPY=X",
+      "session": "NY_PM",
+      "timestamp": "2026-07-19T10:00:00Z"
+    },
+    "structure": {
+      "direction": "BULLISH",
+      "events": [
+        {
+          "type": "LIQUIDITY_SWEEP",
+          "timeframe": "5m",
+          "direction": "bearish"
+        },
+        {
+          "type": "MSS",
+          "timeframe": "5m",
+          "direction": "bullish"
+        }
+      ]
+    },
+    "liquidity": {
+      "swept": "sell_side",
+      "remaining": [
+        {
+          "type": "BSL",
+          "price": 65000
+        }
+      ]
+    },
+    "concepts": [
+      "bos",
+      "liquidity",
+      "ob"
+    ],
+    "models": {
+      "primary": {
+        "id": "reversal-scob",
+        "name": "Single Candle OB (SCOB)",
+        "ontology": "EXECUTION_MODEL",
+        "confidence": 0.76
+      },
+      "alternatives": [
+        {
+          "id": "smc-confluence-4",
+          "name": "HTF POI + BOS + IDM + FVG + OTE",
+          "ontology": "EXECUTION_MODEL",
+          "confidence": 0.69
+        },
+        {
+          "id": "classical-10",
+          "name": "Model 10 — Swing Stalking",
+          "ontology": "EXECUTION_MODEL",
+          "confidence": 0.65
+        }
+      ],
+      "rejected": [
+        {
+          "id": "smc-confluence-1",
+          "name": "HTF POI + BOS + FVG",
+          "ontology": "EXECUTION_MODEL",
+          "confidence": 0
+        },
+        {
+          "id": "classical-06",
+          "name": "Model 6 — Universal Buy Model",
+          "ontology": "EXECUTION_MODEL",
+          "confidence": 0
+        }
+      ]
+    },
+    "timeframeAlignment": [
+      {
+        "higherTf": "4h",
+        "lowerTf": "1h",
+        "alignment": "BULLISH"
+      },
+      {
+        "higherTf": "1h",
+        "lowerTf": "5m",
+        "alignment": "BULLISH"
+      }
+    ],
+    "execution": {
+      "direction": "LONG",
+      "entryTrigger": "FVG retest",
+      "stopLevel": "below sweep low",
+      "targetLevel": "next liquidity pool",
+      "minimumRR": 2,
+      "invalidation": "close beyond sweep"
+    },
+    "evaluation": {
+      "evaluator": "DETERMINISTIC",
+      "version": "1.0",
+      "timestamp": "2026-07-19T10:00:00Z",
+      "scenarioId": "SMC-EVAL-000012"
+    }
+  },
+  "modelCandidates": [
+    "reversal-scob",
+    "smc-confluence-4",
+    "classical-10"
+  ],
+  "requiredConcepts": [
+    "bos",
+    "liquidity",
+    "ob"
+  ],
+  "invalidConcepts": [],
+  "evaluationRubric": {
+    "category": "clear",
+    "expectedPrimaryModel": "reversal-scob",
+    "minScore": 75,
+    "criticalErrors": []
+  }
+}

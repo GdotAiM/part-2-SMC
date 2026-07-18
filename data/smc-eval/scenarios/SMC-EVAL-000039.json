@@ -1,0 +1,111 @@
+{
+  "scenarioId": "SMC-EVAL-000039",
+  "version": "1.0",
+  "market": "forex",
+  "asset": "USDCAD=X",
+  "timestamp": "2026-07-21T17:00:00Z",
+  "session": "NY_AM",
+  "timeframes": [
+    "5m"
+  ],
+  "groundTruth": {
+    "scenarioId": "SMC-EVAL-000039",
+    "market": {
+      "asset": "USDCAD=X",
+      "session": "NY_AM",
+      "timestamp": "2026-07-21T17:00:00Z"
+    },
+    "structure": {
+      "direction": "BULLISH",
+      "events": [
+        {
+          "type": "BOS",
+          "timeframe": "5m",
+          "direction": "bullish"
+        },
+        {
+          "type": "MSS",
+          "timeframe": "5m",
+          "direction": "bullish"
+        }
+      ]
+    },
+    "liquidity": {
+      "swept": "sell_side",
+      "remaining": [
+        {
+          "type": "BSL",
+          "price": 65000
+        }
+      ]
+    },
+    "concepts": [
+      "bos",
+      "mss"
+    ],
+    "models": {
+      "primary": {
+        "id": "classical-07",
+        "name": "Model 7 — Universal Sell Model",
+        "ontology": "EXECUTION_MODEL",
+        "confidence": 0.88
+      },
+      "alternatives": [
+        {
+          "id": "smc-confluence-1",
+          "name": "HTF POI + BOS + FVG",
+          "ontology": "EXECUTION_MODEL",
+          "confidence": 0.61
+        }
+      ],
+      "rejected": [
+        {
+          "id": "framework-2fvg",
+          "name": "2 FVG Model",
+          "ontology": "EXECUTION_MODEL",
+          "confidence": 0
+        },
+        {
+          "id": "smc-confluence-1",
+          "name": "HTF POI + BOS + FVG",
+          "ontology": "EXECUTION_MODEL",
+          "confidence": 0
+        }
+      ]
+    },
+    "timeframeAlignment": [
+      {
+        "higherTf": "4h",
+        "lowerTf": "1h",
+        "alignment": "BULLISH"
+      }
+    ],
+    "evaluation": {
+      "evaluator": "DETERMINISTIC",
+      "version": "1.0",
+      "timestamp": "2026-07-21T17:00:00Z",
+      "scenarioId": "SMC-EVAL-000039"
+    }
+  },
+  "modelCandidates": [
+    "classical-07",
+    "smc-confluence-1"
+  ],
+  "requiredConcepts": [
+    "bos",
+    "mss"
+  ],
+  "invalidConcepts": [
+    "breaker"
+  ],
+  "evaluationRubric": {
+    "category": "false-positive",
+    "expectedPrimaryModel": "classical-07",
+    "minScore": 60,
+    "criticalErrors": [],
+    "missingConcepts": [
+      "liquidity"
+    ],
+    "falsePositiveReason": "No buy-side sweep — not a sell setup"
+  }
+}

@@ -1,0 +1,111 @@
+{
+  "scenarioId": "SMC-EVAL-000035",
+  "version": "1.0",
+  "market": "forex",
+  "asset": "AUDUSD=X",
+  "timestamp": "2026-07-21T13:00:00Z",
+  "session": "LONDON_OPEN",
+  "timeframes": [
+    "5m"
+  ],
+  "groundTruth": {
+    "scenarioId": "SMC-EVAL-000035",
+    "market": {
+      "asset": "AUDUSD=X",
+      "session": "LONDON_OPEN",
+      "timestamp": "2026-07-21T13:00:00Z"
+    },
+    "structure": {
+      "direction": "BULLISH",
+      "events": [
+        {
+          "type": "BOS",
+          "timeframe": "5m",
+          "direction": "bullish"
+        },
+        {
+          "type": "MSS",
+          "timeframe": "5m",
+          "direction": "bullish"
+        }
+      ]
+    },
+    "liquidity": {
+      "swept": "sell_side",
+      "remaining": [
+        {
+          "type": "BSL",
+          "price": 65000
+        }
+      ]
+    },
+    "concepts": [
+      "bos",
+      "mss"
+    ],
+    "models": {
+      "primary": {
+        "id": "classical-06",
+        "name": "Model 6 — Universal Buy Model",
+        "ontology": "EXECUTION_MODEL",
+        "confidence": 0.87
+      },
+      "alternatives": [
+        {
+          "id": "classical-10",
+          "name": "Model 10 — Swing Stalking",
+          "ontology": "EXECUTION_MODEL",
+          "confidence": 0.58
+        }
+      ],
+      "rejected": [
+        {
+          "id": "smc-confluence-4",
+          "name": "HTF POI + BOS + IDM + FVG + OTE",
+          "ontology": "EXECUTION_MODEL",
+          "confidence": 0
+        },
+        {
+          "id": "smc-confluence-3",
+          "name": "HTF POI + BOS + FVG + OTE",
+          "ontology": "EXECUTION_MODEL",
+          "confidence": 0
+        }
+      ]
+    },
+    "timeframeAlignment": [
+      {
+        "higherTf": "4h",
+        "lowerTf": "1h",
+        "alignment": "BULLISH"
+      }
+    ],
+    "evaluation": {
+      "evaluator": "DETERMINISTIC",
+      "version": "1.0",
+      "timestamp": "2026-07-21T13:00:00Z",
+      "scenarioId": "SMC-EVAL-000035"
+    }
+  },
+  "modelCandidates": [
+    "classical-06",
+    "classical-10"
+  ],
+  "requiredConcepts": [
+    "bos",
+    "mss"
+  ],
+  "invalidConcepts": [
+    "smt"
+  ],
+  "evaluationRubric": {
+    "category": "false-positive",
+    "expectedPrimaryModel": "classical-06",
+    "minScore": 60,
+    "criticalErrors": [],
+    "missingConcepts": [
+      "liquidity"
+    ],
+    "falsePositiveReason": "Sell-side not swept — not a buy setup"
+  }
+}

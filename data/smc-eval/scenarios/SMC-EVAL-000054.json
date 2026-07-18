@@ -1,0 +1,126 @@
+{
+  "scenarioId": "SMC-EVAL-000054",
+  "version": "1.0",
+  "market": "forex",
+  "asset": "GBPUSD=X",
+  "timestamp": "2026-07-23T12:00:00Z",
+  "session": "NY_AM",
+  "timeframes": [
+    "5m"
+  ],
+  "groundTruth": {
+    "scenarioId": "SMC-EVAL-000054",
+    "market": {
+      "asset": "GBPUSD=X",
+      "session": "NY_AM",
+      "timestamp": "2026-07-23T12:00:00Z"
+    },
+    "structure": {
+      "direction": "BEARISH",
+      "events": [
+        {
+          "type": "LIQUIDITY_SWEEP",
+          "timeframe": "5m",
+          "direction": "bullish"
+        },
+        {
+          "type": "MSS",
+          "timeframe": "5m",
+          "direction": "bearish"
+        },
+        {
+          "type": "FVG",
+          "timeframe": "5m",
+          "direction": "bearish"
+        }
+      ]
+    },
+    "liquidity": {
+      "swept": "buy_side",
+      "remaining": [
+        {
+          "type": "SSL",
+          "price": 61000
+        }
+      ]
+    },
+    "concepts": [
+      "fvg",
+      "bos",
+      "mss",
+      "liquidity"
+    ],
+    "models": {
+      "primary": {
+        "id": "mmxm-mmbm",
+        "name": "Market Maker Buy Model (MMBM)",
+        "ontology": "EXECUTION_MODEL",
+        "confidence": 0.77
+      },
+      "alternatives": [
+        {
+          "id": "classical-06",
+          "name": "Model 6 — Universal Buy Model",
+          "ontology": "EXECUTION_MODEL",
+          "confidence": 0.62
+        }
+      ],
+      "rejected": [
+        {
+          "id": "smc-confluence-1",
+          "name": "HTF POI + BOS + FVG",
+          "ontology": "EXECUTION_MODEL",
+          "confidence": 0
+        },
+        {
+          "id": "smc-confluence-2",
+          "name": "HTF POI + BOS + IDM + FVG",
+          "ontology": "EXECUTION_MODEL",
+          "confidence": 0
+        }
+      ]
+    },
+    "timeframeAlignment": [
+      {
+        "higherTf": "4h",
+        "lowerTf": "1h",
+        "alignment": "BEARISH"
+      }
+    ],
+    "execution": {
+      "direction": "SHORT",
+      "entryTrigger": "FVG retest",
+      "stopLevel": "below sweep",
+      "targetLevel": "next pool",
+      "minimumRR": 2,
+      "invalidation": "close beyond sweep"
+    },
+    "evaluation": {
+      "evaluator": "DETERMINISTIC",
+      "version": "1.0",
+      "timestamp": "2026-07-23T12:00:00Z",
+      "scenarioId": "SMC-EVAL-000054"
+    }
+  },
+  "modelCandidates": [
+    "mmxm-mmbm",
+    "classical-06"
+  ],
+  "requiredConcepts": [
+    "fvg",
+    "bos",
+    "mss",
+    "liquidity"
+  ],
+  "invalidConcepts": [],
+  "evaluationRubric": {
+    "category": "model-conflict",
+    "expectedPrimaryModel": "mmxm-mmbm",
+    "minScore": 60,
+    "criticalErrors": [],
+    "conflictBetween": [
+      "mmxm-mmbm",
+      "classical-06"
+    ]
+  }
+}

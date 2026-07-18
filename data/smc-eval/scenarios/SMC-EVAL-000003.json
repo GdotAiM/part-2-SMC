@@ -1,0 +1,132 @@
+{
+  "scenarioId": "SMC-EVAL-000003",
+  "version": "1.0",
+  "market": "crypto",
+  "asset": "BNBUSDT",
+  "timestamp": "2026-07-18T11:00:00Z",
+  "session": "NY_AM",
+  "timeframes": [
+    "5m"
+  ],
+  "groundTruth": {
+    "scenarioId": "SMC-EVAL-000003",
+    "market": {
+      "asset": "BNBUSDT",
+      "session": "NY_AM",
+      "timestamp": "2026-07-18T11:00:00Z"
+    },
+    "structure": {
+      "direction": "BULLISH",
+      "events": [
+        {
+          "type": "LIQUIDITY_SWEEP",
+          "timeframe": "5m",
+          "direction": "bearish"
+        },
+        {
+          "type": "MSS",
+          "timeframe": "5m",
+          "direction": "bullish"
+        },
+        {
+          "type": "FVG",
+          "timeframe": "5m",
+          "direction": "bullish"
+        }
+      ]
+    },
+    "liquidity": {
+      "swept": "sell_side",
+      "remaining": [
+        {
+          "type": "BSL",
+          "price": 65000
+        }
+      ]
+    },
+    "concepts": [
+      "fvg",
+      "bos",
+      "ote"
+    ],
+    "models": {
+      "primary": {
+        "id": "smc-confluence-3",
+        "name": "HTF POI + BOS + FVG + OTE",
+        "ontology": "EXECUTION_MODEL",
+        "confidence": 0.86
+      },
+      "alternatives": [
+        {
+          "id": "smc-confluence-4",
+          "name": "HTF POI + BOS + IDM + FVG + OTE",
+          "ontology": "EXECUTION_MODEL",
+          "confidence": 0.64
+        },
+        {
+          "id": "classical-06",
+          "name": "Model 6 — Universal Buy Model",
+          "ontology": "EXECUTION_MODEL",
+          "confidence": 0.54
+        }
+      ],
+      "rejected": [
+        {
+          "id": "mmxm-mmsm",
+          "name": "Market Maker Sell Model (MMSM)",
+          "ontology": "EXECUTION_MODEL",
+          "confidence": 0
+        },
+        {
+          "id": "framework-2fvg",
+          "name": "2 FVG Model",
+          "ontology": "EXECUTION_MODEL",
+          "confidence": 0
+        }
+      ]
+    },
+    "timeframeAlignment": [
+      {
+        "higherTf": "4h",
+        "lowerTf": "1h",
+        "alignment": "BULLISH"
+      },
+      {
+        "higherTf": "1h",
+        "lowerTf": "5m",
+        "alignment": "BULLISH"
+      }
+    ],
+    "execution": {
+      "direction": "LONG",
+      "entryTrigger": "FVG retest",
+      "stopLevel": "below sweep low",
+      "targetLevel": "next liquidity pool",
+      "minimumRR": 2,
+      "invalidation": "close beyond sweep"
+    },
+    "evaluation": {
+      "evaluator": "DETERMINISTIC",
+      "version": "1.0",
+      "timestamp": "2026-07-18T11:00:00Z",
+      "scenarioId": "SMC-EVAL-000003"
+    }
+  },
+  "modelCandidates": [
+    "smc-confluence-3",
+    "smc-confluence-4",
+    "classical-06"
+  ],
+  "requiredConcepts": [
+    "fvg",
+    "bos",
+    "ote"
+  ],
+  "invalidConcepts": [],
+  "evaluationRubric": {
+    "category": "clear",
+    "expectedPrimaryModel": "smc-confluence-3",
+    "minScore": 75,
+    "criticalErrors": []
+  }
+}

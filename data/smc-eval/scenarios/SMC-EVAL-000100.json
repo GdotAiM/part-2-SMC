@@ -1,0 +1,124 @@
+{
+  "scenarioId": "SMC-EVAL-000100",
+  "version": "1.0",
+  "market": "forex",
+  "asset": "USDCAD=X",
+  "timestamp": "2026-07-28T08:00:00Z",
+  "session": "NY_AM",
+  "timeframes": [
+    "15m"
+  ],
+  "groundTruth": {
+    "scenarioId": "SMC-EVAL-000100",
+    "market": {
+      "asset": "USDCAD=X",
+      "session": "NY_AM",
+      "timestamp": "2026-07-28T08:00:00Z"
+    },
+    "structure": {
+      "direction": "RANGE",
+      "events": [
+        {
+          "type": "BOS",
+          "timeframe": "15m",
+          "direction": "bullish"
+        },
+        {
+          "type": "MSS",
+          "timeframe": "15m",
+          "direction": "bearish"
+        }
+      ]
+    },
+    "liquidity": {
+      "remaining": [
+        {
+          "type": "SSL",
+          "price": 61000
+        }
+      ]
+    },
+    "concepts": [
+      "consolidation",
+      "liquidity"
+    ],
+    "models": {
+      "primary": {
+        "id": "classical-05",
+        "name": "Model 5 — Advanced Session Setup",
+        "ontology": "EXECUTION_MODEL",
+        "confidence": 0.8
+      },
+      "alternatives": [
+        {
+          "id": "framework-sharp-turn",
+          "name": "Sharp Turn (ST) Model",
+          "ontology": "EXECUTION_MODEL",
+          "confidence": 0.51
+        },
+        {
+          "id": "smc-confluence-2",
+          "name": "HTF POI + BOS + IDM + FVG",
+          "ontology": "EXECUTION_MODEL",
+          "confidence": 0.67
+        }
+      ],
+      "rejected": [
+        {
+          "id": "smc-confluence-1",
+          "name": "HTF POI + BOS + FVG",
+          "ontology": "EXECUTION_MODEL",
+          "confidence": 0
+        },
+        {
+          "id": "classical-07",
+          "name": "Model 7 — Universal Sell Model",
+          "ontology": "EXECUTION_MODEL",
+          "confidence": 0
+        },
+        {
+          "id": "smc-confluence-3",
+          "name": "HTF POI + BOS + FVG + OTE",
+          "ontology": "EXECUTION_MODEL",
+          "confidence": 0
+        }
+      ]
+    },
+    "timeframeAlignment": [
+      {
+        "higherTf": "4h",
+        "lowerTf": "1h",
+        "alignment": "NEUTRAL"
+      },
+      {
+        "higherTf": "1h",
+        "lowerTf": "15m",
+        "alignment": "NEUTRAL"
+      }
+    ],
+    "evaluation": {
+      "evaluator": "DETERMINISTIC",
+      "version": "1.0",
+      "timestamp": "2026-07-28T08:00:00Z",
+      "scenarioId": "SMC-EVAL-000100"
+    }
+  },
+  "modelCandidates": [
+    "classical-05",
+    "framework-sharp-turn",
+    "smc-confluence-2"
+  ],
+  "requiredConcepts": [
+    "consolidation",
+    "liquidity"
+  ],
+  "invalidConcepts": [],
+  "evaluationRubric": {
+    "category": "ambiguous",
+    "expectedPrimaryModel": "classical-05",
+    "minScore": 40,
+    "criticalErrors": [],
+    "ambiguousContext": "Dealing range contracting — breakout imminent but direction unknown",
+    "expectedResponse": "ACKNOWLEDGE_UNCERTAINTY"
+  }
+}

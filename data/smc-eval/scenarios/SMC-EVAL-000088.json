@@ -1,0 +1,126 @@
+{
+  "scenarioId": "SMC-EVAL-000088",
+  "version": "1.0",
+  "market": "crypto",
+  "asset": "ETHUSDT",
+  "timestamp": "2026-07-26T16:00:00Z",
+  "session": "LONDON_OPEN",
+  "timeframes": [
+    "15m"
+  ],
+  "groundTruth": {
+    "scenarioId": "SMC-EVAL-000088",
+    "market": {
+      "asset": "ETHUSDT",
+      "session": "LONDON_OPEN",
+      "timestamp": "2026-07-26T16:00:00Z"
+    },
+    "structure": {
+      "direction": "RANGE",
+      "events": [
+        {
+          "type": "BOS",
+          "timeframe": "15m",
+          "direction": "bullish"
+        },
+        {
+          "type": "MSS",
+          "timeframe": "15m",
+          "direction": "bearish"
+        }
+      ]
+    },
+    "liquidity": {
+      "remaining": [
+        {
+          "type": "SSL",
+          "price": 61000
+        }
+      ]
+    },
+    "concepts": [
+      "premium",
+      "discount",
+      "equilibrium"
+    ],
+    "models": {
+      "primary": {
+        "id": "framework-2fvg",
+        "name": "2 FVG Model",
+        "ontology": "EXECUTION_MODEL",
+        "confidence": 0.77
+      },
+      "alternatives": [
+        {
+          "id": "classical-07",
+          "name": "Model 7 — Universal Sell Model",
+          "ontology": "EXECUTION_MODEL",
+          "confidence": 0.68
+        },
+        {
+          "id": "smc-confluence-3",
+          "name": "HTF POI + BOS + FVG + OTE",
+          "ontology": "EXECUTION_MODEL",
+          "confidence": 0.56
+        }
+      ],
+      "rejected": [
+        {
+          "id": "smc-confluence-1",
+          "name": "HTF POI + BOS + FVG",
+          "ontology": "EXECUTION_MODEL",
+          "confidence": 0
+        },
+        {
+          "id": "temporal-judas-swing",
+          "name": "Judas Swing",
+          "ontology": "EXECUTION_MODEL",
+          "confidence": 0
+        },
+        {
+          "id": "reversal-scob",
+          "name": "Single Candle OB (SCOB)",
+          "ontology": "EXECUTION_MODEL",
+          "confidence": 0
+        }
+      ]
+    },
+    "timeframeAlignment": [
+      {
+        "higherTf": "4h",
+        "lowerTf": "1h",
+        "alignment": "NEUTRAL"
+      },
+      {
+        "higherTf": "1h",
+        "lowerTf": "15m",
+        "alignment": "NEUTRAL"
+      }
+    ],
+    "evaluation": {
+      "evaluator": "DETERMINISTIC",
+      "version": "1.0",
+      "timestamp": "2026-07-26T16:00:00Z",
+      "scenarioId": "SMC-EVAL-000088"
+    }
+  },
+  "modelCandidates": [
+    "framework-2fvg",
+    "classical-07",
+    "smc-confluence-3"
+  ],
+  "requiredConcepts": [
+    "premium",
+    "discount",
+    "equilibrium"
+  ],
+  "invalidConcepts": [],
+  "evaluationRubric": {
+    "category": "ambiguous",
+    "expectedPrimaryModel": "framework-2fvg",
+    "minScore": 40,
+    "criticalErrors": [],
+    "ambiguousContext": "Dealing range intact but price at extreme — no clear equilibrium bias",
+    "expectedResponse": "ACKNOWLEDGE_UNCERTAINTY"
+  }
+}

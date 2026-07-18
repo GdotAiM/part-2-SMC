@@ -1,0 +1,107 @@
+{
+  "scenarioId": "SMC-EVAL-000065",
+  "version": "1.0",
+  "market": "crypto",
+  "asset": "ETHUSDT",
+  "timestamp": "2026-07-24T13:00:00Z",
+  "session": "LONDON_OPEN",
+  "timeframes": [
+    "15m"
+  ],
+  "groundTruth": {
+    "scenarioId": "SMC-EVAL-000065",
+    "market": {
+      "asset": "ETHUSDT",
+      "session": "LONDON_OPEN",
+      "timestamp": "2026-07-24T13:00:00Z"
+    },
+    "structure": {
+      "direction": "neutral",
+      "events": [
+        {
+          "type": "BOS",
+          "timeframe": "15m",
+          "direction": "bullish"
+        },
+        {
+          "type": "MSS",
+          "timeframe": "15m",
+          "direction": "bullish"
+        }
+      ]
+    },
+    "liquidity": {
+      "remaining": [
+        {
+          "type": "SSL",
+          "price": 61000
+        }
+      ]
+    },
+    "concepts": [
+      "fvg",
+      "bos",
+      "mss",
+      "liquidity"
+    ],
+    "models": {
+      "primary": {
+        "id": "temporal-power-of-three",
+        "name": "Power of Three (PO3)",
+        "ontology": "EXECUTION_MODEL",
+        "confidence": 0.86
+      },
+      "alternatives": [
+        {
+          "id": "temporal-silver-bullet-london",
+          "name": "Silver Bullet — London Open",
+          "ontology": "EXECUTION_MODEL",
+          "confidence": 0.62
+        }
+      ],
+      "rejected": [
+        {
+          "id": "classical-07",
+          "name": "Model 7 — Universal Sell Model",
+          "ontology": "EXECUTION_MODEL",
+          "confidence": 0
+        },
+        {
+          "id": "framework-2fvg",
+          "name": "2 FVG Model",
+          "ontology": "EXECUTION_MODEL",
+          "confidence": 0
+        }
+      ]
+    },
+    "timeframeAlignment": [],
+    "evaluation": {
+      "evaluator": "DETERMINISTIC",
+      "version": "1.0",
+      "timestamp": "2026-07-24T13:00:00Z",
+      "scenarioId": "SMC-EVAL-000065"
+    }
+  },
+  "modelCandidates": [
+    "temporal-power-of-three",
+    "temporal-silver-bullet-london"
+  ],
+  "requiredConcepts": [
+    "fvg",
+    "bos",
+    "mss",
+    "liquidity"
+  ],
+  "invalidConcepts": [],
+  "evaluationRubric": {
+    "category": "adversarial",
+    "expectedPrimaryModel": "temporal-power-of-three",
+    "minScore": 60,
+    "criticalErrors": [
+      "MODEL_HALLUCINATION"
+    ],
+    "trapClaim": "Silver Bullet hour, but no liquidity sweep occurred",
+    "actualModel": "temporal-power-of-three",
+    "lureModel": "temporal-silver-bullet-london"
+  }
+}

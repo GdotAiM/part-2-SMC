@@ -1,0 +1,111 @@
+{
+  "scenarioId": "SMC-EVAL-000025",
+  "version": "1.0",
+  "market": "crypto",
+  "asset": "BTCUSDT",
+  "timestamp": "2026-07-20T13:00:00Z",
+  "session": "LATE",
+  "timeframes": [
+    "5m"
+  ],
+  "groundTruth": {
+    "scenarioId": "SMC-EVAL-000025",
+    "market": {
+      "asset": "BTCUSDT",
+      "session": "LATE",
+      "timestamp": "2026-07-20T13:00:00Z"
+    },
+    "structure": {
+      "direction": "BULLISH",
+      "events": [
+        {
+          "type": "FVG",
+          "timeframe": "5m",
+          "direction": "bullish"
+        },
+        {
+          "type": "BOS",
+          "timeframe": "5m",
+          "direction": "bullish"
+        }
+      ]
+    },
+    "liquidity": {
+      "swept": "sell_side",
+      "remaining": [
+        {
+          "type": "BSL",
+          "price": 65000
+        }
+      ]
+    },
+    "concepts": [
+      "fvg",
+      "bos"
+    ],
+    "models": {
+      "primary": {
+        "id": "reversal-unicorn",
+        "name": "Unicorn Model",
+        "ontology": "EXECUTION_MODEL",
+        "confidence": 0.81
+      },
+      "alternatives": [
+        {
+          "id": "classical-07",
+          "name": "Model 7 — Universal Sell Model",
+          "ontology": "EXECUTION_MODEL",
+          "confidence": 0.62
+        }
+      ],
+      "rejected": [
+        {
+          "id": "reversal-turtle-soup",
+          "name": "Turtle Soup",
+          "ontology": "EXECUTION_MODEL",
+          "confidence": 0
+        },
+        {
+          "id": "framework-sharp-turn",
+          "name": "Sharp Turn (ST) Model",
+          "ontology": "EXECUTION_MODEL",
+          "confidence": 0
+        }
+      ]
+    },
+    "timeframeAlignment": [
+      {
+        "higherTf": "4h",
+        "lowerTf": "1h",
+        "alignment": "BULLISH"
+      }
+    ],
+    "evaluation": {
+      "evaluator": "DETERMINISTIC",
+      "version": "1.0",
+      "timestamp": "2026-07-20T13:00:00Z",
+      "scenarioId": "SMC-EVAL-000025"
+    }
+  },
+  "modelCandidates": [
+    "reversal-unicorn",
+    "classical-07"
+  ],
+  "requiredConcepts": [
+    "fvg",
+    "bos"
+  ],
+  "invalidConcepts": [
+    "breaker"
+  ],
+  "evaluationRubric": {
+    "category": "false-positive",
+    "expectedPrimaryModel": "reversal-unicorn",
+    "minScore": 60,
+    "criticalErrors": [],
+    "missingConcepts": [
+      "breaker"
+    ],
+    "falsePositiveReason": "No breaker block — plain FVG only"
+  }
+}

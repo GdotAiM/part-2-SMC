@@ -1,0 +1,106 @@
+{
+  "scenarioId": "SMC-EVAL-000024",
+  "version": "1.0",
+  "market": "crypto",
+  "asset": "XRPUSDT",
+  "timestamp": "2026-07-20T12:00:00Z",
+  "session": "NY_AM",
+  "timeframes": [
+    "5m"
+  ],
+  "groundTruth": {
+    "scenarioId": "SMC-EVAL-000024",
+    "market": {
+      "asset": "XRPUSDT",
+      "session": "NY_AM",
+      "timestamp": "2026-07-20T12:00:00Z"
+    },
+    "structure": {
+      "direction": "BEARISH",
+      "events": [
+        {
+          "type": "FVG",
+          "timeframe": "5m",
+          "direction": "bearish"
+        },
+        {
+          "type": "MSS",
+          "timeframe": "5m",
+          "direction": "bearish"
+        }
+      ]
+    },
+    "liquidity": {
+      "swept": "buy_side",
+      "remaining": []
+    },
+    "concepts": [
+      "fvg",
+      "mss"
+    ],
+    "models": {
+      "primary": {
+        "id": "temporal-silver-bullet-london",
+        "name": "Silver Bullet — London Open",
+        "ontology": "EXECUTION_MODEL",
+        "confidence": 0.76
+      },
+      "alternatives": [
+        {
+          "id": "smc-confluence-5",
+          "name": "Five Box Setup",
+          "ontology": "EXECUTION_MODEL",
+          "confidence": 0.52
+        }
+      ],
+      "rejected": [
+        {
+          "id": "mmxm-mmbm",
+          "name": "Market Maker Buy Model (MMBM)",
+          "ontology": "EXECUTION_MODEL",
+          "confidence": 0
+        },
+        {
+          "id": "smc-confluence-5",
+          "name": "Five Box Setup",
+          "ontology": "EXECUTION_MODEL",
+          "confidence": 0
+        }
+      ]
+    },
+    "timeframeAlignment": [
+      {
+        "higherTf": "4h",
+        "lowerTf": "1h",
+        "alignment": "BEARISH"
+      }
+    ],
+    "evaluation": {
+      "evaluator": "DETERMINISTIC",
+      "version": "1.0",
+      "timestamp": "2026-07-20T12:00:00Z",
+      "scenarioId": "SMC-EVAL-000024"
+    }
+  },
+  "modelCandidates": [
+    "temporal-silver-bullet-london",
+    "smc-confluence-5"
+  ],
+  "requiredConcepts": [
+    "fvg",
+    "mss"
+  ],
+  "invalidConcepts": [
+    "breaker"
+  ],
+  "evaluationRubric": {
+    "category": "false-positive",
+    "expectedPrimaryModel": "temporal-silver-bullet-london",
+    "minScore": 60,
+    "criticalErrors": [],
+    "missingConcepts": [
+      "session"
+    ],
+    "falsePositiveReason": "Outside London session window"
+  }
+}

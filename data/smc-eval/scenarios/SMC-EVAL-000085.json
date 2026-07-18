@@ -1,0 +1,124 @@
+{
+  "scenarioId": "SMC-EVAL-000085",
+  "version": "1.0",
+  "market": "crypto",
+  "asset": "BTCUSDT",
+  "timestamp": "2026-07-26T13:00:00Z",
+  "session": "ASIAN",
+  "timeframes": [
+    "15m"
+  ],
+  "groundTruth": {
+    "scenarioId": "SMC-EVAL-000085",
+    "market": {
+      "asset": "BTCUSDT",
+      "session": "ASIAN",
+      "timestamp": "2026-07-26T13:00:00Z"
+    },
+    "structure": {
+      "direction": "RANGE",
+      "events": [
+        {
+          "type": "BOS",
+          "timeframe": "15m",
+          "direction": "bullish"
+        },
+        {
+          "type": "MSS",
+          "timeframe": "15m",
+          "direction": "bearish"
+        }
+      ]
+    },
+    "liquidity": {
+      "remaining": [
+        {
+          "type": "SSL",
+          "price": 61000
+        }
+      ]
+    },
+    "concepts": [
+      "displacement",
+      "fvg"
+    ],
+    "models": {
+      "primary": {
+        "id": "classical-07",
+        "name": "Model 7 — Universal Sell Model",
+        "ontology": "EXECUTION_MODEL",
+        "confidence": 0.94
+      },
+      "alternatives": [
+        {
+          "id": "framework-sharp-turn",
+          "name": "Sharp Turn (ST) Model",
+          "ontology": "EXECUTION_MODEL",
+          "confidence": 0.63
+        },
+        {
+          "id": "framework-2fvg",
+          "name": "2 FVG Model",
+          "ontology": "EXECUTION_MODEL",
+          "confidence": 0.53
+        }
+      ],
+      "rejected": [
+        {
+          "id": "mmxm-mmsm",
+          "name": "Market Maker Sell Model (MMSM)",
+          "ontology": "EXECUTION_MODEL",
+          "confidence": 0
+        },
+        {
+          "id": "smc-confluence-4",
+          "name": "HTF POI + BOS + IDM + FVG + OTE",
+          "ontology": "EXECUTION_MODEL",
+          "confidence": 0
+        },
+        {
+          "id": "temporal-judas-swing",
+          "name": "Judas Swing",
+          "ontology": "EXECUTION_MODEL",
+          "confidence": 0
+        }
+      ]
+    },
+    "timeframeAlignment": [
+      {
+        "higherTf": "4h",
+        "lowerTf": "1h",
+        "alignment": "NEUTRAL"
+      },
+      {
+        "higherTf": "1h",
+        "lowerTf": "15m",
+        "alignment": "NEUTRAL"
+      }
+    ],
+    "evaluation": {
+      "evaluator": "DETERMINISTIC",
+      "version": "1.0",
+      "timestamp": "2026-07-26T13:00:00Z",
+      "scenarioId": "SMC-EVAL-000085"
+    }
+  },
+  "modelCandidates": [
+    "classical-07",
+    "framework-sharp-turn",
+    "framework-2fvg"
+  ],
+  "requiredConcepts": [
+    "displacement",
+    "fvg"
+  ],
+  "invalidConcepts": [],
+  "evaluationRubric": {
+    "category": "ambiguous",
+    "expectedPrimaryModel": "classical-07",
+    "minScore": 40,
+    "criticalErrors": [],
+    "ambiguousContext": "Strong displacement occurs but on low volume — significance unclear",
+    "expectedResponse": "ACKNOWLEDGE_UNCERTAINTY"
+  }
+}

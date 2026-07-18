@@ -1,0 +1,107 @@
+{
+  "scenarioId": "SMC-EVAL-000080",
+  "version": "1.0",
+  "market": "forex",
+  "asset": "USDJPY=X",
+  "timestamp": "2026-07-26T08:00:00Z",
+  "session": "LONDON_OPEN",
+  "timeframes": [
+    "15m"
+  ],
+  "groundTruth": {
+    "scenarioId": "SMC-EVAL-000080",
+    "market": {
+      "asset": "USDJPY=X",
+      "session": "LONDON_OPEN",
+      "timestamp": "2026-07-26T08:00:00Z"
+    },
+    "structure": {
+      "direction": "neutral",
+      "events": [
+        {
+          "type": "BOS",
+          "timeframe": "15m",
+          "direction": "bullish"
+        },
+        {
+          "type": "MSS",
+          "timeframe": "15m",
+          "direction": "bullish"
+        }
+      ]
+    },
+    "liquidity": {
+      "remaining": [
+        {
+          "type": "SSL",
+          "price": 61000
+        }
+      ]
+    },
+    "concepts": [
+      "fvg",
+      "bos",
+      "mss",
+      "liquidity"
+    ],
+    "models": {
+      "primary": {
+        "id": "reversal-scob",
+        "name": "Single Candle OB (SCOB)",
+        "ontology": "EXECUTION_MODEL",
+        "confidence": 0.91
+      },
+      "alternatives": [
+        {
+          "id": "classical-08",
+          "name": "Model 8 — Weekly Range Strategy",
+          "ontology": "EXECUTION_MODEL",
+          "confidence": 0.51
+        }
+      ],
+      "rejected": [
+        {
+          "id": "classical-05",
+          "name": "Model 5 — Advanced Session Setup",
+          "ontology": "EXECUTION_MODEL",
+          "confidence": 0
+        },
+        {
+          "id": "classical-07",
+          "name": "Model 7 — Universal Sell Model",
+          "ontology": "EXECUTION_MODEL",
+          "confidence": 0
+        }
+      ]
+    },
+    "timeframeAlignment": [],
+    "evaluation": {
+      "evaluator": "DETERMINISTIC",
+      "version": "1.0",
+      "timestamp": "2026-07-26T08:00:00Z",
+      "scenarioId": "SMC-EVAL-000080"
+    }
+  },
+  "modelCandidates": [
+    "reversal-scob",
+    "classical-08"
+  ],
+  "requiredConcepts": [
+    "fvg",
+    "bos",
+    "mss",
+    "liquidity"
+  ],
+  "invalidConcepts": [],
+  "evaluationRubric": {
+    "category": "adversarial",
+    "expectedPrimaryModel": "reversal-scob",
+    "minScore": 60,
+    "criticalErrors": [
+      "MODEL_HALLUCINATION"
+    ],
+    "trapClaim": "Weekly range expansion expected, but Monday/Tuesday already hit weekly ATR",
+    "actualModel": "reversal-scob",
+    "lureModel": "classical-08"
+  }
+}

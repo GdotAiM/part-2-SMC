@@ -1,0 +1,126 @@
+{
+  "scenarioId": "SMC-EVAL-000048",
+  "version": "1.0",
+  "market": "crypto",
+  "asset": "SOLUSDT",
+  "timestamp": "2026-07-22T16:00:00Z",
+  "session": "NY_AM",
+  "timeframes": [
+    "5m"
+  ],
+  "groundTruth": {
+    "scenarioId": "SMC-EVAL-000048",
+    "market": {
+      "asset": "SOLUSDT",
+      "session": "NY_AM",
+      "timestamp": "2026-07-22T16:00:00Z"
+    },
+    "structure": {
+      "direction": "BULLISH",
+      "events": [
+        {
+          "type": "LIQUIDITY_SWEEP",
+          "timeframe": "5m",
+          "direction": "bearish"
+        },
+        {
+          "type": "MSS",
+          "timeframe": "5m",
+          "direction": "bullish"
+        },
+        {
+          "type": "FVG",
+          "timeframe": "5m",
+          "direction": "bullish"
+        }
+      ]
+    },
+    "liquidity": {
+      "swept": "sell_side",
+      "remaining": [
+        {
+          "type": "BSL",
+          "price": 65000
+        }
+      ]
+    },
+    "concepts": [
+      "fvg",
+      "bos",
+      "mss",
+      "liquidity"
+    ],
+    "models": {
+      "primary": {
+        "id": "framework-2fvg",
+        "name": "2 FVG Model",
+        "ontology": "EXECUTION_MODEL",
+        "confidence": 0.93
+      },
+      "alternatives": [
+        {
+          "id": "smc-confluence-1",
+          "name": "HTF POI + BOS + FVG",
+          "ontology": "EXECUTION_MODEL",
+          "confidence": 0.55
+        }
+      ],
+      "rejected": [
+        {
+          "id": "smc-confluence-5",
+          "name": "Five Box Setup",
+          "ontology": "EXECUTION_MODEL",
+          "confidence": 0
+        },
+        {
+          "id": "smc-confluence-2",
+          "name": "HTF POI + BOS + IDM + FVG",
+          "ontology": "EXECUTION_MODEL",
+          "confidence": 0
+        }
+      ]
+    },
+    "timeframeAlignment": [
+      {
+        "higherTf": "4h",
+        "lowerTf": "1h",
+        "alignment": "BULLISH"
+      }
+    ],
+    "execution": {
+      "direction": "LONG",
+      "entryTrigger": "FVG retest",
+      "stopLevel": "below sweep",
+      "targetLevel": "next pool",
+      "minimumRR": 2,
+      "invalidation": "close beyond sweep"
+    },
+    "evaluation": {
+      "evaluator": "DETERMINISTIC",
+      "version": "1.0",
+      "timestamp": "2026-07-22T16:00:00Z",
+      "scenarioId": "SMC-EVAL-000048"
+    }
+  },
+  "modelCandidates": [
+    "framework-2fvg",
+    "smc-confluence-1"
+  ],
+  "requiredConcepts": [
+    "fvg",
+    "bos",
+    "mss",
+    "liquidity"
+  ],
+  "invalidConcepts": [],
+  "evaluationRubric": {
+    "category": "model-conflict",
+    "expectedPrimaryModel": "framework-2fvg",
+    "minScore": 60,
+    "criticalErrors": [],
+    "conflictBetween": [
+      "framework-2fvg",
+      "smc-confluence-1"
+    ]
+  }
+}

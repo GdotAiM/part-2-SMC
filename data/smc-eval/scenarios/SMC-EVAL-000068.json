@@ -1,0 +1,107 @@
+{
+  "scenarioId": "SMC-EVAL-000068",
+  "version": "1.0",
+  "market": "crypto",
+  "asset": "ETHUSDT",
+  "timestamp": "2026-07-24T16:00:00Z",
+  "session": "LONDON_OPEN",
+  "timeframes": [
+    "15m"
+  ],
+  "groundTruth": {
+    "scenarioId": "SMC-EVAL-000068",
+    "market": {
+      "asset": "ETHUSDT",
+      "session": "LONDON_OPEN",
+      "timestamp": "2026-07-24T16:00:00Z"
+    },
+    "structure": {
+      "direction": "neutral",
+      "events": [
+        {
+          "type": "BOS",
+          "timeframe": "15m",
+          "direction": "bullish"
+        },
+        {
+          "type": "MSS",
+          "timeframe": "15m",
+          "direction": "bullish"
+        }
+      ]
+    },
+    "liquidity": {
+      "remaining": [
+        {
+          "type": "SSL",
+          "price": 61000
+        }
+      ]
+    },
+    "concepts": [
+      "fvg",
+      "bos",
+      "mss",
+      "liquidity"
+    ],
+    "models": {
+      "primary": {
+        "id": "smc-confluence-5",
+        "name": "Five Box Setup",
+        "ontology": "EXECUTION_MODEL",
+        "confidence": 0.91
+      },
+      "alternatives": [
+        {
+          "id": "smc-confluence-3",
+          "name": "HTF POI + BOS + FVG + OTE",
+          "ontology": "EXECUTION_MODEL",
+          "confidence": 0.64
+        }
+      ],
+      "rejected": [
+        {
+          "id": "classical-11",
+          "name": "Model 11 — Daily Range Scalping",
+          "ontology": "EXECUTION_MODEL",
+          "confidence": 0
+        },
+        {
+          "id": "reversal-unicorn",
+          "name": "Unicorn Model",
+          "ontology": "EXECUTION_MODEL",
+          "confidence": 0
+        }
+      ]
+    },
+    "timeframeAlignment": [],
+    "evaluation": {
+      "evaluator": "DETERMINISTIC",
+      "version": "1.0",
+      "timestamp": "2026-07-24T16:00:00Z",
+      "scenarioId": "SMC-EVAL-000068"
+    }
+  },
+  "modelCandidates": [
+    "smc-confluence-5",
+    "smc-confluence-3"
+  ],
+  "requiredConcepts": [
+    "fvg",
+    "bos",
+    "mss",
+    "liquidity"
+  ],
+  "invalidConcepts": [],
+  "evaluationRubric": {
+    "category": "adversarial",
+    "expectedPrimaryModel": "smc-confluence-5",
+    "minScore": 60,
+    "criticalErrors": [
+      "MODEL_HALLUCINATION"
+    ],
+    "trapClaim": "Bullish candle with large body — displacement confirmed, but at range extreme",
+    "actualModel": "smc-confluence-5",
+    "lureModel": "smc-confluence-3"
+  }
+}

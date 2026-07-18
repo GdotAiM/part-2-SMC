@@ -1,0 +1,126 @@
+{
+  "scenarioId": "SMC-EVAL-000058",
+  "version": "1.0",
+  "market": "forex",
+  "asset": "EURUSD=X",
+  "timestamp": "2026-07-23T16:00:00Z",
+  "session": "ASIAN",
+  "timeframes": [
+    "5m"
+  ],
+  "groundTruth": {
+    "scenarioId": "SMC-EVAL-000058",
+    "market": {
+      "asset": "EURUSD=X",
+      "session": "ASIAN",
+      "timestamp": "2026-07-23T16:00:00Z"
+    },
+    "structure": {
+      "direction": "BEARISH",
+      "events": [
+        {
+          "type": "LIQUIDITY_SWEEP",
+          "timeframe": "5m",
+          "direction": "bullish"
+        },
+        {
+          "type": "MSS",
+          "timeframe": "5m",
+          "direction": "bearish"
+        },
+        {
+          "type": "FVG",
+          "timeframe": "5m",
+          "direction": "bearish"
+        }
+      ]
+    },
+    "liquidity": {
+      "swept": "buy_side",
+      "remaining": [
+        {
+          "type": "SSL",
+          "price": 61000
+        }
+      ]
+    },
+    "concepts": [
+      "fvg",
+      "bos",
+      "mss",
+      "liquidity"
+    ],
+    "models": {
+      "primary": {
+        "id": "reversal-turtle-soup",
+        "name": "Turtle Soup",
+        "ontology": "EXECUTION_MODEL",
+        "confidence": 0.77
+      },
+      "alternatives": [
+        {
+          "id": "reversal-unicorn",
+          "name": "Unicorn Model",
+          "ontology": "EXECUTION_MODEL",
+          "confidence": 0.68
+        }
+      ],
+      "rejected": [
+        {
+          "id": "classical-05",
+          "name": "Model 5 — Advanced Session Setup",
+          "ontology": "EXECUTION_MODEL",
+          "confidence": 0
+        },
+        {
+          "id": "classical-07",
+          "name": "Model 7 — Universal Sell Model",
+          "ontology": "EXECUTION_MODEL",
+          "confidence": 0
+        }
+      ]
+    },
+    "timeframeAlignment": [
+      {
+        "higherTf": "4h",
+        "lowerTf": "1h",
+        "alignment": "BEARISH"
+      }
+    ],
+    "execution": {
+      "direction": "SHORT",
+      "entryTrigger": "FVG retest",
+      "stopLevel": "below sweep",
+      "targetLevel": "next pool",
+      "minimumRR": 2,
+      "invalidation": "close beyond sweep"
+    },
+    "evaluation": {
+      "evaluator": "DETERMINISTIC",
+      "version": "1.0",
+      "timestamp": "2026-07-23T16:00:00Z",
+      "scenarioId": "SMC-EVAL-000058"
+    }
+  },
+  "modelCandidates": [
+    "reversal-turtle-soup",
+    "reversal-unicorn"
+  ],
+  "requiredConcepts": [
+    "fvg",
+    "bos",
+    "mss",
+    "liquidity"
+  ],
+  "invalidConcepts": [],
+  "evaluationRubric": {
+    "category": "model-conflict",
+    "expectedPrimaryModel": "reversal-turtle-soup",
+    "minScore": 60,
+    "criticalErrors": [],
+    "conflictBetween": [
+      "reversal-turtle-soup",
+      "reversal-unicorn"
+    ]
+  }
+}

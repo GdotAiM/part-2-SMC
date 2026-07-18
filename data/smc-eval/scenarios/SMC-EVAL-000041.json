@@ -1,0 +1,126 @@
+{
+  "scenarioId": "SMC-EVAL-000041",
+  "version": "1.0",
+  "market": "crypto",
+  "asset": "BNBUSDT",
+  "timestamp": "2026-07-22T09:00:00Z",
+  "session": "NY_PM",
+  "timeframes": [
+    "5m"
+  ],
+  "groundTruth": {
+    "scenarioId": "SMC-EVAL-000041",
+    "market": {
+      "asset": "BNBUSDT",
+      "session": "NY_PM",
+      "timestamp": "2026-07-22T09:00:00Z"
+    },
+    "structure": {
+      "direction": "BULLISH",
+      "events": [
+        {
+          "type": "LIQUIDITY_SWEEP",
+          "timeframe": "5m",
+          "direction": "bearish"
+        },
+        {
+          "type": "MSS",
+          "timeframe": "5m",
+          "direction": "bullish"
+        },
+        {
+          "type": "FVG",
+          "timeframe": "5m",
+          "direction": "bullish"
+        }
+      ]
+    },
+    "liquidity": {
+      "swept": "sell_side",
+      "remaining": [
+        {
+          "type": "BSL",
+          "price": 65000
+        }
+      ]
+    },
+    "concepts": [
+      "fvg",
+      "bos",
+      "mss",
+      "liquidity"
+    ],
+    "models": {
+      "primary": {
+        "id": "smc-confluence-1",
+        "name": "HTF POI + BOS + FVG",
+        "ontology": "EXECUTION_MODEL",
+        "confidence": 0.9
+      },
+      "alternatives": [
+        {
+          "id": "temporal-silver-bullet-london",
+          "name": "Silver Bullet — London Open",
+          "ontology": "EXECUTION_MODEL",
+          "confidence": 0.51
+        }
+      ],
+      "rejected": [
+        {
+          "id": "reversal-unicorn",
+          "name": "Unicorn Model",
+          "ontology": "EXECUTION_MODEL",
+          "confidence": 0
+        },
+        {
+          "id": "smc-confluence-2",
+          "name": "HTF POI + BOS + IDM + FVG",
+          "ontology": "EXECUTION_MODEL",
+          "confidence": 0
+        }
+      ]
+    },
+    "timeframeAlignment": [
+      {
+        "higherTf": "4h",
+        "lowerTf": "1h",
+        "alignment": "BULLISH"
+      }
+    ],
+    "execution": {
+      "direction": "LONG",
+      "entryTrigger": "FVG retest",
+      "stopLevel": "below sweep",
+      "targetLevel": "next pool",
+      "minimumRR": 2,
+      "invalidation": "close beyond sweep"
+    },
+    "evaluation": {
+      "evaluator": "DETERMINISTIC",
+      "version": "1.0",
+      "timestamp": "2026-07-22T09:00:00Z",
+      "scenarioId": "SMC-EVAL-000041"
+    }
+  },
+  "modelCandidates": [
+    "smc-confluence-1",
+    "temporal-silver-bullet-london"
+  ],
+  "requiredConcepts": [
+    "fvg",
+    "bos",
+    "mss",
+    "liquidity"
+  ],
+  "invalidConcepts": [],
+  "evaluationRubric": {
+    "category": "model-conflict",
+    "expectedPrimaryModel": "smc-confluence-1",
+    "minScore": 60,
+    "criticalErrors": [],
+    "conflictBetween": [
+      "smc-confluence-1",
+      "temporal-silver-bullet-london"
+    ]
+  }
+}

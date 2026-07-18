@@ -1,0 +1,107 @@
+{
+  "scenarioId": "SMC-EVAL-000064",
+  "version": "1.0",
+  "market": "crypto",
+  "asset": "SOLUSDT",
+  "timestamp": "2026-07-24T12:00:00Z",
+  "session": "LATE",
+  "timeframes": [
+    "15m"
+  ],
+  "groundTruth": {
+    "scenarioId": "SMC-EVAL-000064",
+    "market": {
+      "asset": "SOLUSDT",
+      "session": "LATE",
+      "timestamp": "2026-07-24T12:00:00Z"
+    },
+    "structure": {
+      "direction": "neutral",
+      "events": [
+        {
+          "type": "BOS",
+          "timeframe": "15m",
+          "direction": "bullish"
+        },
+        {
+          "type": "MSS",
+          "timeframe": "15m",
+          "direction": "bullish"
+        }
+      ]
+    },
+    "liquidity": {
+      "remaining": [
+        {
+          "type": "SSL",
+          "price": 61000
+        }
+      ]
+    },
+    "concepts": [
+      "fvg",
+      "bos",
+      "mss",
+      "liquidity"
+    ],
+    "models": {
+      "primary": {
+        "id": "smc-confluence-5",
+        "name": "Five Box Setup",
+        "ontology": "EXECUTION_MODEL",
+        "confidence": 0.88
+      },
+      "alternatives": [
+        {
+          "id": "smc-confluence-1",
+          "name": "HTF POI + BOS + FVG",
+          "ontology": "EXECUTION_MODEL",
+          "confidence": 0.64
+        }
+      ],
+      "rejected": [
+        {
+          "id": "temporal-silver-bullet-london",
+          "name": "Silver Bullet — London Open",
+          "ontology": "EXECUTION_MODEL",
+          "confidence": 0
+        },
+        {
+          "id": "classical-05",
+          "name": "Model 5 — Advanced Session Setup",
+          "ontology": "EXECUTION_MODEL",
+          "confidence": 0
+        }
+      ]
+    },
+    "timeframeAlignment": [],
+    "evaluation": {
+      "evaluator": "DETERMINISTIC",
+      "version": "1.0",
+      "timestamp": "2026-07-24T12:00:00Z",
+      "scenarioId": "SMC-EVAL-000064"
+    }
+  },
+  "modelCandidates": [
+    "smc-confluence-5",
+    "smc-confluence-1"
+  ],
+  "requiredConcepts": [
+    "fvg",
+    "bos",
+    "mss",
+    "liquidity"
+  ],
+  "invalidConcepts": [],
+  "evaluationRubric": {
+    "category": "adversarial",
+    "expectedPrimaryModel": "smc-confluence-5",
+    "minScore": 60,
+    "criticalErrors": [
+      "MODEL_HALLUCINATION"
+    ],
+    "trapClaim": "FVG formed, but it's an inversion gap — filled almost immediately",
+    "actualModel": "smc-confluence-5",
+    "lureModel": "smc-confluence-1"
+  }
+}

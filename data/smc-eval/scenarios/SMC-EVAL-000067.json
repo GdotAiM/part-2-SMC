@@ -1,0 +1,107 @@
+{
+  "scenarioId": "SMC-EVAL-000067",
+  "version": "1.0",
+  "market": "crypto",
+  "asset": "ETHUSDT",
+  "timestamp": "2026-07-24T15:00:00Z",
+  "session": "LONDON_OPEN",
+  "timeframes": [
+    "15m"
+  ],
+  "groundTruth": {
+    "scenarioId": "SMC-EVAL-000067",
+    "market": {
+      "asset": "ETHUSDT",
+      "session": "LONDON_OPEN",
+      "timestamp": "2026-07-24T15:00:00Z"
+    },
+    "structure": {
+      "direction": "bearish",
+      "events": [
+        {
+          "type": "BOS",
+          "timeframe": "15m",
+          "direction": "bullish"
+        },
+        {
+          "type": "MSS",
+          "timeframe": "15m",
+          "direction": "bearish"
+        }
+      ]
+    },
+    "liquidity": {
+      "remaining": [
+        {
+          "type": "SSL",
+          "price": 61000
+        }
+      ]
+    },
+    "concepts": [
+      "fvg",
+      "bos",
+      "mss",
+      "liquidity"
+    ],
+    "models": {
+      "primary": {
+        "id": "classical-07",
+        "name": "Model 7 — Universal Sell Model",
+        "ontology": "EXECUTION_MODEL",
+        "confidence": 0.89
+      },
+      "alternatives": [
+        {
+          "id": "reversal-turtle-soup",
+          "name": "Turtle Soup",
+          "ontology": "EXECUTION_MODEL",
+          "confidence": 0.59
+        }
+      ],
+      "rejected": [
+        {
+          "id": "mmxm-mmbm",
+          "name": "Market Maker Buy Model (MMBM)",
+          "ontology": "EXECUTION_MODEL",
+          "confidence": 0
+        },
+        {
+          "id": "temporal-silver-bullet-nypm",
+          "name": "Silver Bullet — New York PM",
+          "ontology": "EXECUTION_MODEL",
+          "confidence": 0
+        }
+      ]
+    },
+    "timeframeAlignment": [],
+    "evaluation": {
+      "evaluator": "DETERMINISTIC",
+      "version": "1.0",
+      "timestamp": "2026-07-24T15:00:00Z",
+      "scenarioId": "SMC-EVAL-000067"
+    }
+  },
+  "modelCandidates": [
+    "classical-07",
+    "reversal-turtle-soup"
+  ],
+  "requiredConcepts": [
+    "fvg",
+    "bos",
+    "mss",
+    "liquidity"
+  ],
+  "invalidConcepts": [],
+  "evaluationRubric": {
+    "category": "adversarial",
+    "expectedPrimaryModel": "classical-07",
+    "minScore": 60,
+    "criticalErrors": [
+      "MODEL_HALLUCINATION"
+    ],
+    "trapClaim": "Price swept equal lows — retail expects reversal, but continuation follows",
+    "actualModel": "classical-07",
+    "lureModel": "reversal-turtle-soup"
+  }
+}

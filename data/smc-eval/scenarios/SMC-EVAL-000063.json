@@ -1,0 +1,107 @@
+{
+  "scenarioId": "SMC-EVAL-000063",
+  "version": "1.0",
+  "market": "crypto",
+  "asset": "BNBUSDT",
+  "timestamp": "2026-07-24T11:00:00Z",
+  "session": "NY_AM",
+  "timeframes": [
+    "15m"
+  ],
+  "groundTruth": {
+    "scenarioId": "SMC-EVAL-000063",
+    "market": {
+      "asset": "BNBUSDT",
+      "session": "NY_AM",
+      "timestamp": "2026-07-24T11:00:00Z"
+    },
+    "structure": {
+      "direction": "bearish",
+      "events": [
+        {
+          "type": "BOS",
+          "timeframe": "15m",
+          "direction": "bullish"
+        },
+        {
+          "type": "MSS",
+          "timeframe": "15m",
+          "direction": "bearish"
+        }
+      ]
+    },
+    "liquidity": {
+      "remaining": [
+        {
+          "type": "SSL",
+          "price": 61000
+        }
+      ]
+    },
+    "concepts": [
+      "fvg",
+      "bos",
+      "mss",
+      "liquidity"
+    ],
+    "models": {
+      "primary": {
+        "id": "classical-07",
+        "name": "Model 7 — Universal Sell Model",
+        "ontology": "EXECUTION_MODEL",
+        "confidence": 0.94
+      },
+      "alternatives": [
+        {
+          "id": "classical-06",
+          "name": "Model 6 — Universal Buy Model",
+          "ontology": "EXECUTION_MODEL",
+          "confidence": 0.57
+        }
+      ],
+      "rejected": [
+        {
+          "id": "classical-10",
+          "name": "Model 10 — Swing Stalking",
+          "ontology": "EXECUTION_MODEL",
+          "confidence": 0
+        },
+        {
+          "id": "temporal-silver-bullet-nyam",
+          "name": "Silver Bullet — New York AM",
+          "ontology": "EXECUTION_MODEL",
+          "confidence": 0
+        }
+      ]
+    },
+    "timeframeAlignment": [],
+    "evaluation": {
+      "evaluator": "DETERMINISTIC",
+      "version": "1.0",
+      "timestamp": "2026-07-24T11:00:00Z",
+      "scenarioId": "SMC-EVAL-000063"
+    }
+  },
+  "modelCandidates": [
+    "classical-07",
+    "classical-06"
+  ],
+  "requiredConcepts": [
+    "fvg",
+    "bos",
+    "mss",
+    "liquidity"
+  ],
+  "invalidConcepts": [],
+  "evaluationRubric": {
+    "category": "adversarial",
+    "expectedPrimaryModel": "classical-07",
+    "minScore": 60,
+    "criticalErrors": [
+      "MODEL_HALLUCINATION"
+    ],
+    "trapClaim": "Price above VWAP — retail thinks bullish, but price at premium extreme",
+    "actualModel": "classical-07",
+    "lureModel": "classical-06"
+  }
+}

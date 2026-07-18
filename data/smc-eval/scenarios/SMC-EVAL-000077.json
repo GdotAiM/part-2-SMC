@@ -1,0 +1,107 @@
+{
+  "scenarioId": "SMC-EVAL-000077",
+  "version": "1.0",
+  "market": "forex",
+  "asset": "AUDUSD=X",
+  "timestamp": "2026-07-25T15:00:00Z",
+  "session": "LATE",
+  "timeframes": [
+    "15m"
+  ],
+  "groundTruth": {
+    "scenarioId": "SMC-EVAL-000077",
+    "market": {
+      "asset": "AUDUSD=X",
+      "session": "LATE",
+      "timestamp": "2026-07-25T15:00:00Z"
+    },
+    "structure": {
+      "direction": "bearish",
+      "events": [
+        {
+          "type": "BOS",
+          "timeframe": "15m",
+          "direction": "bullish"
+        },
+        {
+          "type": "MSS",
+          "timeframe": "15m",
+          "direction": "bearish"
+        }
+      ]
+    },
+    "liquidity": {
+      "remaining": [
+        {
+          "type": "SSL",
+          "price": 61000
+        }
+      ]
+    },
+    "concepts": [
+      "fvg",
+      "bos",
+      "mss",
+      "liquidity"
+    ],
+    "models": {
+      "primary": {
+        "id": "mmxm-mmsm",
+        "name": "Market Maker Sell Model (MMSM)",
+        "ontology": "EXECUTION_MODEL",
+        "confidence": 0.89
+      },
+      "alternatives": [
+        {
+          "id": "temporal-power-of-three",
+          "name": "Power of Three (PO3)",
+          "ontology": "EXECUTION_MODEL",
+          "confidence": 0.52
+        }
+      ],
+      "rejected": [
+        {
+          "id": "smc-confluence-4",
+          "name": "HTF POI + BOS + IDM + FVG + OTE",
+          "ontology": "EXECUTION_MODEL",
+          "confidence": 0
+        },
+        {
+          "id": "temporal-judas-swing",
+          "name": "Judas Swing",
+          "ontology": "EXECUTION_MODEL",
+          "confidence": 0
+        }
+      ]
+    },
+    "timeframeAlignment": [],
+    "evaluation": {
+      "evaluator": "DETERMINISTIC",
+      "version": "1.0",
+      "timestamp": "2026-07-25T15:00:00Z",
+      "scenarioId": "SMC-EVAL-000077"
+    }
+  },
+  "modelCandidates": [
+    "mmxm-mmsm",
+    "temporal-power-of-three"
+  ],
+  "requiredConcepts": [
+    "fvg",
+    "bos",
+    "mss",
+    "liquidity"
+  ],
+  "invalidConcepts": [],
+  "evaluationRubric": {
+    "category": "adversarial",
+    "expectedPrimaryModel": "mmxm-mmsm",
+    "minScore": 60,
+    "criticalErrors": [
+      "MODEL_HALLUCINATION"
+    ],
+    "trapClaim": "PO3 accumulation phase looks like consolidation — but it's distribution",
+    "actualModel": "mmxm-mmsm",
+    "lureModel": "temporal-power-of-three"
+  }
+}

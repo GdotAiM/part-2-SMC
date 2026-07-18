@@ -1,0 +1,126 @@
+{
+  "scenarioId": "SMC-EVAL-000094",
+  "version": "1.0",
+  "market": "forex",
+  "asset": "EURUSD=X",
+  "timestamp": "2026-07-27T12:00:00Z",
+  "session": "NY_AM",
+  "timeframes": [
+    "15m"
+  ],
+  "groundTruth": {
+    "scenarioId": "SMC-EVAL-000094",
+    "market": {
+      "asset": "EURUSD=X",
+      "session": "NY_AM",
+      "timestamp": "2026-07-27T12:00:00Z"
+    },
+    "structure": {
+      "direction": "RANGE",
+      "events": [
+        {
+          "type": "BOS",
+          "timeframe": "15m",
+          "direction": "bullish"
+        },
+        {
+          "type": "MSS",
+          "timeframe": "15m",
+          "direction": "bearish"
+        }
+      ]
+    },
+    "liquidity": {
+      "remaining": [
+        {
+          "type": "SSL",
+          "price": 61000
+        }
+      ]
+    },
+    "concepts": [
+      "consolidation",
+      "liquidity",
+      "bos"
+    ],
+    "models": {
+      "primary": {
+        "id": "classical-09",
+        "name": "Model 9 — One Shot One Kill",
+        "ontology": "EXECUTION_MODEL",
+        "confidence": 0.75
+      },
+      "alternatives": [
+        {
+          "id": "classical-07",
+          "name": "Model 7 — Universal Sell Model",
+          "ontology": "EXECUTION_MODEL",
+          "confidence": 0.68
+        },
+        {
+          "id": "reversal-scob",
+          "name": "Single Candle OB (SCOB)",
+          "ontology": "EXECUTION_MODEL",
+          "confidence": 0.68
+        }
+      ],
+      "rejected": [
+        {
+          "id": "framework-2fvg",
+          "name": "2 FVG Model",
+          "ontology": "EXECUTION_MODEL",
+          "confidence": 0
+        },
+        {
+          "id": "framework-sharp-turn",
+          "name": "Sharp Turn (ST) Model",
+          "ontology": "EXECUTION_MODEL",
+          "confidence": 0
+        },
+        {
+          "id": "smc-confluence-1",
+          "name": "HTF POI + BOS + FVG",
+          "ontology": "EXECUTION_MODEL",
+          "confidence": 0
+        }
+      ]
+    },
+    "timeframeAlignment": [
+      {
+        "higherTf": "4h",
+        "lowerTf": "1h",
+        "alignment": "NEUTRAL"
+      },
+      {
+        "higherTf": "1h",
+        "lowerTf": "15m",
+        "alignment": "NEUTRAL"
+      }
+    ],
+    "evaluation": {
+      "evaluator": "DETERMINISTIC",
+      "version": "1.0",
+      "timestamp": "2026-07-27T12:00:00Z",
+      "scenarioId": "SMC-EVAL-000094"
+    }
+  },
+  "modelCandidates": [
+    "classical-09",
+    "classical-07",
+    "reversal-scob"
+  ],
+  "requiredConcepts": [
+    "consolidation",
+    "liquidity",
+    "bos"
+  ],
+  "invalidConcepts": [],
+  "evaluationRubric": {
+    "category": "ambiguous",
+    "expectedPrimaryModel": "classical-09",
+    "minScore": 40,
+    "criticalErrors": [],
+    "ambiguousContext": "Series of equal highs and equal lows — no breakout direction established",
+    "expectedResponse": "ACKNOWLEDGE_UNCERTAINTY"
+  }
+}

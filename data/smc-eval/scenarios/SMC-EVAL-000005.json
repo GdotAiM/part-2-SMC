@@ -1,0 +1,127 @@
+{
+  "scenarioId": "SMC-EVAL-000005",
+  "version": "1.0",
+  "market": "crypto",
+  "asset": "BTCUSDT",
+  "timestamp": "2026-07-18T13:00:00Z",
+  "session": "NY_AM",
+  "timeframes": [
+    "5m"
+  ],
+  "groundTruth": {
+    "scenarioId": "SMC-EVAL-000005",
+    "market": {
+      "asset": "BTCUSDT",
+      "session": "NY_AM",
+      "timestamp": "2026-07-18T13:00:00Z"
+    },
+    "structure": {
+      "direction": "BULLISH",
+      "events": [
+        {
+          "type": "BOS",
+          "timeframe": "5m",
+          "direction": "bullish"
+        },
+        {
+          "type": "MSS",
+          "timeframe": "5m",
+          "direction": "bearish"
+        }
+      ]
+    },
+    "liquidity": {
+      "swept": "sell_side",
+      "remaining": [
+        {
+          "type": "BSL",
+          "price": 65000
+        }
+      ]
+    },
+    "concepts": [
+      "bos",
+      "mss",
+      "consolidation"
+    ],
+    "models": {
+      "primary": {
+        "id": "smc-confluence-5",
+        "name": "Five Box Setup",
+        "ontology": "EXECUTION_MODEL",
+        "confidence": 0.82
+      },
+      "alternatives": [
+        {
+          "id": "reversal-turtle-soup",
+          "name": "Turtle Soup",
+          "ontology": "EXECUTION_MODEL",
+          "confidence": 0.56
+        },
+        {
+          "id": "classical-05",
+          "name": "Model 5 — Advanced Session Setup",
+          "ontology": "EXECUTION_MODEL",
+          "confidence": 0.63
+        }
+      ],
+      "rejected": [
+        {
+          "id": "temporal-silver-bullet-nyam",
+          "name": "Silver Bullet — New York AM",
+          "ontology": "EXECUTION_MODEL",
+          "confidence": 0
+        },
+        {
+          "id": "temporal-power-of-three",
+          "name": "Power of Three (PO3)",
+          "ontology": "EXECUTION_MODEL",
+          "confidence": 0
+        }
+      ]
+    },
+    "timeframeAlignment": [
+      {
+        "higherTf": "4h",
+        "lowerTf": "1h",
+        "alignment": "BULLISH"
+      },
+      {
+        "higherTf": "1h",
+        "lowerTf": "5m",
+        "alignment": "BULLISH"
+      }
+    ],
+    "execution": {
+      "direction": "LONG",
+      "entryTrigger": "FVG retest",
+      "stopLevel": "below sweep low",
+      "targetLevel": "next liquidity pool",
+      "minimumRR": 2,
+      "invalidation": "close beyond sweep"
+    },
+    "evaluation": {
+      "evaluator": "DETERMINISTIC",
+      "version": "1.0",
+      "timestamp": "2026-07-18T13:00:00Z",
+      "scenarioId": "SMC-EVAL-000005"
+    }
+  },
+  "modelCandidates": [
+    "smc-confluence-5",
+    "reversal-turtle-soup",
+    "classical-05"
+  ],
+  "requiredConcepts": [
+    "bos",
+    "mss",
+    "consolidation"
+  ],
+  "invalidConcepts": [],
+  "evaluationRubric": {
+    "category": "clear",
+    "expectedPrimaryModel": "smc-confluence-5",
+    "minScore": 75,
+    "criticalErrors": []
+  }
+}

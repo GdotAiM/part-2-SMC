@@ -1,0 +1,134 @@
+{
+  "scenarioId": "SMC-EVAL-000004",
+  "version": "1.0",
+  "market": "crypto",
+  "asset": "ETHUSDT",
+  "timestamp": "2026-07-18T12:00:00Z",
+  "session": "LONDON_OPEN",
+  "timeframes": [
+    "5m"
+  ],
+  "groundTruth": {
+    "scenarioId": "SMC-EVAL-000004",
+    "market": {
+      "asset": "ETHUSDT",
+      "session": "LONDON_OPEN",
+      "timestamp": "2026-07-18T12:00:00Z"
+    },
+    "structure": {
+      "direction": "BULLISH",
+      "events": [
+        {
+          "type": "LIQUIDITY_SWEEP",
+          "timeframe": "5m",
+          "direction": "bearish"
+        },
+        {
+          "type": "MSS",
+          "timeframe": "5m",
+          "direction": "bullish"
+        },
+        {
+          "type": "FVG",
+          "timeframe": "5m",
+          "direction": "bullish"
+        }
+      ]
+    },
+    "liquidity": {
+      "swept": "sell_side",
+      "remaining": [
+        {
+          "type": "BSL",
+          "price": 65000
+        }
+      ]
+    },
+    "concepts": [
+      "fvg",
+      "bos",
+      "inducement",
+      "ote"
+    ],
+    "models": {
+      "primary": {
+        "id": "smc-confluence-4",
+        "name": "HTF POI + BOS + IDM + FVG + OTE",
+        "ontology": "EXECUTION_MODEL",
+        "confidence": 0.8
+      },
+      "alternatives": [
+        {
+          "id": "reversal-unicorn",
+          "name": "Unicorn Model",
+          "ontology": "EXECUTION_MODEL",
+          "confidence": 0.51
+        },
+        {
+          "id": "classical-06",
+          "name": "Model 6 — Universal Buy Model",
+          "ontology": "EXECUTION_MODEL",
+          "confidence": 0.59
+        }
+      ],
+      "rejected": [
+        {
+          "id": "reversal-scob",
+          "name": "Single Candle OB (SCOB)",
+          "ontology": "EXECUTION_MODEL",
+          "confidence": 0
+        },
+        {
+          "id": "mmxm-mmsm",
+          "name": "Market Maker Sell Model (MMSM)",
+          "ontology": "EXECUTION_MODEL",
+          "confidence": 0
+        }
+      ]
+    },
+    "timeframeAlignment": [
+      {
+        "higherTf": "4h",
+        "lowerTf": "1h",
+        "alignment": "BULLISH"
+      },
+      {
+        "higherTf": "1h",
+        "lowerTf": "5m",
+        "alignment": "BULLISH"
+      }
+    ],
+    "execution": {
+      "direction": "LONG",
+      "entryTrigger": "FVG retest",
+      "stopLevel": "below sweep low",
+      "targetLevel": "next liquidity pool",
+      "minimumRR": 2,
+      "invalidation": "close beyond sweep"
+    },
+    "evaluation": {
+      "evaluator": "DETERMINISTIC",
+      "version": "1.0",
+      "timestamp": "2026-07-18T12:00:00Z",
+      "scenarioId": "SMC-EVAL-000004"
+    }
+  },
+  "modelCandidates": [
+    "smc-confluence-4",
+    "reversal-unicorn",
+    "classical-06"
+  ],
+  "requiredConcepts": [
+    "fvg",
+    "bos",
+    "inducement",
+    "ote"
+  ],
+  "invalidConcepts": [],
+  "evaluationRubric": {
+    "category": "clear",
+    "expectedPrimaryModel": "smc-confluence-4",
+    "minScore": 75,
+    "criticalErrors": []
+  }
+}

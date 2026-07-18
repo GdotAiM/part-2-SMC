@@ -1,0 +1,122 @@
+{
+  "scenarioId": "SMC-EVAL-000034",
+  "version": "1.0",
+  "market": "forex",
+  "asset": "USDJPY=X",
+  "timestamp": "2026-07-21T12:00:00Z",
+  "session": "LATE",
+  "timeframes": [
+    "5m"
+  ],
+  "groundTruth": {
+    "scenarioId": "SMC-EVAL-000034",
+    "market": {
+      "asset": "USDJPY=X",
+      "session": "LATE",
+      "timestamp": "2026-07-21T12:00:00Z"
+    },
+    "structure": {
+      "direction": "BEARISH",
+      "events": [
+        {
+          "type": "BOS",
+          "timeframe": "5m",
+          "direction": "bearish"
+        },
+        {
+          "type": "MSS",
+          "timeframe": "5m",
+          "direction": "bearish"
+        },
+        {
+          "type": "LIQUIDITY_SWEEP",
+          "timeframe": "5m",
+          "direction": "bearish"
+        }
+      ]
+    },
+    "liquidity": {
+      "swept": "buy_side",
+      "remaining": [
+        {
+          "type": "SSL",
+          "price": 61000
+        },
+        {
+          "type": "SSL",
+          "price": 60600
+        }
+      ]
+    },
+    "concepts": [
+      "bos",
+      "mss",
+      "liquidity"
+    ],
+    "models": {
+      "primary": {
+        "id": "framework-2fvg",
+        "name": "2 FVG Model",
+        "ontology": "EXECUTION_MODEL",
+        "confidence": 0.88
+      },
+      "alternatives": [
+        {
+          "id": "classical-10",
+          "name": "Model 10 — Swing Stalking",
+          "ontology": "EXECUTION_MODEL",
+          "confidence": 0.52
+        }
+      ],
+      "rejected": [
+        {
+          "id": "reversal-turtle-soup",
+          "name": "Turtle Soup",
+          "ontology": "EXECUTION_MODEL",
+          "confidence": 0
+        },
+        {
+          "id": "temporal-power-of-three",
+          "name": "Power of Three (PO3)",
+          "ontology": "EXECUTION_MODEL",
+          "confidence": 0
+        }
+      ]
+    },
+    "timeframeAlignment": [
+      {
+        "higherTf": "4h",
+        "lowerTf": "1h",
+        "alignment": "BEARISH"
+      }
+    ],
+    "evaluation": {
+      "evaluator": "DETERMINISTIC",
+      "version": "1.0",
+      "timestamp": "2026-07-21T12:00:00Z",
+      "scenarioId": "SMC-EVAL-000034"
+    }
+  },
+  "modelCandidates": [
+    "framework-2fvg",
+    "classical-10"
+  ],
+  "requiredConcepts": [
+    "bos",
+    "mss",
+    "liquidity"
+  ],
+  "invalidConcepts": [
+    "smt"
+  ],
+  "evaluationRubric": {
+    "category": "false-positive",
+    "expectedPrimaryModel": "framework-2fvg",
+    "minScore": 60,
+    "criticalErrors": [],
+    "missingConcepts": [
+      "fvg"
+    ],
+    "falsePositiveReason": "Only one FVG formed"
+  }
+}

@@ -1,0 +1,119 @@
+{
+  "scenarioId": "SMC-EVAL-000036",
+  "version": "1.0",
+  "market": "forex",
+  "asset": "USDCAD=X",
+  "timestamp": "2026-07-21T14:00:00Z",
+  "session": "LATE",
+  "timeframes": [
+    "5m"
+  ],
+  "groundTruth": {
+    "scenarioId": "SMC-EVAL-000036",
+    "market": {
+      "asset": "USDCAD=X",
+      "session": "LATE",
+      "timestamp": "2026-07-21T14:00:00Z"
+    },
+    "structure": {
+      "direction": "BEARISH",
+      "events": [
+        {
+          "type": "FVG",
+          "timeframe": "5m",
+          "direction": "bearish"
+        },
+        {
+          "type": "BOS",
+          "timeframe": "5m",
+          "direction": "bearish"
+        },
+        {
+          "type": "MSS",
+          "timeframe": "5m",
+          "direction": "bearish"
+        }
+      ]
+    },
+    "liquidity": {
+      "swept": "buy_side",
+      "remaining": [
+        {
+          "type": "SSL",
+          "price": 61000
+        }
+      ]
+    },
+    "concepts": [
+      "fvg",
+      "bos",
+      "mss"
+    ],
+    "models": {
+      "primary": {
+        "id": "smc-confluence-4",
+        "name": "HTF POI + BOS + IDM + FVG + OTE",
+        "ontology": "EXECUTION_MODEL",
+        "confidence": 0.87
+      },
+      "alternatives": [
+        {
+          "id": "classical-09",
+          "name": "Model 9 — One Shot One Kill",
+          "ontology": "EXECUTION_MODEL",
+          "confidence": 0.51
+        }
+      ],
+      "rejected": [
+        {
+          "id": "reversal-scob",
+          "name": "Single Candle OB (SCOB)",
+          "ontology": "EXECUTION_MODEL",
+          "confidence": 0
+        },
+        {
+          "id": "smc-confluence-3",
+          "name": "HTF POI + BOS + FVG + OTE",
+          "ontology": "EXECUTION_MODEL",
+          "confidence": 0
+        }
+      ]
+    },
+    "timeframeAlignment": [
+      {
+        "higherTf": "4h",
+        "lowerTf": "1h",
+        "alignment": "BEARISH"
+      }
+    ],
+    "evaluation": {
+      "evaluator": "DETERMINISTIC",
+      "version": "1.0",
+      "timestamp": "2026-07-21T14:00:00Z",
+      "scenarioId": "SMC-EVAL-000036"
+    }
+  },
+  "modelCandidates": [
+    "smc-confluence-4",
+    "classical-09"
+  ],
+  "requiredConcepts": [
+    "fvg",
+    "bos",
+    "mss"
+  ],
+  "invalidConcepts": [
+    "breaker"
+  ],
+  "evaluationRubric": {
+    "category": "false-positive",
+    "expectedPrimaryModel": "smc-confluence-4",
+    "minScore": 60,
+    "criticalErrors": [],
+    "missingConcepts": [
+      "inducement",
+      "ote"
+    ],
+    "falsePositiveReason": "Missing IDM + OTE confluence"
+  }
+}

@@ -1,0 +1,131 @@
+{
+  "scenarioId": "SMC-EVAL-000009",
+  "version": "1.0",
+  "market": "crypto",
+  "asset": "BTCUSDT",
+  "timestamp": "2026-07-18T17:00:00Z",
+  "session": "NY_AM",
+  "timeframes": [
+    "15m"
+  ],
+  "groundTruth": {
+    "scenarioId": "SMC-EVAL-000009",
+    "market": {
+      "asset": "BTCUSDT",
+      "session": "NY_AM",
+      "timestamp": "2026-07-18T17:00:00Z"
+    },
+    "structure": {
+      "direction": "BULLISH",
+      "events": [
+        {
+          "type": "BOS",
+          "timeframe": "15m",
+          "direction": "bearish"
+        },
+        {
+          "type": "BOS",
+          "timeframe": "15m",
+          "direction": "bullish"
+        }
+      ]
+    },
+    "liquidity": {
+      "swept": "sell_side",
+      "remaining": [
+        {
+          "type": "BSL",
+          "price": 65000
+        },
+        {
+          "type": "BSL",
+          "price": 65400
+        }
+      ]
+    },
+    "concepts": [
+      "bos",
+      "mss",
+      "consolidation"
+    ],
+    "models": {
+      "primary": {
+        "id": "temporal-power-of-three",
+        "name": "Power of Three (PO3)",
+        "ontology": "EXECUTION_MODEL",
+        "confidence": 0.83
+      },
+      "alternatives": [
+        {
+          "id": "framework-sharp-turn",
+          "name": "Sharp Turn (ST) Model",
+          "ontology": "EXECUTION_MODEL",
+          "confidence": 0.58
+        },
+        {
+          "id": "reversal-unicorn",
+          "name": "Unicorn Model",
+          "ontology": "EXECUTION_MODEL",
+          "confidence": 0.55
+        }
+      ],
+      "rejected": [
+        {
+          "id": "smc-confluence-1",
+          "name": "HTF POI + BOS + FVG",
+          "ontology": "EXECUTION_MODEL",
+          "confidence": 0
+        },
+        {
+          "id": "classical-07",
+          "name": "Model 7 — Universal Sell Model",
+          "ontology": "EXECUTION_MODEL",
+          "confidence": 0
+        }
+      ]
+    },
+    "timeframeAlignment": [
+      {
+        "higherTf": "4h",
+        "lowerTf": "1h",
+        "alignment": "BULLISH"
+      },
+      {
+        "higherTf": "1h",
+        "lowerTf": "5m",
+        "alignment": "BULLISH"
+      }
+    ],
+    "execution": {
+      "direction": "LONG",
+      "entryTrigger": "FVG retest",
+      "stopLevel": "below sweep low",
+      "targetLevel": "next liquidity pool",
+      "minimumRR": 2,
+      "invalidation": "close beyond sweep"
+    },
+    "evaluation": {
+      "evaluator": "DETERMINISTIC",
+      "version": "1.0",
+      "timestamp": "2026-07-18T17:00:00Z",
+      "scenarioId": "SMC-EVAL-000009"
+    }
+  },
+  "modelCandidates": [
+    "temporal-power-of-three",
+    "framework-sharp-turn",
+    "reversal-unicorn"
+  ],
+  "requiredConcepts": [
+    "bos",
+    "mss",
+    "consolidation"
+  ],
+  "invalidConcepts": [],
+  "evaluationRubric": {
+    "category": "clear",
+    "expectedPrimaryModel": "temporal-power-of-three",
+    "minScore": 75,
+    "criticalErrors": []
+  }
+}

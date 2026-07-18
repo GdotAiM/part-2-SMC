@@ -1,0 +1,107 @@
+{
+  "scenarioId": "SMC-EVAL-000073",
+  "version": "1.0",
+  "market": "forex",
+  "asset": "USDJPY=X",
+  "timestamp": "2026-07-25T11:00:00Z",
+  "session": "LATE",
+  "timeframes": [
+    "15m"
+  ],
+  "groundTruth": {
+    "scenarioId": "SMC-EVAL-000073",
+    "market": {
+      "asset": "USDJPY=X",
+      "session": "LATE",
+      "timestamp": "2026-07-25T11:00:00Z"
+    },
+    "structure": {
+      "direction": "bearish",
+      "events": [
+        {
+          "type": "BOS",
+          "timeframe": "15m",
+          "direction": "bullish"
+        },
+        {
+          "type": "MSS",
+          "timeframe": "15m",
+          "direction": "bearish"
+        }
+      ]
+    },
+    "liquidity": {
+      "remaining": [
+        {
+          "type": "SSL",
+          "price": 61000
+        }
+      ]
+    },
+    "concepts": [
+      "fvg",
+      "bos",
+      "mss",
+      "liquidity"
+    ],
+    "models": {
+      "primary": {
+        "id": "mmxm-mmsm",
+        "name": "Market Maker Sell Model (MMSM)",
+        "ontology": "EXECUTION_MODEL",
+        "confidence": 0.81
+      },
+      "alternatives": [
+        {
+          "id": "smc-confluence-1",
+          "name": "HTF POI + BOS + FVG",
+          "ontology": "EXECUTION_MODEL",
+          "confidence": 0.56
+        }
+      ],
+      "rejected": [
+        {
+          "id": "temporal-silver-bullet-london",
+          "name": "Silver Bullet — London Open",
+          "ontology": "EXECUTION_MODEL",
+          "confidence": 0
+        },
+        {
+          "id": "classical-06",
+          "name": "Model 6 — Universal Buy Model",
+          "ontology": "EXECUTION_MODEL",
+          "confidence": 0
+        }
+      ]
+    },
+    "timeframeAlignment": [],
+    "evaluation": {
+      "evaluator": "DETERMINISTIC",
+      "version": "1.0",
+      "timestamp": "2026-07-25T11:00:00Z",
+      "scenarioId": "SMC-EVAL-000073"
+    }
+  },
+  "modelCandidates": [
+    "mmxm-mmsm",
+    "smc-confluence-1"
+  ],
+  "requiredConcepts": [
+    "fvg",
+    "bos",
+    "mss",
+    "liquidity"
+  ],
+  "invalidConcepts": [],
+  "evaluationRubric": {
+    "category": "adversarial",
+    "expectedPrimaryModel": "mmxm-mmsm",
+    "minScore": 60,
+    "criticalErrors": [
+      "MODEL_HALLUCINATION"
+    ],
+    "trapClaim": "Consecutive bullish daily bias, but structure shows distribution phase",
+    "actualModel": "mmxm-mmsm",
+    "lureModel": "smc-confluence-1"
+  }
+}

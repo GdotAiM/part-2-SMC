@@ -1,0 +1,107 @@
+{
+  "scenarioId": "SMC-EVAL-000069",
+  "version": "1.0",
+  "market": "crypto",
+  "asset": "XRPUSDT",
+  "timestamp": "2026-07-24T17:00:00Z",
+  "session": "NY_AM",
+  "timeframes": [
+    "15m"
+  ],
+  "groundTruth": {
+    "scenarioId": "SMC-EVAL-000069",
+    "market": {
+      "asset": "XRPUSDT",
+      "session": "NY_AM",
+      "timestamp": "2026-07-24T17:00:00Z"
+    },
+    "structure": {
+      "direction": "neutral",
+      "events": [
+        {
+          "type": "BOS",
+          "timeframe": "15m",
+          "direction": "bullish"
+        },
+        {
+          "type": "MSS",
+          "timeframe": "15m",
+          "direction": "bullish"
+        }
+      ]
+    },
+    "liquidity": {
+      "remaining": [
+        {
+          "type": "SSL",
+          "price": 61000
+        }
+      ]
+    },
+    "concepts": [
+      "fvg",
+      "bos",
+      "mss",
+      "liquidity"
+    ],
+    "models": {
+      "primary": {
+        "id": "smc-confluence-1",
+        "name": "HTF POI + BOS + FVG",
+        "ontology": "EXECUTION_MODEL",
+        "confidence": 0.75
+      },
+      "alternatives": [
+        {
+          "id": "mmxm-mmbm",
+          "name": "Market Maker Buy Model (MMBM)",
+          "ontology": "EXECUTION_MODEL",
+          "confidence": 0.51
+        }
+      ],
+      "rejected": [
+        {
+          "id": "reversal-scob",
+          "name": "Single Candle OB (SCOB)",
+          "ontology": "EXECUTION_MODEL",
+          "confidence": 0
+        },
+        {
+          "id": "mmxm-mmsm",
+          "name": "Market Maker Sell Model (MMSM)",
+          "ontology": "EXECUTION_MODEL",
+          "confidence": 0
+        }
+      ]
+    },
+    "timeframeAlignment": [],
+    "evaluation": {
+      "evaluator": "DETERMINISTIC",
+      "version": "1.0",
+      "timestamp": "2026-07-24T17:00:00Z",
+      "scenarioId": "SMC-EVAL-000069"
+    }
+  },
+  "modelCandidates": [
+    "smc-confluence-1",
+    "mmxm-mmbm"
+  ],
+  "requiredConcepts": [
+    "fvg",
+    "bos",
+    "mss",
+    "liquidity"
+  ],
+  "invalidConcepts": [],
+  "evaluationRubric": {
+    "category": "adversarial",
+    "expectedPrimaryModel": "smc-confluence-1",
+    "minScore": 60,
+    "criticalErrors": [
+      "MODEL_HALLUCINATION"
+    ],
+    "trapClaim": "SMT divergence detected, but on wrong correlated pair",
+    "actualModel": "smc-confluence-1",
+    "lureModel": "mmxm-mmbm"
+  }
+}

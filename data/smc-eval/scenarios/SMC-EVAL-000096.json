@@ -1,0 +1,124 @@
+{
+  "scenarioId": "SMC-EVAL-000096",
+  "version": "1.0",
+  "market": "forex",
+  "asset": "USDCAD=X",
+  "timestamp": "2026-07-27T14:00:00Z",
+  "session": "LONDON_OPEN",
+  "timeframes": [
+    "15m"
+  ],
+  "groundTruth": {
+    "scenarioId": "SMC-EVAL-000096",
+    "market": {
+      "asset": "USDCAD=X",
+      "session": "LONDON_OPEN",
+      "timestamp": "2026-07-27T14:00:00Z"
+    },
+    "structure": {
+      "direction": "RANGE",
+      "events": [
+        {
+          "type": "BOS",
+          "timeframe": "15m",
+          "direction": "bullish"
+        },
+        {
+          "type": "MSS",
+          "timeframe": "15m",
+          "direction": "bearish"
+        }
+      ]
+    },
+    "liquidity": {
+      "remaining": [
+        {
+          "type": "SSL",
+          "price": 61000
+        }
+      ]
+    },
+    "concepts": [
+      "ob",
+      "fvg"
+    ],
+    "models": {
+      "primary": {
+        "id": "reversal-turtle-soup",
+        "name": "Turtle Soup",
+        "ontology": "EXECUTION_MODEL",
+        "confidence": 0.93
+      },
+      "alternatives": [
+        {
+          "id": "smc-confluence-3",
+          "name": "HTF POI + BOS + FVG + OTE",
+          "ontology": "EXECUTION_MODEL",
+          "confidence": 0.64
+        },
+        {
+          "id": "smc-confluence-5",
+          "name": "Five Box Setup",
+          "ontology": "EXECUTION_MODEL",
+          "confidence": 0.67
+        }
+      ],
+      "rejected": [
+        {
+          "id": "classical-06",
+          "name": "Model 6 — Universal Buy Model",
+          "ontology": "EXECUTION_MODEL",
+          "confidence": 0
+        },
+        {
+          "id": "temporal-judas-swing",
+          "name": "Judas Swing",
+          "ontology": "EXECUTION_MODEL",
+          "confidence": 0
+        },
+        {
+          "id": "temporal-silver-bullet-nyam",
+          "name": "Silver Bullet — New York AM",
+          "ontology": "EXECUTION_MODEL",
+          "confidence": 0
+        }
+      ]
+    },
+    "timeframeAlignment": [
+      {
+        "higherTf": "4h",
+        "lowerTf": "1h",
+        "alignment": "NEUTRAL"
+      },
+      {
+        "higherTf": "1h",
+        "lowerTf": "15m",
+        "alignment": "NEUTRAL"
+      }
+    ],
+    "evaluation": {
+      "evaluator": "DETERMINISTIC",
+      "version": "1.0",
+      "timestamp": "2026-07-27T14:00:00Z",
+      "scenarioId": "SMC-EVAL-000096"
+    }
+  },
+  "modelCandidates": [
+    "reversal-turtle-soup",
+    "smc-confluence-3",
+    "smc-confluence-5"
+  ],
+  "requiredConcepts": [
+    "ob",
+    "fvg"
+  ],
+  "invalidConcepts": [],
+  "evaluationRubric": {
+    "category": "ambiguous",
+    "expectedPrimaryModel": "reversal-turtle-soup",
+    "minScore": 40,
+    "criticalErrors": [],
+    "ambiguousContext": "Order block identified but proximal/distal zone unusually wide",
+    "expectedResponse": "ACKNOWLEDGE_UNCERTAINTY"
+  }
+}

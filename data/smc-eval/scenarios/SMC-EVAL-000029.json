@@ -1,0 +1,122 @@
+{
+  "scenarioId": "SMC-EVAL-000029",
+  "version": "1.0",
+  "market": "crypto",
+  "asset": "BTCUSDT",
+  "timestamp": "2026-07-20T17:00:00Z",
+  "session": "NY_AM",
+  "timeframes": [
+    "5m"
+  ],
+  "groundTruth": {
+    "scenarioId": "SMC-EVAL-000029",
+    "market": {
+      "asset": "BTCUSDT",
+      "session": "NY_AM",
+      "timestamp": "2026-07-20T17:00:00Z"
+    },
+    "structure": {
+      "direction": "BULLISH",
+      "events": [
+        {
+          "type": "BOS",
+          "timeframe": "5m",
+          "direction": "bullish"
+        },
+        {
+          "type": "MSS",
+          "timeframe": "5m",
+          "direction": "bullish"
+        },
+        {
+          "type": "LIQUIDITY_SWEEP",
+          "timeframe": "5m",
+          "direction": "bullish"
+        }
+      ]
+    },
+    "liquidity": {
+      "swept": "sell_side",
+      "remaining": [
+        {
+          "type": "BSL",
+          "price": 65000
+        },
+        {
+          "type": "BSL",
+          "price": 65400
+        }
+      ]
+    },
+    "concepts": [
+      "bos",
+      "mss",
+      "liquidity"
+    ],
+    "models": {
+      "primary": {
+        "id": "mmxm-mmbm",
+        "name": "Market Maker Buy Model (MMBM)",
+        "ontology": "EXECUTION_MODEL",
+        "confidence": 0.75
+      },
+      "alternatives": [
+        {
+          "id": "smc-confluence-1",
+          "name": "HTF POI + BOS + FVG",
+          "ontology": "EXECUTION_MODEL",
+          "confidence": 0.68
+        }
+      ],
+      "rejected": [
+        {
+          "id": "classical-06",
+          "name": "Model 6 — Universal Buy Model",
+          "ontology": "EXECUTION_MODEL",
+          "confidence": 0
+        },
+        {
+          "id": "reversal-turtle-soup",
+          "name": "Turtle Soup",
+          "ontology": "EXECUTION_MODEL",
+          "confidence": 0
+        }
+      ]
+    },
+    "timeframeAlignment": [
+      {
+        "higherTf": "4h",
+        "lowerTf": "1h",
+        "alignment": "BULLISH"
+      }
+    ],
+    "evaluation": {
+      "evaluator": "DETERMINISTIC",
+      "version": "1.0",
+      "timestamp": "2026-07-20T17:00:00Z",
+      "scenarioId": "SMC-EVAL-000029"
+    }
+  },
+  "modelCandidates": [
+    "mmxm-mmbm",
+    "smc-confluence-1"
+  ],
+  "requiredConcepts": [
+    "bos",
+    "mss",
+    "liquidity"
+  ],
+  "invalidConcepts": [
+    "breaker"
+  ],
+  "evaluationRubric": {
+    "category": "false-positive",
+    "expectedPrimaryModel": "mmxm-mmbm",
+    "minScore": 60,
+    "criticalErrors": [],
+    "missingConcepts": [
+      "smt"
+    ],
+    "falsePositiveReason": "No SMT divergence confirmation"
+  }
+}

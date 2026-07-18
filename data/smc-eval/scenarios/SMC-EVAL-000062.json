@@ -1,0 +1,107 @@
+{
+  "scenarioId": "SMC-EVAL-000062",
+  "version": "1.0",
+  "market": "crypto",
+  "asset": "BNBUSDT",
+  "timestamp": "2026-07-24T10:00:00Z",
+  "session": "LONDON_OPEN",
+  "timeframes": [
+    "15m"
+  ],
+  "groundTruth": {
+    "scenarioId": "SMC-EVAL-000062",
+    "market": {
+      "asset": "BNBUSDT",
+      "session": "LONDON_OPEN",
+      "timestamp": "2026-07-24T10:00:00Z"
+    },
+    "structure": {
+      "direction": "neutral",
+      "events": [
+        {
+          "type": "BOS",
+          "timeframe": "15m",
+          "direction": "bullish"
+        },
+        {
+          "type": "MSS",
+          "timeframe": "15m",
+          "direction": "bullish"
+        }
+      ]
+    },
+    "liquidity": {
+      "remaining": [
+        {
+          "type": "SSL",
+          "price": 61000
+        }
+      ]
+    },
+    "concepts": [
+      "fvg",
+      "bos",
+      "mss",
+      "liquidity"
+    ],
+    "models": {
+      "primary": {
+        "id": "temporal-power-of-three",
+        "name": "Power of Three (PO3)",
+        "ontology": "EXECUTION_MODEL",
+        "confidence": 0.87
+      },
+      "alternatives": [
+        {
+          "id": "classical-07",
+          "name": "Model 7 — Universal Sell Model",
+          "ontology": "EXECUTION_MODEL",
+          "confidence": 0.52
+        }
+      ],
+      "rejected": [
+        {
+          "id": "smc-confluence-2",
+          "name": "HTF POI + BOS + IDM + FVG",
+          "ontology": "EXECUTION_MODEL",
+          "confidence": 0
+        },
+        {
+          "id": "classical-09",
+          "name": "Model 9 — One Shot One Kill",
+          "ontology": "EXECUTION_MODEL",
+          "confidence": 0
+        }
+      ]
+    },
+    "timeframeAlignment": [],
+    "evaluation": {
+      "evaluator": "DETERMINISTIC",
+      "version": "1.0",
+      "timestamp": "2026-07-24T10:00:00Z",
+      "scenarioId": "SMC-EVAL-000062"
+    }
+  },
+  "modelCandidates": [
+    "temporal-power-of-three",
+    "classical-07"
+  ],
+  "requiredConcepts": [
+    "fvg",
+    "bos",
+    "mss",
+    "liquidity"
+  ],
+  "invalidConcepts": [],
+  "evaluationRubric": {
+    "category": "adversarial",
+    "expectedPrimaryModel": "temporal-power-of-three",
+    "minScore": 60,
+    "criticalErrors": [
+      "MODEL_HALLUCINATION"
+    ],
+    "trapClaim": "Bearish candle close suggests reversal — but no MSS confirmed",
+    "actualModel": "temporal-power-of-three",
+    "lureModel": "classical-07"
+  }
+}

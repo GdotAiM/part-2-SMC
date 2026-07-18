@@ -1,0 +1,111 @@
+{
+  "scenarioId": "SMC-EVAL-000032",
+  "version": "1.0",
+  "market": "forex",
+  "asset": "USDCAD=X",
+  "timestamp": "2026-07-21T10:00:00Z",
+  "session": "LATE",
+  "timeframes": [
+    "5m"
+  ],
+  "groundTruth": {
+    "scenarioId": "SMC-EVAL-000032",
+    "market": {
+      "asset": "USDCAD=X",
+      "session": "LATE",
+      "timestamp": "2026-07-21T10:00:00Z"
+    },
+    "structure": {
+      "direction": "BEARISH",
+      "events": [
+        {
+          "type": "BOS",
+          "timeframe": "5m",
+          "direction": "bearish"
+        },
+        {
+          "type": "MSS",
+          "timeframe": "5m",
+          "direction": "bearish"
+        }
+      ]
+    },
+    "liquidity": {
+      "swept": "buy_side",
+      "remaining": [
+        {
+          "type": "SSL",
+          "price": 61000
+        }
+      ]
+    },
+    "concepts": [
+      "bos",
+      "mss"
+    ],
+    "models": {
+      "primary": {
+        "id": "reversal-scob",
+        "name": "Single Candle OB (SCOB)",
+        "ontology": "EXECUTION_MODEL",
+        "confidence": 0.78
+      },
+      "alternatives": [
+        {
+          "id": "classical-05",
+          "name": "Model 5 — Advanced Session Setup",
+          "ontology": "EXECUTION_MODEL",
+          "confidence": 0.57
+        }
+      ],
+      "rejected": [
+        {
+          "id": "smc-confluence-4",
+          "name": "HTF POI + BOS + IDM + FVG + OTE",
+          "ontology": "EXECUTION_MODEL",
+          "confidence": 0
+        },
+        {
+          "id": "reversal-turtle-soup",
+          "name": "Turtle Soup",
+          "ontology": "EXECUTION_MODEL",
+          "confidence": 0
+        }
+      ]
+    },
+    "timeframeAlignment": [
+      {
+        "higherTf": "4h",
+        "lowerTf": "1h",
+        "alignment": "BEARISH"
+      }
+    ],
+    "evaluation": {
+      "evaluator": "DETERMINISTIC",
+      "version": "1.0",
+      "timestamp": "2026-07-21T10:00:00Z",
+      "scenarioId": "SMC-EVAL-000032"
+    }
+  },
+  "modelCandidates": [
+    "reversal-scob",
+    "classical-05"
+  ],
+  "requiredConcepts": [
+    "bos",
+    "mss"
+  ],
+  "invalidConcepts": [
+    "smt"
+  ],
+  "evaluationRubric": {
+    "category": "false-positive",
+    "expectedPrimaryModel": "reversal-scob",
+    "minScore": 60,
+    "criticalErrors": [],
+    "missingConcepts": [
+      "liquidity"
+    ],
+    "falsePositiveReason": "No single-candle sweep"
+  }
+}
