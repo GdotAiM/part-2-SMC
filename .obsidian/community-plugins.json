@@ -2,5 +2,7 @@
   "obsidian-git",
   "obsidian-kanban",
   "obsidian-excalidraw-plugin",
-  "obsidian-mermaid"
+  "obsidian-mermaid",
+  "obsidian-dataview",
+  "obsidian-tasks"
 ]

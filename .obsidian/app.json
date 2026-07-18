@@ -7,16 +7,20 @@
   "newFileLocation": "current",
   "newFileFolderPath": "knowledge",
   "showLineNumber": true,
-  "spellcheck": false,
+  "spellcheck": true,
   "tabSize": 2,
   "userIgnoreFilters": [
     "node_modules/",
     "dist/",
-    ".git/"
+    ".git/",
+    "artifacts/api-server/dist/"
   ],
   "vimMode": false,
   "readableLineLength": true,
   "strictLineBreaks": false,
   "showFrontmatter": true,
-  "livePreview": true
+  "livePreview": true,
+  "promptDelete": false,
+  "propertiesInDocument": "visible",
+  "showUnsupportedFiles": true
 }

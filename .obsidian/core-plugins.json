@@ -13,8 +13,11 @@
   "note-composer": true,
   "command-palette": true,
   "editor-status": true,
-  "starred": true,
+  "bookmarks": true,
   "outline": true,
   "word-count": true,
-  "properties": true
+  "properties": true,
+  "audio-recorder": false,
+  "files": false,
+  "starred": false
 }

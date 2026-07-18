@@ -4,11 +4,16 @@
   "cssTheme": "",
   "enabledPlugins": [
     "obsidian-git",
-    "obsidian-kanban"
+    "obsidian-kanban",
+    "obsidian-dataview",
+    "obsidian-tasks"
   ],
   "theme": "obsidian",
   "vault": {
     "displayName": "SMC Pulse Predict",
     "icon": "chart-line"
-  }
+  },
+  "promptDelete": false,
+  "spellcheck": true,
+  "showInlineTitle": true
 }
