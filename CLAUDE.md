@@ -99,6 +99,49 @@ A complete ICT/SMC model-matching engine. Key files:
 
 **Frontend:** `useCascadeStrategy` hook → `ConfluenceCard` shows primary strategy name/score + Execute Now → opens `IntelligenceSheet` with `OSOutputPanel`. `CAL` button for economic calendar refresh.
 
+## SMC Pulse OS — Capability Exposure Phase (Jul 18, 2026)
+
+A new **SMC Pulse OS** application shell was built to expose the system's ~150 capabilities through a navigable interface.
+
+**Status: ⚠️ PARTIALLY IMPLEMENTED — See known issues below.**
+
+### New files created
+
+| File | Purpose |
+|---|---|
+| `components/layout/AppShell.tsx` | OS sidebar navigation (7 views: Overview, Market, Analyze, Trade, Learn, Evaluate, Agent) + ⌘K integration |
+| `components/layout/CommandPalette.tsx` | Global ⌘K/Ctrl+K command palette with 12+ commands |
+| `pages/OsDashboard.tsx` | Main OS orchestrator — all TF hooks, cascade, strategy detection, real-time, wraps all views |
+| `pages/Overview.tsx` | Command center — market intelligence, strategy snapshot, cascade, system health, SMC-EVAL |
+| `pages/MarketView.tsx` | Dedicated market exploration — symbol, structure, liquidity, key metrics |
+| `pages/StrategyAtlas.tsx` | Browse 59 strategy models — wired to `GET /api/strategies` |
+| `pages/SmcEvalLab.tsx` | SMC-EVAL benchmark — scenario selection, 5-dimension scoring — wired to `POST /api/smc-eval/evaluate` |
+| `pages/AgentWorkspace.tsx` | Agent chat + loop toggle with capability cards |
+| `pages/TradeView.tsx` | Signal ledger, execution abstraction, review mode |
+| `pages/LearnView.tsx` | Truth Engine, learning timeline, reliability matrix |
+| `serve-frontend.mjs` | Standalone Node.js HTTP static server for when Docker nginx fails (runs via `node serve-frontend.mjs`) |
+
+### What changed in App.tsx
+- Default route `/` now renders `OsDashboard` instead of the old `Dashboard`
+- All existing pages (`/analytics`, `/broker`, `/agent-loop`) remain unchanged
+
+### Known issues (fix before using in production)
+
+1. **Vite `BASE_PATH` resolves to `/Program Files/Git/` on Windows/Git Bash** — When building from Git Bash, the `BASE_PATH` env var picks up the Git install path instead of `/`. Always build from **PowerShell** with `$env:BASE_PATH="/"; pnpm run build`, or from the root with `PORT=3000 BASE_PATH=/ pnpm exec tsx ...`. The build in `dist/public/` was last built correctly from PowerShell.
+
+2. **Docker nginx container may serve default "Welcome to nginx" page** — The Docker-built `smc-frontend` image (from `Dockerfile` target `frontend`) using `deploy/local/nginx/default.conf` requires the correct build artifacts to be baked in. If the container starts without the built SPA, it shows the default nginx page. The fix is to either: (a) rebuild the Docker image, or (b) use the standalone `serve-frontend.mjs` script as a fallback: `node serve-frontend.mjs`
+
+3. **No API proxy on the static server** — The Node.js `serve-frontend.mjs` static server doesn't proxy `/api` requests to the backend. The frontend SPA handles this correctly via the `apiUrl()` function in `api.ts` which calls port 3001 directly. This works fine when both servers are running.
+
+### To reverse the OS implementation
+To go back to the old dashboard, change `App.tsx` line 23 from `OsDashboard` back to `Dashboard`.
+
+### To pick up where you left off
+1. `node serve-frontend.mjs` (from repo root, serves the SPA on port 3000)
+2. The old nginx Docker container was named `smc-frontend` — if it's still running with the wrong content, stop it: `docker rm -f smc-frontend`
+3. The frontend source lives in `artifacts/liquidity-hunter/` — new pages are in `pages/`, the shell is in `components/layout/`
+4. The reference design is at `reference/smc-pulse-os-capability-exposure-demo.html`
+
 ## SMC-EVAL Benchmark Integration (`lib/api-zod/src/strategies/`)
 
 A 100-point evaluation system for AI reasoning on ICT/SMC market structure, matching the SMC-EVAL-Benchmark.md v1.0 specification. Includes 100 generated benchmark scenarios across 5 categories.
