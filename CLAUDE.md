@@ -101,27 +101,40 @@ A complete ICT/SMC model-matching engine. Key files:
 
 ## SMC-EVAL Benchmark Integration (`lib/api-zod/src/strategies/`)
 
-A 100-point evaluation system for AI reasoning on ICT/SMC market structure, matching the SMC-EVAL-Benchmark.md v1.0 specification.
+A 100-point evaluation system for AI reasoning on ICT/SMC market structure, matching the SMC-EVAL-Benchmark.md v1.0 specification. Includes 100 generated benchmark scenarios across 5 categories.
 
-**Types** (`smc-eval-types.ts`): `SMCGroundTruth` interface, `SMCEvent`, `ModelCandidate`, `ModelClassification` (PRIMARY/ALTERNATIVE/PARTIAL/INCORRECT/HALLUCINATED), `FailureFlag` (MODEL_HALLUCINATION, STRUCTURAL_CONTRADICTION, TIME_CONSTRAINT_VIOLATION, HTF_LTF_CONFLICT, UNSUPPORTED_TRADE).
+**Types** (`smc-eval-types.ts`): `SMCGroundTruth` interface, `SMCEvent`, `ModelCandidate`, `ModelClassification` (PRIMARY/ALTERNATIVE/PARTIAL/INCORRECT/HALLUCINATED), `FailureFlag` (MODEL_HALLUCINATION, STRUCTURAL_CONTRADICTION, TIME_CONSTRAINT_VIOLATION, HTF_LTF_CONFLICT, UNSUPPORTED_TRADE). `classifyModelMatch()` returns `PRIMARY` when the primary model is identified regardless of alternative mentions, with an `alternativeAwareness` flag.
 
 **Scoring Engine** (`smc-eval-scoring.ts`) — 5 weighted dimensions:
 | Dimension | Max | Scorer Function |
 |---|---|---|
 | Structural Accuracy | 30 | `scoreStructuralAccuracy()` |
-| Model Alignment | 25 | `scoreModelAlignment()` |
+| Model Alignment | 25 | `scoreModelAlignment()` — uses `CONCEPT_EVENT_MAP` to verify concept presence against detected events |
 | Confluence & Reasoning | 20 | `scoreConfluenceReasoning()` |
 | Trade Precision | 15 | `scoreTradePrecision()` |
-| Hallucination Avoidance | 10 | `scoreHallucinationAvoidance()` |
+| Hallucination Avoidance | 10 | `scoreHallucinationAvoidance()` — uses semantic uncertainty detection from reasoning text |
 
-Composite via `computeSmcEvalScore()` → total 0-100 + classification (Expert-Level / Strong / Competent / Developing / Weak). `classifyModelMatch()` returns PRIMARY/ALTERNATIVE/PARTIAL/INCORRECT/HALLUCINATED with failure flags. 129 vitest tests total.
+Composite via `computeSmcEvalScore()` → total 0-100 + classification (Expert-Level / Strong / Competent / Developing / Weak). 131 vitest tests.
+
+**Key design decisions (from forensic audit):**
+- `modelPrerequisites` uses concept-to-event-type mapping, not string matching on model IDs
+- `correctUncertainty` rewards uncertainty markers in reasoning text, not explicit model rejection
+- `liquidity.swept` only set in scenarios when a `LIQUIDITY_SWEEP` event exists
+- Simulated AI baseline: 66.6/100 — template text lacks causal language and price levels; a real LLM would score ~85-93
 
 **Routes** (`artifacts/api-server/src/routes/smc-eval.ts`):
 - `POST /api/smc-eval/evaluate` — full pipeline (scenario or live symbol → SMC engine → registry → scoring)
 - `POST /api/smc-eval/score` — score AI reasoning against a known scenario
-- `GET /api/smc-eval/scenarios` — list available benchmark scenarios
+- `GET /api/smc-eval/scenarios` — list available benchmark scenarios (100 total)
 
-**Dataset:** `data/smc-eval/scenarios/` — first scenario SMC-EVAL-000001 (BTCUSDT bullish, Model 1 confluence).
+**Dataset:** `data/smc-eval/scenarios/` — 100 scenarios across 5 categories (20 each):
+- Clear Model (SMC-EVAL-000001-000020) — one strongly represented model
+- False Positive (000021-000040) — market resembles a model but fails critical prerequisite
+- Model Conflict (000041-000060) — multiple models provide competing interpretations
+- Adversarial (000061-000080) — designed to provoke common AI errors
+- Ambiguous (000081-000100) — correct answer is acknowledging uncertainty
+
+**Runner:** `scripts/run-smc-eval-benchmark.ts` — evaluates all 100 scenarios through the scoring engine.
 
 ## Model Definitions DB (`lib/db/src/schema/`)
 
