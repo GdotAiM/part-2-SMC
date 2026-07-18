@@ -90,18 +90,18 @@ A complete ICT/SMC model-matching engine. Key files:
 | `predicates.ts` | 21 pure functions (all seed-referenced predicates now implemented: `hasDisplacement`, `hasLiquiditySweep`, `hasBreakerBlock`, `hasSessionAlignment`, `hasRangeExpansion`, `hasWeeklyExpansionContext`, `hasEqualHighsLows` added Jul 18) returning `{ matched, evidence, score? }` — ~120 vitest tests |
 | `rules.ts` | Recursive `Rule` discriminated union (`predicate`/`and`/`or`/`not`) + `StrategyDefinition` Zod schema |
 | `evaluator.ts` | `StrategyEvaluator` — walks a Rule tree against `Map<string, SmcReport>` via predicate function registry |
-| `registry.ts` | `StrategyRegistry` — auto-loads 41 templates, `detectAll(reports)` → ranked `DetectionResult[]` |
-| `templates/*.ts` | 41 StrategyDefinitions matching seed data: classical-horizon (12), charter-blueprint (12), modern-confluence (5), mmxm-and-temporal (12) |
+| `registry.ts` | `StrategyRegistry` — **59 templates**, `detectAll(options)` with category filtering, priority-aware `rankResults()`, invalidation checking |
+| `templates/*.ts` | 7-layer ontology: `modern-confluence` (5 EXECUTION_MODEL), `charter-blueprint` (12 CURRICULUM), `classical-horizon` (12 — mixed), `mmxm-and-temporal` (12 — mixed), **`concepts-and-patterns`** (18 NEW: 8 CONCEPT + 6 STRUCTURAL_PATTERN + 4 TRADING_HORIZON) |
 
-**API route:** `POST /api/strategies/detect` — fetches multi-TF OHLCV, builds SMC reports, runs `detectAll`, returns ranked results. Optional `?reason=true` appends deterministic narrative + LLM reasoning assessment.
+**SMC-EVAL Taxonomy v2** — models classified into 7 ontology layers: `CONCEPT | STRUCTURAL_PATTERN | EXECUTION_MODEL | TEMPORAL_MODEL | MARKET_CYCLE | TRADING_HORIZON | CURRICULUM`. Each has a `priority` (`PRIMARY | ALTERNATIVE | INFORMATIONAL`) for ranking. Default `detectAll()` filters out CURRICULUM, TRADING_HORIZON, and CONCEPT — 30 execution/temporal/market-cycle models evaluated by default.
 
-**Frontend:** `useCascadeStrategy` hook → `ConfluenceCard` shows primary strategy name/score + Execute Now → opens `IntelligenceSheet` with `OSOutputPanel` (narrative + reasoning). `CAL` button in header triggers economic calendar refresh.
+**API route:** `POST /api/strategies/detect` — multi-TF detection. Optional `?reason=true` appends narrative + reasoning.
 
-**All 21 predicates** are implemented — the 7 previously missing functions (`hasDisplacement`, `hasLiquiditySweep`, `hasBreakerBlock`, `hasSessionAlignment`, `hasRangeExpansion`, `hasWeeklyExpansionContext`, `hasEqualHighsLows`) were added July 18. Templates that previously used proxy predicates (`hasLiquidityPool` for `hasLiquiditySweep`, etc.) now use the real functions.
+**Frontend:** `useCascadeStrategy` hook → `ConfluenceCard` shows primary strategy name/score + Execute Now → opens `IntelligenceSheet` with `OSOutputPanel`. `CAL` button for economic calendar refresh.
 
 ## Model Definitions DB (`lib/db/src/schema/`)
 
-- `model-definitions.ts` — `model_definitions` table (text PK, name, category, version, description, requires/optional as jsonb arrays, parameters with key/label/type/default/min/max/options, performanceStats jsonb, isPublished, timestamps). Migration `0000`.
+- `model-definitions.ts` — `model_definitions` table with **Taxonomy v2 columns**: ontology (7-layer SMC-EVAL category), priority (PRIMARY/ALTERNATIVE/INFORMATIONAL), invalidation rules (jsonb), temporalRules, confusionGuards, prerequisites. Migrations `0000` + `0002` (additive).
 - `economic-events.ts` — `economic_events` table (time, currency, event, impact, forecast, previous, actual, refreshedAt, source). Unique upsert key on `(time, currency, event)`. Migration `0001`.
 - **Seed:** `lib/db/seeds/model-definitions.ts` — 41 ICT/SMC models. Run with `DATABASE_URL="..." pnpm --filter @workspace/db run seed:models`.
 
