@@ -2,7 +2,7 @@
   "scenarioId": "SMC-EVAL-000042",
   "version": "1.0",
   "market": "crypto",
-  "asset": "XRPUSDT",
+  "asset": "ETHUSDT",
   "timestamp": "2026-07-22T10:00:00Z",
   "session": "LONDON_OPEN",
   "timeframes": [
@@ -11,7 +11,7 @@
   "groundTruth": {
     "scenarioId": "SMC-EVAL-000042",
     "market": {
-      "asset": "XRPUSDT",
+      "asset": "ETHUSDT",
       "session": "LONDON_OPEN",
       "timestamp": "2026-07-22T10:00:00Z"
     },
@@ -55,26 +55,26 @@
         "id": "smc-confluence-2",
         "name": "HTF POI + BOS + IDM + FVG",
         "ontology": "EXECUTION_MODEL",
-        "confidence": 0.85
+        "confidence": 0.92
       },
       "alternatives": [
         {
           "id": "smc-confluence-4",
           "name": "HTF POI + BOS + IDM + FVG + OTE",
           "ontology": "EXECUTION_MODEL",
-          "confidence": 0.62
+          "confidence": 0.65
         }
       ],
       "rejected": [
         {
-          "id": "framework-2fvg",
-          "name": "2 FVG Model",
+          "id": "reversal-scob",
+          "name": "Single Candle OB (SCOB)",
           "ontology": "EXECUTION_MODEL",
           "confidence": 0
         },
         {
-          "id": "classical-09",
-          "name": "Model 9 — One Shot One Kill",
+          "id": "classical-06",
+          "name": "Model 6 — Universal Buy Model",
           "ontology": "EXECUTION_MODEL",
           "confidence": 0
         }

@@ -2,7 +2,7 @@
   "scenarioId": "SMC-EVAL-000096",
   "version": "1.0",
   "market": "forex",
-  "asset": "USDCAD=X",
+  "asset": "USDJPY=X",
   "timestamp": "2026-07-27T14:00:00Z",
   "session": "LONDON_OPEN",
   "timeframes": [
@@ -11,7 +11,7 @@
   "groundTruth": {
     "scenarioId": "SMC-EVAL-000096",
     "market": {
-      "asset": "USDCAD=X",
+      "asset": "USDJPY=X",
       "session": "LONDON_OPEN",
       "timestamp": "2026-07-27T14:00:00Z"
     },
@@ -44,41 +44,41 @@
     ],
     "models": {
       "primary": {
-        "id": "reversal-turtle-soup",
-        "name": "Turtle Soup",
+        "id": "classical-09",
+        "name": "Model 9 — One Shot One Kill",
         "ontology": "EXECUTION_MODEL",
-        "confidence": 0.93
+        "confidence": 0.91
       },
       "alternatives": [
+        {
+          "id": "smc-confluence-4",
+          "name": "HTF POI + BOS + IDM + FVG + OTE",
+          "ontology": "EXECUTION_MODEL",
+          "confidence": 0.66
+        },
         {
           "id": "smc-confluence-3",
           "name": "HTF POI + BOS + FVG + OTE",
           "ontology": "EXECUTION_MODEL",
-          "confidence": 0.64
-        },
-        {
-          "id": "smc-confluence-5",
-          "name": "Five Box Setup",
-          "ontology": "EXECUTION_MODEL",
-          "confidence": 0.67
+          "confidence": 0.63
         }
       ],
       "rejected": [
         {
-          "id": "classical-06",
-          "name": "Model 6 — Universal Buy Model",
+          "id": "smc-confluence-5",
+          "name": "Five Box Setup",
           "ontology": "EXECUTION_MODEL",
           "confidence": 0
         },
         {
-          "id": "temporal-judas-swing",
-          "name": "Judas Swing",
+          "id": "classical-07",
+          "name": "Model 7 — Universal Sell Model",
           "ontology": "EXECUTION_MODEL",
           "confidence": 0
         },
         {
-          "id": "temporal-silver-bullet-nyam",
-          "name": "Silver Bullet — New York AM",
+          "id": "reversal-scob",
+          "name": "Single Candle OB (SCOB)",
           "ontology": "EXECUTION_MODEL",
           "confidence": 0
         }
@@ -104,9 +104,9 @@
     }
   },
   "modelCandidates": [
-    "reversal-turtle-soup",
-    "smc-confluence-3",
-    "smc-confluence-5"
+    "classical-09",
+    "smc-confluence-4",
+    "smc-confluence-3"
   ],
   "requiredConcepts": [
     "ob",
@@ -115,7 +115,7 @@
   "invalidConcepts": [],
   "evaluationRubric": {
     "category": "ambiguous",
-    "expectedPrimaryModel": "reversal-turtle-soup",
+    "expectedPrimaryModel": "classical-09",
     "minScore": 40,
     "criticalErrors": [],
     "ambiguousContext": "Order block identified but proximal/distal zone unusually wide",

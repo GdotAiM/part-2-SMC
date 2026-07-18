@@ -2,17 +2,17 @@
   "scenarioId": "SMC-EVAL-000013",
   "version": "1.0",
   "market": "forex",
-  "asset": "AUDUSD=X",
+  "asset": "EURUSD=X",
   "timestamp": "2026-07-19T11:00:00Z",
-  "session": "NY_PM",
+  "session": "LONDON_OPEN",
   "timeframes": [
     "4h"
   ],
   "groundTruth": {
     "scenarioId": "SMC-EVAL-000013",
     "market": {
-      "asset": "AUDUSD=X",
-      "session": "NY_PM",
+      "asset": "EURUSD=X",
+      "session": "LONDON_OPEN",
       "timestamp": "2026-07-19T11:00:00Z"
     },
     "structure": {
@@ -55,32 +55,32 @@
         "id": "framework-2fvg",
         "name": "2 FVG Model",
         "ontology": "EXECUTION_MODEL",
-        "confidence": 0.89
+        "confidence": 0.94
       },
       "alternatives": [
         {
-          "id": "smc-confluence-4",
-          "name": "HTF POI + BOS + IDM + FVG + OTE",
+          "id": "smc-confluence-3",
+          "name": "HTF POI + BOS + FVG + OTE",
           "ontology": "EXECUTION_MODEL",
-          "confidence": 0.62
+          "confidence": 0.58
         },
         {
           "id": "classical-07",
           "name": "Model 7 — Universal Sell Model",
           "ontology": "EXECUTION_MODEL",
-          "confidence": 0.66
+          "confidence": 0.67
         }
       ],
       "rejected": [
         {
-          "id": "smc-confluence-1",
-          "name": "HTF POI + BOS + FVG",
+          "id": "classical-06",
+          "name": "Model 6 — Universal Buy Model",
           "ontology": "EXECUTION_MODEL",
           "confidence": 0
         },
         {
-          "id": "smc-confluence-2",
-          "name": "HTF POI + BOS + IDM + FVG",
+          "id": "reversal-scob",
+          "name": "Single Candle OB (SCOB)",
           "ontology": "EXECUTION_MODEL",
           "confidence": 0
         }
@@ -115,7 +115,7 @@
   },
   "modelCandidates": [
     "framework-2fvg",
-    "smc-confluence-4",
+    "smc-confluence-3",
     "classical-07"
   ],
   "requiredConcepts": [

@@ -2,17 +2,17 @@
   "scenarioId": "SMC-EVAL-000091",
   "version": "1.0",
   "market": "forex",
-  "asset": "USDJPY=X",
+  "asset": "EURUSD=X",
   "timestamp": "2026-07-27T09:00:00Z",
-  "session": "LONDON_OPEN",
+  "session": "ASIAN",
   "timeframes": [
     "15m"
   ],
   "groundTruth": {
     "scenarioId": "SMC-EVAL-000091",
     "market": {
-      "asset": "USDJPY=X",
-      "session": "LONDON_OPEN",
+      "asset": "EURUSD=X",
+      "session": "ASIAN",
       "timestamp": "2026-07-27T09:00:00Z"
     },
     "structure": {
@@ -44,41 +44,41 @@
     ],
     "models": {
       "primary": {
-        "id": "smc-confluence-4",
-        "name": "HTF POI + BOS + IDM + FVG + OTE",
+        "id": "classical-06",
+        "name": "Model 6 — Universal Buy Model",
         "ontology": "EXECUTION_MODEL",
         "confidence": 0.9
       },
       "alternatives": [
         {
-          "id": "classical-06",
-          "name": "Model 6 — Universal Buy Model",
+          "id": "classical-05",
+          "name": "Model 5 — Advanced Session Setup",
           "ontology": "EXECUTION_MODEL",
-          "confidence": 0.6
+          "confidence": 0.67
         },
         {
-          "id": "smc-confluence-3",
-          "name": "HTF POI + BOS + FVG + OTE",
+          "id": "classical-11",
+          "name": "Model 11 — Daily Range Scalping",
           "ontology": "EXECUTION_MODEL",
-          "confidence": 0.54
+          "confidence": 0.55
         }
       ],
       "rejected": [
         {
-          "id": "smc-confluence-1",
-          "name": "HTF POI + BOS + FVG",
-          "ontology": "EXECUTION_MODEL",
-          "confidence": 0
-        },
-        {
-          "id": "temporal-silver-bullet-nyam",
-          "name": "Silver Bullet — New York AM",
-          "ontology": "EXECUTION_MODEL",
-          "confidence": 0
-        },
-        {
           "id": "framework-2fvg",
           "name": "2 FVG Model",
+          "ontology": "EXECUTION_MODEL",
+          "confidence": 0
+        },
+        {
+          "id": "temporal-silver-bullet-london",
+          "name": "Silver Bullet — London Open",
+          "ontology": "EXECUTION_MODEL",
+          "confidence": 0
+        },
+        {
+          "id": "mmxm-mmsm",
+          "name": "Market Maker Sell Model (MMSM)",
           "ontology": "EXECUTION_MODEL",
           "confidence": 0
         }
@@ -104,9 +104,9 @@
     }
   },
   "modelCandidates": [
-    "smc-confluence-4",
     "classical-06",
-    "smc-confluence-3"
+    "classical-05",
+    "classical-11"
   ],
   "requiredConcepts": [
     "bos",
@@ -115,7 +115,7 @@
   "invalidConcepts": [],
   "evaluationRubric": {
     "category": "ambiguous",
-    "expectedPrimaryModel": "smc-confluence-4",
+    "expectedPrimaryModel": "classical-06",
     "minScore": 40,
     "criticalErrors": [],
     "ambiguousContext": "BOS formed but candle body is small — displacement not convincing",

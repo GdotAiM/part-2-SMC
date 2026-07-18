@@ -4,7 +4,7 @@
   "market": "crypto",
   "asset": "BTCUSDT",
   "timestamp": "2026-07-20T13:00:00Z",
-  "session": "LATE",
+  "session": "LONDON_OPEN",
   "timeframes": [
     "5m"
   ],
@@ -12,7 +12,7 @@
     "scenarioId": "SMC-EVAL-000025",
     "market": {
       "asset": "BTCUSDT",
-      "session": "LATE",
+      "session": "LONDON_OPEN",
       "timestamp": "2026-07-20T13:00:00Z"
     },
     "structure": {
@@ -31,7 +31,6 @@
       ]
     },
     "liquidity": {
-      "swept": "sell_side",
       "remaining": [
         {
           "type": "BSL",
@@ -48,26 +47,26 @@
         "id": "reversal-unicorn",
         "name": "Unicorn Model",
         "ontology": "EXECUTION_MODEL",
-        "confidence": 0.81
+        "confidence": 0.94
       },
       "alternatives": [
         {
-          "id": "classical-07",
-          "name": "Model 7 — Universal Sell Model",
+          "id": "smc-confluence-4",
+          "name": "HTF POI + BOS + IDM + FVG + OTE",
           "ontology": "EXECUTION_MODEL",
-          "confidence": 0.62
+          "confidence": 0.63
         }
       ],
       "rejected": [
         {
-          "id": "reversal-turtle-soup",
-          "name": "Turtle Soup",
+          "id": "smc-confluence-4",
+          "name": "HTF POI + BOS + IDM + FVG + OTE",
           "ontology": "EXECUTION_MODEL",
           "confidence": 0
         },
         {
-          "id": "framework-sharp-turn",
-          "name": "Sharp Turn (ST) Model",
+          "id": "mmxm-mmbm",
+          "name": "Market Maker Buy Model (MMBM)",
           "ontology": "EXECUTION_MODEL",
           "confidence": 0
         }
@@ -89,7 +88,7 @@
   },
   "modelCandidates": [
     "reversal-unicorn",
-    "classical-07"
+    "smc-confluence-4"
   ],
   "requiredConcepts": [
     "fvg",

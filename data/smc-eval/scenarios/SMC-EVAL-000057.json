@@ -4,7 +4,7 @@
   "market": "forex",
   "asset": "EURUSD=X",
   "timestamp": "2026-07-23T15:00:00Z",
-  "session": "NY_AM",
+  "session": "ASIAN",
   "timeframes": [
     "5m"
   ],
@@ -12,7 +12,7 @@
     "scenarioId": "SMC-EVAL-000057",
     "market": {
       "asset": "EURUSD=X",
-      "session": "NY_AM",
+      "session": "ASIAN",
       "timestamp": "2026-07-23T15:00:00Z"
     },
     "structure": {
@@ -55,26 +55,26 @@
         "id": "classical-06",
         "name": "Model 6 — Universal Buy Model",
         "ontology": "EXECUTION_MODEL",
-        "confidence": 0.79
+        "confidence": 0.88
       },
       "alternatives": [
         {
           "id": "classical-09",
           "name": "Model 9 — One Shot One Kill",
           "ontology": "EXECUTION_MODEL",
-          "confidence": 0.63
+          "confidence": 0.65
         }
       ],
       "rejected": [
         {
-          "id": "smc-confluence-5",
-          "name": "Five Box Setup",
+          "id": "smc-confluence-4",
+          "name": "HTF POI + BOS + IDM + FVG + OTE",
           "ontology": "EXECUTION_MODEL",
           "confidence": 0
         },
         {
-          "id": "smc-confluence-4",
-          "name": "HTF POI + BOS + IDM + FVG + OTE",
+          "id": "framework-sharp-turn",
+          "name": "Sharp Turn (ST) Model",
           "ontology": "EXECUTION_MODEL",
           "confidence": 0
         }

@@ -2,7 +2,7 @@
   "scenarioId": "SMC-EVAL-000071",
   "version": "1.0",
   "market": "forex",
-  "asset": "AUDUSD=X",
+  "asset": "EURUSD=X",
   "timestamp": "2026-07-25T09:00:00Z",
   "session": "LONDON_OPEN",
   "timeframes": [
@@ -11,7 +11,7 @@
   "groundTruth": {
     "scenarioId": "SMC-EVAL-000071",
     "market": {
-      "asset": "AUDUSD=X",
+      "asset": "EURUSD=X",
       "session": "LONDON_OPEN",
       "timestamp": "2026-07-25T09:00:00Z"
     },
@@ -49,26 +49,26 @@
         "id": "mmxm-mmsm",
         "name": "Market Maker Sell Model (MMSM)",
         "ontology": "EXECUTION_MODEL",
-        "confidence": 0.81
+        "confidence": 0.9
       },
       "alternatives": [
         {
           "id": "temporal-judas-swing",
           "name": "Judas Swing",
           "ontology": "EXECUTION_MODEL",
-          "confidence": 0.66
+          "confidence": 0.56
         }
       ],
       "rejected": [
         {
-          "id": "smc-confluence-1",
-          "name": "HTF POI + BOS + FVG",
+          "id": "framework-sharp-turn",
+          "name": "Sharp Turn (ST) Model",
           "ontology": "EXECUTION_MODEL",
           "confidence": 0
         },
         {
-          "id": "smc-confluence-2",
-          "name": "HTF POI + BOS + IDM + FVG",
+          "id": "framework-2fvg",
+          "name": "2 FVG Model",
           "ontology": "EXECUTION_MODEL",
           "confidence": 0
         }

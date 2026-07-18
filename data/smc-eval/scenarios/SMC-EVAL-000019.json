@@ -2,17 +2,17 @@
   "scenarioId": "SMC-EVAL-000019",
   "version": "1.0",
   "market": "forex",
-  "asset": "GBPUSD=X",
+  "asset": "EURUSD=X",
   "timestamp": "2026-07-19T17:00:00Z",
-  "session": "NY_AM",
+  "session": "LONDON_OPEN",
   "timeframes": [
     "15m"
   ],
   "groundTruth": {
     "scenarioId": "SMC-EVAL-000019",
     "market": {
-      "asset": "GBPUSD=X",
-      "session": "NY_AM",
+      "asset": "EURUSD=X",
+      "session": "LONDON_OPEN",
       "timestamp": "2026-07-19T17:00:00Z"
     },
     "structure": {
@@ -49,32 +49,32 @@
         "id": "classical-05",
         "name": "Model 5 — Advanced Session Setup",
         "ontology": "EXECUTION_MODEL",
-        "confidence": 0.87
+        "confidence": 0.93
       },
       "alternatives": [
         {
-          "id": "framework-sharp-turn",
-          "name": "Sharp Turn (ST) Model",
+          "id": "smc-confluence-4",
+          "name": "HTF POI + BOS + IDM + FVG + OTE",
           "ontology": "EXECUTION_MODEL",
-          "confidence": 0.52
+          "confidence": 0.67
         },
         {
-          "id": "classical-10",
-          "name": "Model 10 — Swing Stalking",
+          "id": "smc-confluence-1",
+          "name": "HTF POI + BOS + FVG",
           "ontology": "EXECUTION_MODEL",
-          "confidence": 0.6
+          "confidence": 0.61
         }
       ],
       "rejected": [
         {
-          "id": "classical-11",
-          "name": "Model 11 — Daily Range Scalping",
+          "id": "mmxm-mmsm",
+          "name": "Market Maker Sell Model (MMSM)",
           "ontology": "EXECUTION_MODEL",
           "confidence": 0
         },
         {
-          "id": "temporal-judas-swing",
-          "name": "Judas Swing",
+          "id": "classical-07",
+          "name": "Model 7 — Universal Sell Model",
           "ontology": "EXECUTION_MODEL",
           "confidence": 0
         }
@@ -109,8 +109,8 @@
   },
   "modelCandidates": [
     "classical-05",
-    "framework-sharp-turn",
-    "classical-10"
+    "smc-confluence-4",
+    "smc-confluence-1"
   ],
   "requiredConcepts": [
     "bos",

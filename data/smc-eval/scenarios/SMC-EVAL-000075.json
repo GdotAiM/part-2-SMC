@@ -49,26 +49,26 @@
         "id": "classical-05",
         "name": "Model 5 — Advanced Session Setup",
         "ontology": "EXECUTION_MODEL",
-        "confidence": 0.79
+        "confidence": 0.85
       },
       "alternatives": [
         {
           "id": "classical-09",
           "name": "Model 9 — One Shot One Kill",
           "ontology": "EXECUTION_MODEL",
-          "confidence": 0.54
+          "confidence": 0.53
         }
       ],
       "rejected": [
         {
-          "id": "temporal-judas-swing",
-          "name": "Judas Swing",
+          "id": "temporal-silver-bullet-london",
+          "name": "Silver Bullet — London Open",
           "ontology": "EXECUTION_MODEL",
           "confidence": 0
         },
         {
-          "id": "smc-confluence-3",
-          "name": "HTF POI + BOS + FVG + OTE",
+          "id": "smc-confluence-5",
+          "name": "Five Box Setup",
           "ontology": "EXECUTION_MODEL",
           "confidence": 0
         }

@@ -2,17 +2,17 @@
   "scenarioId": "SMC-EVAL-000099",
   "version": "1.0",
   "market": "forex",
-  "asset": "GBPUSD=X",
+  "asset": "AUDUSD=X",
   "timestamp": "2026-07-27T17:00:00Z",
-  "session": "ASIAN",
+  "session": "LONDON_OPEN",
   "timeframes": [
     "15m"
   ],
   "groundTruth": {
     "scenarioId": "SMC-EVAL-000099",
     "market": {
-      "asset": "GBPUSD=X",
-      "session": "ASIAN",
+      "asset": "AUDUSD=X",
+      "session": "LONDON_OPEN",
       "timestamp": "2026-07-27T17:00:00Z"
     },
     "structure": {
@@ -45,41 +45,41 @@
     ],
     "models": {
       "primary": {
-        "id": "framework-sharp-turn",
-        "name": "Sharp Turn (ST) Model",
+        "id": "classical-11",
+        "name": "Model 11 — Daily Range Scalping",
         "ontology": "EXECUTION_MODEL",
-        "confidence": 0.79
+        "confidence": 0.91
       },
       "alternatives": [
-        {
-          "id": "smc-confluence-1",
-          "name": "HTF POI + BOS + FVG",
-          "ontology": "EXECUTION_MODEL",
-          "confidence": 0.61
-        },
-        {
-          "id": "reversal-scob",
-          "name": "Single Candle OB (SCOB)",
-          "ontology": "EXECUTION_MODEL",
-          "confidence": 0.62
-        }
-      ],
-      "rejected": [
         {
           "id": "reversal-turtle-soup",
           "name": "Turtle Soup",
           "ontology": "EXECUTION_MODEL",
-          "confidence": 0
+          "confidence": 0.54
         },
         {
-          "id": "smc-confluence-2",
-          "name": "HTF POI + BOS + IDM + FVG",
+          "id": "classical-09",
+          "name": "Model 9 — One Shot One Kill",
+          "ontology": "EXECUTION_MODEL",
+          "confidence": 0.57
+        }
+      ],
+      "rejected": [
+        {
+          "id": "temporal-silver-bullet-nypm",
+          "name": "Silver Bullet — New York PM",
           "ontology": "EXECUTION_MODEL",
           "confidence": 0
         },
         {
-          "id": "mmxm-mmsm",
-          "name": "Market Maker Sell Model (MMSM)",
+          "id": "framework-sharp-turn",
+          "name": "Sharp Turn (ST) Model",
+          "ontology": "EXECUTION_MODEL",
+          "confidence": 0
+        },
+        {
+          "id": "mmxm-mmbm",
+          "name": "Market Maker Buy Model (MMBM)",
           "ontology": "EXECUTION_MODEL",
           "confidence": 0
         }
@@ -105,9 +105,9 @@
     }
   },
   "modelCandidates": [
-    "framework-sharp-turn",
-    "smc-confluence-1",
-    "reversal-scob"
+    "classical-11",
+    "reversal-turtle-soup",
+    "classical-09"
   ],
   "requiredConcepts": [
     "inducement",
@@ -117,7 +117,7 @@
   "invalidConcepts": [],
   "evaluationRubric": {
     "category": "ambiguous",
-    "expectedPrimaryModel": "framework-sharp-turn",
+    "expectedPrimaryModel": "classical-11",
     "minScore": 40,
     "criticalErrors": [],
     "ambiguousContext": "Multiple inducement zones without clear hierarchy — which IDM is significant?",

@@ -2,17 +2,17 @@
   "scenarioId": "SMC-EVAL-000003",
   "version": "1.0",
   "market": "crypto",
-  "asset": "BNBUSDT",
+  "asset": "ETHUSDT",
   "timestamp": "2026-07-18T11:00:00Z",
-  "session": "NY_AM",
+  "session": "LONDON_OPEN",
   "timeframes": [
     "5m"
   ],
   "groundTruth": {
     "scenarioId": "SMC-EVAL-000003",
     "market": {
-      "asset": "BNBUSDT",
-      "session": "NY_AM",
+      "asset": "ETHUSDT",
+      "session": "LONDON_OPEN",
       "timestamp": "2026-07-18T11:00:00Z"
     },
     "structure": {
@@ -54,32 +54,32 @@
         "id": "smc-confluence-3",
         "name": "HTF POI + BOS + FVG + OTE",
         "ontology": "EXECUTION_MODEL",
-        "confidence": 0.86
+        "confidence": 0.76
       },
       "alternatives": [
         {
           "id": "smc-confluence-4",
           "name": "HTF POI + BOS + IDM + FVG + OTE",
           "ontology": "EXECUTION_MODEL",
-          "confidence": 0.64
+          "confidence": 0.69
         },
         {
-          "id": "classical-06",
-          "name": "Model 6 — Universal Buy Model",
+          "id": "classical-10",
+          "name": "Model 10 — Swing Stalking",
           "ontology": "EXECUTION_MODEL",
-          "confidence": 0.54
+          "confidence": 0.56
         }
       ],
       "rejected": [
         {
-          "id": "mmxm-mmsm",
-          "name": "Market Maker Sell Model (MMSM)",
+          "id": "smc-confluence-1",
+          "name": "HTF POI + BOS + FVG",
           "ontology": "EXECUTION_MODEL",
           "confidence": 0
         },
         {
-          "id": "framework-2fvg",
-          "name": "2 FVG Model",
+          "id": "smc-confluence-2",
+          "name": "HTF POI + BOS + IDM + FVG",
           "ontology": "EXECUTION_MODEL",
           "confidence": 0
         }
@@ -115,7 +115,7 @@
   "modelCandidates": [
     "smc-confluence-3",
     "smc-confluence-4",
-    "classical-06"
+    "classical-10"
   ],
   "requiredConcepts": [
     "fvg",

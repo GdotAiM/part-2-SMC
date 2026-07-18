@@ -2,17 +2,17 @@
   "scenarioId": "SMC-EVAL-000056",
   "version": "1.0",
   "market": "forex",
-  "asset": "USDCAD=X",
+  "asset": "USDJPY=X",
   "timestamp": "2026-07-23T14:00:00Z",
-  "session": "LONDON_OPEN",
+  "session": "NY_AM",
   "timeframes": [
     "5m"
   ],
   "groundTruth": {
     "scenarioId": "SMC-EVAL-000056",
     "market": {
-      "asset": "USDCAD=X",
-      "session": "LONDON_OPEN",
+      "asset": "USDJPY=X",
+      "session": "NY_AM",
       "timestamp": "2026-07-23T14:00:00Z"
     },
     "structure": {
@@ -55,26 +55,26 @@
         "id": "smc-confluence-4",
         "name": "HTF POI + BOS + IDM + FVG + OTE",
         "ontology": "EXECUTION_MODEL",
-        "confidence": 0.77
+        "confidence": 0.78
       },
       "alternatives": [
         {
           "id": "smc-confluence-3",
           "name": "HTF POI + BOS + FVG + OTE",
           "ontology": "EXECUTION_MODEL",
-          "confidence": 0.61
+          "confidence": 0.6
         }
       ],
       "rejected": [
         {
-          "id": "classical-06",
-          "name": "Model 6 — Universal Buy Model",
+          "id": "smc-confluence-1",
+          "name": "HTF POI + BOS + FVG",
           "ontology": "EXECUTION_MODEL",
           "confidence": 0
         },
         {
-          "id": "smc-confluence-5",
-          "name": "Five Box Setup",
+          "id": "smc-confluence-2",
+          "name": "HTF POI + BOS + IDM + FVG",
           "ontology": "EXECUTION_MODEL",
           "confidence": 0
         }

@@ -2,17 +2,17 @@
   "scenarioId": "SMC-EVAL-000014",
   "version": "1.0",
   "market": "forex",
-  "asset": "USDJPY=X",
+  "asset": "EURUSD=X",
   "timestamp": "2026-07-19T12:00:00Z",
-  "session": "NY_PM",
+  "session": "LONDON_OPEN",
   "timeframes": [
     "1h"
   ],
   "groundTruth": {
     "scenarioId": "SMC-EVAL-000014",
     "market": {
-      "asset": "USDJPY=X",
-      "session": "NY_PM",
+      "asset": "EURUSD=X",
+      "session": "LONDON_OPEN",
       "timestamp": "2026-07-19T12:00:00Z"
     },
     "structure": {
@@ -49,32 +49,32 @@
         "id": "classical-09",
         "name": "Model 9 — One Shot One Kill",
         "ontology": "EXECUTION_MODEL",
-        "confidence": 0.78
+        "confidence": 0.9
       },
       "alternatives": [
         {
-          "id": "classical-11",
-          "name": "Model 11 — Daily Range Scalping",
+          "id": "framework-sharp-turn",
+          "name": "Sharp Turn (ST) Model",
           "ontology": "EXECUTION_MODEL",
-          "confidence": 0.53
+          "confidence": 0.54
         },
         {
-          "id": "classical-06",
-          "name": "Model 6 — Universal Buy Model",
+          "id": "smc-confluence-1",
+          "name": "HTF POI + BOS + FVG",
           "ontology": "EXECUTION_MODEL",
-          "confidence": 0.52
+          "confidence": 0.7
         }
       ],
       "rejected": [
         {
-          "id": "smc-confluence-2",
-          "name": "HTF POI + BOS + IDM + FVG",
+          "id": "smc-confluence-5",
+          "name": "Five Box Setup",
           "ontology": "EXECUTION_MODEL",
           "confidence": 0
         },
         {
-          "id": "classical-07",
-          "name": "Model 7 — Universal Sell Model",
+          "id": "temporal-silver-bullet-london",
+          "name": "Silver Bullet — London Open",
           "ontology": "EXECUTION_MODEL",
           "confidence": 0
         }
@@ -109,8 +109,8 @@
   },
   "modelCandidates": [
     "classical-09",
-    "classical-11",
-    "classical-06"
+    "framework-sharp-turn",
+    "smc-confluence-1"
   ],
   "requiredConcepts": [
     "liquidity",

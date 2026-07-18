@@ -4,7 +4,7 @@
   "market": "crypto",
   "asset": "BTCUSDT",
   "timestamp": "2026-07-18T17:00:00Z",
-  "session": "NY_AM",
+  "session": "LONDON_OPEN",
   "timeframes": [
     "15m"
   ],
@@ -12,7 +12,7 @@
     "scenarioId": "SMC-EVAL-000009",
     "market": {
       "asset": "BTCUSDT",
-      "session": "NY_AM",
+      "session": "LONDON_OPEN",
       "timestamp": "2026-07-18T17:00:00Z"
     },
     "structure": {
@@ -53,26 +53,26 @@
         "id": "temporal-power-of-three",
         "name": "Power of Three (PO3)",
         "ontology": "EXECUTION_MODEL",
-        "confidence": 0.83
+        "confidence": 0.75
       },
       "alternatives": [
         {
-          "id": "framework-sharp-turn",
-          "name": "Sharp Turn (ST) Model",
+          "id": "smc-confluence-4",
+          "name": "HTF POI + BOS + IDM + FVG + OTE",
           "ontology": "EXECUTION_MODEL",
-          "confidence": 0.58
+          "confidence": 0.64
         },
         {
-          "id": "reversal-unicorn",
-          "name": "Unicorn Model",
+          "id": "smc-confluence-3",
+          "name": "HTF POI + BOS + FVG + OTE",
           "ontology": "EXECUTION_MODEL",
-          "confidence": 0.55
+          "confidence": 0.66
         }
       ],
       "rejected": [
         {
-          "id": "smc-confluence-1",
-          "name": "HTF POI + BOS + FVG",
+          "id": "classical-06",
+          "name": "Model 6 — Universal Buy Model",
           "ontology": "EXECUTION_MODEL",
           "confidence": 0
         },
@@ -113,8 +113,8 @@
   },
   "modelCandidates": [
     "temporal-power-of-three",
-    "framework-sharp-turn",
-    "reversal-unicorn"
+    "smc-confluence-4",
+    "smc-confluence-3"
   ],
   "requiredConcepts": [
     "bos",

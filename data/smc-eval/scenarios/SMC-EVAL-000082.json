@@ -2,17 +2,17 @@
   "scenarioId": "SMC-EVAL-000082",
   "version": "1.0",
   "market": "crypto",
-  "asset": "ETHUSDT",
+  "asset": "BNBUSDT",
   "timestamp": "2026-07-26T10:00:00Z",
-  "session": "ASIAN",
+  "session": "NY_AM",
   "timeframes": [
     "15m"
   ],
   "groundTruth": {
     "scenarioId": "SMC-EVAL-000082",
     "market": {
-      "asset": "ETHUSDT",
-      "session": "ASIAN",
+      "asset": "BNBUSDT",
+      "session": "NY_AM",
       "timestamp": "2026-07-26T10:00:00Z"
     },
     "structure": {
@@ -44,41 +44,41 @@
     ],
     "models": {
       "primary": {
-        "id": "classical-07",
-        "name": "Model 7 — Universal Sell Model",
+        "id": "smc-confluence-1",
+        "name": "HTF POI + BOS + FVG",
         "ontology": "EXECUTION_MODEL",
-        "confidence": 0.91
+        "confidence": 0.94
       },
       "alternatives": [
         {
-          "id": "classical-06",
-          "name": "Model 6 — Universal Buy Model",
+          "id": "classical-07",
+          "name": "Model 7 — Universal Sell Model",
           "ontology": "EXECUTION_MODEL",
-          "confidence": 0.69
+          "confidence": 0.51
         },
         {
-          "id": "classical-10",
-          "name": "Model 10 — Swing Stalking",
+          "id": "reversal-scob",
+          "name": "Single Candle OB (SCOB)",
           "ontology": "EXECUTION_MODEL",
-          "confidence": 0.69
+          "confidence": 0.7
         }
       ],
       "rejected": [
         {
-          "id": "smc-confluence-1",
-          "name": "HTF POI + BOS + FVG",
+          "id": "classical-11",
+          "name": "Model 11 — Daily Range Scalping",
           "ontology": "EXECUTION_MODEL",
           "confidence": 0
         },
         {
-          "id": "smc-confluence-5",
-          "name": "Five Box Setup",
+          "id": "classical-06",
+          "name": "Model 6 — Universal Buy Model",
           "ontology": "EXECUTION_MODEL",
           "confidence": 0
         },
         {
-          "id": "framework-2fvg",
-          "name": "2 FVG Model",
+          "id": "mmxm-mmsm",
+          "name": "Market Maker Sell Model (MMSM)",
           "ontology": "EXECUTION_MODEL",
           "confidence": 0
         }
@@ -104,9 +104,9 @@
     }
   },
   "modelCandidates": [
+    "smc-confluence-1",
     "classical-07",
-    "classical-06",
-    "classical-10"
+    "reversal-scob"
   ],
   "requiredConcepts": [
     "fvg",
@@ -115,7 +115,7 @@
   "invalidConcepts": [],
   "evaluationRubric": {
     "category": "ambiguous",
-    "expectedPrimaryModel": "classical-07",
+    "expectedPrimaryModel": "smc-confluence-1",
     "minScore": 40,
     "criticalErrors": [],
     "ambiguousContext": "Partial FVG formed but barely touched — not clearly filled nor rejected",

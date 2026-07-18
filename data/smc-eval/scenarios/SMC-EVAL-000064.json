@@ -2,17 +2,17 @@
   "scenarioId": "SMC-EVAL-000064",
   "version": "1.0",
   "market": "crypto",
-  "asset": "SOLUSDT",
+  "asset": "ETHUSDT",
   "timestamp": "2026-07-24T12:00:00Z",
-  "session": "LATE",
+  "session": "NY_AM",
   "timeframes": [
     "15m"
   ],
   "groundTruth": {
     "scenarioId": "SMC-EVAL-000064",
     "market": {
-      "asset": "SOLUSDT",
-      "session": "LATE",
+      "asset": "ETHUSDT",
+      "session": "NY_AM",
       "timestamp": "2026-07-24T12:00:00Z"
     },
     "structure": {
@@ -49,26 +49,26 @@
         "id": "smc-confluence-5",
         "name": "Five Box Setup",
         "ontology": "EXECUTION_MODEL",
-        "confidence": 0.88
+        "confidence": 0.75
       },
       "alternatives": [
         {
           "id": "smc-confluence-1",
           "name": "HTF POI + BOS + FVG",
           "ontology": "EXECUTION_MODEL",
-          "confidence": 0.64
+          "confidence": 0.6
         }
       ],
       "rejected": [
         {
-          "id": "temporal-silver-bullet-london",
-          "name": "Silver Bullet — London Open",
+          "id": "framework-2fvg",
+          "name": "2 FVG Model",
           "ontology": "EXECUTION_MODEL",
           "confidence": 0
         },
         {
-          "id": "classical-05",
-          "name": "Model 5 — Advanced Session Setup",
+          "id": "reversal-unicorn",
+          "name": "Unicorn Model",
           "ontology": "EXECUTION_MODEL",
           "confidence": 0
         }

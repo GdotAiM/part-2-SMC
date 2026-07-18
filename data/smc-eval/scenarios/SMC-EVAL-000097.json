@@ -2,17 +2,17 @@
   "scenarioId": "SMC-EVAL-000097",
   "version": "1.0",
   "market": "forex",
-  "asset": "USDJPY=X",
+  "asset": "EURUSD=X",
   "timestamp": "2026-07-27T15:00:00Z",
-  "session": "NY_AM",
+  "session": "ASIAN",
   "timeframes": [
     "15m"
   ],
   "groundTruth": {
     "scenarioId": "SMC-EVAL-000097",
     "market": {
-      "asset": "USDJPY=X",
-      "session": "NY_AM",
+      "asset": "EURUSD=X",
+      "session": "ASIAN",
       "timestamp": "2026-07-27T15:00:00Z"
     },
     "structure": {
@@ -45,26 +45,32 @@
     ],
     "models": {
       "primary": {
-        "id": "reversal-turtle-soup",
-        "name": "Turtle Soup",
+        "id": "classical-05",
+        "name": "Model 5 — Advanced Session Setup",
         "ontology": "EXECUTION_MODEL",
-        "confidence": 0.91
+        "confidence": 0.84
       },
       "alternatives": [
         {
-          "id": "classical-06",
-          "name": "Model 6 — Universal Buy Model",
+          "id": "smc-confluence-1",
+          "name": "HTF POI + BOS + FVG",
           "ontology": "EXECUTION_MODEL",
-          "confidence": 0.6
+          "confidence": 0.63
         },
         {
-          "id": "framework-2fvg",
-          "name": "2 FVG Model",
+          "id": "smc-confluence-5",
+          "name": "Five Box Setup",
           "ontology": "EXECUTION_MODEL",
-          "confidence": 0.5
+          "confidence": 0.57
         }
       ],
       "rejected": [
+        {
+          "id": "mmxm-mmbm",
+          "name": "Market Maker Buy Model (MMBM)",
+          "ontology": "EXECUTION_MODEL",
+          "confidence": 0
+        },
         {
           "id": "classical-09",
           "name": "Model 9 — One Shot One Kill",
@@ -72,14 +78,8 @@
           "confidence": 0
         },
         {
-          "id": "classical-05",
-          "name": "Model 5 — Advanced Session Setup",
-          "ontology": "EXECUTION_MODEL",
-          "confidence": 0
-        },
-        {
-          "id": "temporal-judas-swing",
-          "name": "Judas Swing",
+          "id": "temporal-silver-bullet-london",
+          "name": "Silver Bullet — London Open",
           "ontology": "EXECUTION_MODEL",
           "confidence": 0
         }
@@ -105,9 +105,9 @@
     }
   },
   "modelCandidates": [
-    "reversal-turtle-soup",
-    "classical-06",
-    "framework-2fvg"
+    "classical-05",
+    "smc-confluence-1",
+    "smc-confluence-5"
   ],
   "requiredConcepts": [
     "liquidity",
@@ -117,7 +117,7 @@
   "invalidConcepts": [],
   "evaluationRubric": {
     "category": "ambiguous",
-    "expectedPrimaryModel": "reversal-turtle-soup",
+    "expectedPrimaryModel": "classical-05",
     "minScore": 40,
     "criticalErrors": [],
     "ambiguousContext": "Weekly open near Friday's close — gap context makes direction uncertain",

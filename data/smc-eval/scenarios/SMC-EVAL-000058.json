@@ -2,17 +2,17 @@
   "scenarioId": "SMC-EVAL-000058",
   "version": "1.0",
   "market": "forex",
-  "asset": "EURUSD=X",
+  "asset": "USDCAD=X",
   "timestamp": "2026-07-23T16:00:00Z",
-  "session": "ASIAN",
+  "session": "NY_PM",
   "timeframes": [
     "5m"
   ],
   "groundTruth": {
     "scenarioId": "SMC-EVAL-000058",
     "market": {
-      "asset": "EURUSD=X",
-      "session": "ASIAN",
+      "asset": "USDCAD=X",
+      "session": "NY_PM",
       "timestamp": "2026-07-23T16:00:00Z"
     },
     "structure": {
@@ -55,26 +55,26 @@
         "id": "reversal-turtle-soup",
         "name": "Turtle Soup",
         "ontology": "EXECUTION_MODEL",
-        "confidence": 0.77
+        "confidence": 0.89
       },
       "alternatives": [
         {
           "id": "reversal-unicorn",
           "name": "Unicorn Model",
           "ontology": "EXECUTION_MODEL",
-          "confidence": 0.68
+          "confidence": 0.64
         }
       ],
       "rejected": [
         {
-          "id": "classical-05",
-          "name": "Model 5 — Advanced Session Setup",
+          "id": "classical-07",
+          "name": "Model 7 — Universal Sell Model",
           "ontology": "EXECUTION_MODEL",
           "confidence": 0
         },
         {
-          "id": "classical-07",
-          "name": "Model 7 — Universal Sell Model",
+          "id": "framework-sharp-turn",
+          "name": "Sharp Turn (ST) Model",
           "ontology": "EXECUTION_MODEL",
           "confidence": 0
         }

@@ -2,17 +2,17 @@
   "scenarioId": "SMC-EVAL-000079",
   "version": "1.0",
   "market": "forex",
-  "asset": "USDCAD=X",
+  "asset": "AUDUSD=X",
   "timestamp": "2026-07-25T17:00:00Z",
-  "session": "NY_AM",
+  "session": "LATE",
   "timeframes": [
     "15m"
   ],
   "groundTruth": {
     "scenarioId": "SMC-EVAL-000079",
     "market": {
-      "asset": "USDCAD=X",
-      "session": "NY_AM",
+      "asset": "AUDUSD=X",
+      "session": "LATE",
       "timestamp": "2026-07-25T17:00:00Z"
     },
     "structure": {
@@ -49,14 +49,14 @@
         "id": "temporal-power-of-three",
         "name": "Power of Three (PO3)",
         "ontology": "EXECUTION_MODEL",
-        "confidence": 0.94
+        "confidence": 0.8
       },
       "alternatives": [
         {
           "id": "temporal-silver-bullet-nyam",
           "name": "Silver Bullet — New York AM",
           "ontology": "EXECUTION_MODEL",
-          "confidence": 0.64
+          "confidence": 0.62
         }
       ],
       "rejected": [
@@ -67,8 +67,8 @@
           "confidence": 0
         },
         {
-          "id": "framework-2fvg",
-          "name": "2 FVG Model",
+          "id": "smc-confluence-4",
+          "name": "HTF POI + BOS + IDM + FVG + OTE",
           "ontology": "EXECUTION_MODEL",
           "confidence": 0
         }

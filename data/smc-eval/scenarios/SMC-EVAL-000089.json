@@ -2,7 +2,7 @@
   "scenarioId": "SMC-EVAL-000089",
   "version": "1.0",
   "market": "crypto",
-  "asset": "ETHUSDT",
+  "asset": "SOLUSDT",
   "timestamp": "2026-07-26T17:00:00Z",
   "session": "ASIAN",
   "timeframes": [
@@ -11,7 +11,7 @@
   "groundTruth": {
     "scenarioId": "SMC-EVAL-000089",
     "market": {
-      "asset": "ETHUSDT",
+      "asset": "SOLUSDT",
       "session": "ASIAN",
       "timestamp": "2026-07-26T17:00:00Z"
     },
@@ -44,41 +44,41 @@
     ],
     "models": {
       "primary": {
-        "id": "reversal-unicorn",
-        "name": "Unicorn Model",
+        "id": "classical-11",
+        "name": "Model 11 — Daily Range Scalping",
         "ontology": "EXECUTION_MODEL",
-        "confidence": 0.91
+        "confidence": 0.88
       },
       "alternatives": [
         {
-          "id": "framework-sharp-turn",
-          "name": "Sharp Turn (ST) Model",
+          "id": "classical-06",
+          "name": "Model 6 — Universal Buy Model",
           "ontology": "EXECUTION_MODEL",
-          "confidence": 0.59
+          "confidence": 0.57
         },
         {
-          "id": "classical-07",
-          "name": "Model 7 — Universal Sell Model",
+          "id": "smc-confluence-4",
+          "name": "HTF POI + BOS + IDM + FVG + OTE",
           "ontology": "EXECUTION_MODEL",
-          "confidence": 0.62
+          "confidence": 0.7
         }
       ],
       "rejected": [
         {
-          "id": "smc-confluence-1",
-          "name": "HTF POI + BOS + FVG",
+          "id": "classical-07",
+          "name": "Model 7 — Universal Sell Model",
           "ontology": "EXECUTION_MODEL",
           "confidence": 0
         },
         {
-          "id": "smc-confluence-2",
-          "name": "HTF POI + BOS + IDM + FVG",
+          "id": "temporal-silver-bullet-nypm",
+          "name": "Silver Bullet — New York PM",
           "ontology": "EXECUTION_MODEL",
           "confidence": 0
         },
         {
-          "id": "classical-09",
-          "name": "Model 9 — One Shot One Kill",
+          "id": "smc-confluence-3",
+          "name": "HTF POI + BOS + FVG + OTE",
           "ontology": "EXECUTION_MODEL",
           "confidence": 0
         }
@@ -104,9 +104,9 @@
     }
   },
   "modelCandidates": [
-    "reversal-unicorn",
-    "framework-sharp-turn",
-    "classical-07"
+    "classical-11",
+    "classical-06",
+    "smc-confluence-4"
   ],
   "requiredConcepts": [
     "bos",
@@ -115,7 +115,7 @@
   "invalidConcepts": [],
   "evaluationRubric": {
     "category": "ambiguous",
-    "expectedPrimaryModel": "reversal-unicorn",
+    "expectedPrimaryModel": "classical-11",
     "minScore": 40,
     "criticalErrors": [],
     "ambiguousContext": "CHoCH on 1m but 4h trend unchanged — conflicting timeframe signals",

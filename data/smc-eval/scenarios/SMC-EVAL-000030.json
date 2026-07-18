@@ -2,17 +2,17 @@
   "scenarioId": "SMC-EVAL-000030",
   "version": "1.0",
   "market": "crypto",
-  "asset": "SOLUSDT",
+  "asset": "XRPUSDT",
   "timestamp": "2026-07-21T08:00:00Z",
-  "session": "LONDON_OPEN",
+  "session": "NY_AM",
   "timeframes": [
     "5m"
   ],
   "groundTruth": {
     "scenarioId": "SMC-EVAL-000030",
     "market": {
-      "asset": "SOLUSDT",
-      "session": "LONDON_OPEN",
+      "asset": "XRPUSDT",
+      "session": "NY_AM",
       "timestamp": "2026-07-21T08:00:00Z"
     },
     "structure": {
@@ -31,7 +31,6 @@
       ]
     },
     "liquidity": {
-      "swept": "buy_side",
       "remaining": [
         {
           "type": "SSL",
@@ -48,7 +47,7 @@
         "id": "smc-confluence-5",
         "name": "Five Box Setup",
         "ontology": "EXECUTION_MODEL",
-        "confidence": 0.83
+        "confidence": 0.87
       },
       "alternatives": [
         {
@@ -60,14 +59,14 @@
       ],
       "rejected": [
         {
-          "id": "smc-confluence-2",
-          "name": "HTF POI + BOS + IDM + FVG",
+          "id": "reversal-turtle-soup",
+          "name": "Turtle Soup",
           "ontology": "EXECUTION_MODEL",
           "confidence": 0
         },
         {
-          "id": "reversal-turtle-soup",
-          "name": "Turtle Soup",
+          "id": "temporal-power-of-three",
+          "name": "Power of Three (PO3)",
           "ontology": "EXECUTION_MODEL",
           "confidence": 0
         }
@@ -96,7 +95,7 @@
     "mss"
   ],
   "invalidConcepts": [
-    "induced"
+    "smt"
   ],
   "evaluationRubric": {
     "category": "false-positive",

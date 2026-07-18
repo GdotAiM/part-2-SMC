@@ -2,17 +2,17 @@
   "scenarioId": "SMC-EVAL-000038",
   "version": "1.0",
   "market": "forex",
-  "asset": "USDCAD=X",
+  "asset": "GBPUSD=X",
   "timestamp": "2026-07-21T16:00:00Z",
-  "session": "NY_AM",
+  "session": "LONDON_OPEN",
   "timeframes": [
     "5m"
   ],
   "groundTruth": {
     "scenarioId": "SMC-EVAL-000038",
     "market": {
-      "asset": "USDCAD=X",
-      "session": "NY_AM",
+      "asset": "GBPUSD=X",
+      "session": "LONDON_OPEN",
       "timestamp": "2026-07-21T16:00:00Z"
     },
     "structure": {
@@ -26,7 +26,6 @@
       ]
     },
     "liquidity": {
-      "swept": "buy_side",
       "remaining": []
     },
     "concepts": [
@@ -37,26 +36,26 @@
         "id": "temporal-power-of-three",
         "name": "Power of Three (PO3)",
         "ontology": "EXECUTION_MODEL",
-        "confidence": 0.83
+        "confidence": 0.93
       },
       "alternatives": [
         {
-          "id": "reversal-unicorn",
-          "name": "Unicorn Model",
+          "id": "smc-confluence-5",
+          "name": "Five Box Setup",
           "ontology": "EXECUTION_MODEL",
-          "confidence": 0.51
+          "confidence": 0.55
         }
       ],
       "rejected": [
         {
-          "id": "reversal-scob",
-          "name": "Single Candle OB (SCOB)",
+          "id": "smc-confluence-3",
+          "name": "HTF POI + BOS + FVG + OTE",
           "ontology": "EXECUTION_MODEL",
           "confidence": 0
         },
         {
-          "id": "smc-confluence-1",
-          "name": "HTF POI + BOS + FVG",
+          "id": "framework-sharp-turn",
+          "name": "Sharp Turn (ST) Model",
           "ontology": "EXECUTION_MODEL",
           "confidence": 0
         }
@@ -78,13 +77,13 @@
   },
   "modelCandidates": [
     "temporal-power-of-three",
-    "reversal-unicorn"
+    "smc-confluence-5"
   ],
   "requiredConcepts": [
     "mss"
   ],
   "invalidConcepts": [
-    "breaker"
+    "induced"
   ],
   "evaluationRubric": {
     "category": "false-positive",

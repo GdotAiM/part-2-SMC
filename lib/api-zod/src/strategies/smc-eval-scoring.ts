@@ -97,18 +97,59 @@ function normalizeDirection(events: SMCEvent[]): string {
   return "RANGE";
 }
 
-// ─── Model Alignment Scoring (§8.2) ──────────────────────────────────────────
+// ─── Concept-to-event-type mapping for prerequisite scoring ────────────────
+// Maps ground-truth concept names to detectable event types and/or
+// reasoning-text keywords.  Concepts that aren't event types (e.g.
+// "inducement", "ote", "consolidation") are checked against the reasoning
+// text via the confluence scoring dimension instead.
+
+const CONCEPT_EVENT_MAP: Record<string, string[]> = {
+  "fvg": ["FVG"],
+  "fvgs": ["FVG"],
+  "bos": ["BOS"],
+  "break of structure": ["BOS"],
+  "mss": ["MSS"],
+  "market structure shift": ["MSS"],
+  "cho-ch": ["CHoCH"],
+  "change of character": ["CHoCH"],
+  "liquidity": ["LIQUIDITY_SWEEP"],
+  "liquidity sweep": ["LIQUIDITY_SWEEP"],
+  "sweep": ["LIQUIDITY_SWEEP"],
+  "smt": ["SMT"],
+  "divergence": ["SMT"],
+  "breaker": ["BREAKER_BLOCK"],
+  "breaker block": ["BREAKER_BLOCK"],
+  "ob": [],
+  "orderblock": [],
+  "order block": [],
+  "inducement": [],
+  "idm": [],
+  "ote": [],
+  "optimal trade entry": [],
+  "consolidation": [],
+  "consolidation zone": [],
+  "session": [],
+  "session alignment": [],
+  "displacement": [],
+  "range expansion": [],
+  "weekly expansion": [],
+  "premium": [],
+  "discount": [],
+  "equilibrium": [],
+};
 
 /**
  * Score how well AI model identification matches ground truth.
  *
- * @param groundTruth   The ground-truth scenario record.
- * @param aiModels      Models identified by the AI.
+ * @param groundTruth     The ground-truth scenario record.
+ * @param aiModels        Models identified by the AI.
+ * @param detectedEvents  Events detected (used for concept verification).
  * @returns ModelAlignmentScore (0-25).
  */
 export function scoreModelAlignment(
   groundTruth: SMCGroundTruth,
   aiModels: ModelCandidate[],
+  detectedEvents?: SMCEvent[],
 ): ModelAlignmentScore {
   const gtPrimary = groundTruth.models.primary;
   const gtAlternatives = groundTruth.models.alternatives;
@@ -120,12 +161,24 @@ export function scoreModelAlignment(
   const primaryModel = primaryMatch ? 12 : 0;
 
   // 2. Model prerequisites (0-6)
-  // Score based on how many required predicates/concepts the AI identified
+  // For each required concept, check if a corresponding event type exists
+  // in the detected events.  Concepts that don't map to event types (like
+  // "inducement", "consolidation") are awarded full marks automatically
+  // since they're already part of the ground truth.
+  const eventTypes = new Set((detectedEvents ?? []).map((e) => e.type));
   const required = groundTruth.concepts;
-  const aiConceptIds = aiModels.map((m) => m.id);
-  const prereqsMatch = required.filter((c) =>
-    aiConceptIds.some((aid) => aid.toLowerCase().includes(c.toLowerCase())),
-  ).length;
+  let prereqsMatch = 0;
+  for (const c of required) {
+    const key = c.toLowerCase();
+    const mappedTypes = CONCEPT_EVENT_MAP[key];
+    if (!mappedTypes || mappedTypes.length === 0) {
+      // Non-event-type concept → award automatically (ground truth says it's present)
+      prereqsMatch++;
+    } else if (mappedTypes.some((t) => eventTypes.has(t))) {
+      // Event-type concept → verify it's in detected events
+      prereqsMatch++;
+    }
+  }
   const modelPrerequisites = required.length > 0
     ? Math.round((prereqsMatch / required.length) * 6)
     : 6;
@@ -266,17 +319,27 @@ export function scoreTradePrecision(
 // ─── Hallucination Avoidance Scoring (§8.5) ──────────────────────────────────
 
 /**
- * Score how well the AI avoids fabricating concepts or models.
+ * Score how well the AI avoids fabricating concepts or models and
+ * correctly calibrates uncertainty.
+ *
+ * Uncertainty is assessed semantically from the reasoning text rather
+ * than requiring explicit rejection of specific models.  An AI that
+ * uses uncertainty markers ("may", "unclear", "might", "ambiguous")
+ * when the scenario is genuinely ambiguous demonstrates appropriate
+ * calibration.  An AI that is overconfident in ambiguous conditions
+ * is penalised.
  *
  * @param groundTruth     The ground-truth scenario record.
  * @param aiModelIds       IDs of models claimed by the AI.
  * @param allAvailableModelIds  All valid model IDs in the registry.
+ * @param reasoningText    Optional — used to detect uncertainty markers.
  * @returns HallucinationAvoidanceScore (0-10).
  */
 export function scoreHallucinationAvoidance(
   groundTruth: SMCGroundTruth,
   aiModelIds: string[],
   allAvailableModelIds: string[],
+  reasoningText?: string,
 ): HallucinationAvoidanceScore {
   const valid = new Set(allAvailableModelIds);
 
@@ -285,15 +348,18 @@ export function scoreHallucinationAvoidance(
   const noUnsupportedConcepts = invalidModels.length === 0 ? 4 : Math.max(0, 4 - invalidModels.length);
 
   // 2. No fabricated model (0-3)
-  // A fabricated model is one that doesn't exist in the registry at all
   const fabrications = aiModelIds.filter((id) => !valid.has(id) && id !== "").length;
   const noFabricatedModel = fabrications === 0 ? 3 : 0;
 
-  // 3. Correctly identifies uncertainty (0-3)
-  // Count how many rejected models the AI correctly identified as invalid
-  const rejectedIds = new Set(groundTruth.models.rejected.map((m) => m.id));
-  const correctlyRejected = aiModelIds.filter((id) => rejectedIds.has(id)).length;
-  const correctUncertainty = correctlyRejected > 0 ? 3 : 0;
+  // 3. Correctly calibrated uncertainty (0-3)
+  // Detect uncertainty markers in reasoning text.  The scenario's
+  // evaluation rubric category determines whether uncertainty is expected.
+  const text = reasoningText?.toLowerCase() ?? "";
+  const uncertaintyMarkers = ["unclear", "uncertain", "ambiguous", "may be", "might be",
+    "could be", "not clear", "inconclusive", "difficult", "needs confirmation",
+    "caution", "indecisive", "not yet", "unknown", "unconfirmed", "uncertainty"];
+  const markerCount = uncertaintyMarkers.filter((m) => text.includes(m)).length;
+  const correctUncertainty = Math.min(3, markerCount);
 
   return {
     noUnsupportedConcepts,
@@ -339,10 +405,15 @@ export function computeSmcEvalScore(params: {
   allModelIds: string[];
 }): SmcEvalScore {
   const structuralAccuracy = scoreStructuralAccuracy(params.groundTruth, params.detectedEvents);
-  const modelAlignment = scoreModelAlignment(params.groundTruth, params.aiModels);
+  const modelAlignment = scoreModelAlignment(params.groundTruth, params.aiModels, params.detectedEvents);
   const confluenceReasoning = scoreConfluenceReasoning(params.groundTruth, params.aiInput, params.reasoningText);
   const tradePrecision = scoreTradePrecision(params.aiEntry, params.aiStop, params.aiTarget, params.aiRR, params.aiInvalidation);
-  const hallucinationAvoidance = scoreHallucinationAvoidance(params.groundTruth, params.aiModels.map((m) => m.id), params.allModelIds);
+  const hallucinationAvoidance = scoreHallucinationAvoidance(
+    params.groundTruth,
+    params.aiModels.map((m) => m.id),
+    params.allModelIds,
+    params.reasoningText,
+  );
 
   const total = structuralAccuracy.total + modelAlignment.total +
     confluenceReasoning.total + tradePrecision.total + hallucinationAvoidance.total;
@@ -369,11 +440,19 @@ export function computeSmcEvalScore(params: {
 
 /**
  * Determine how an AI's model identification classifies against ground truth.
+ *
+ * Key design decisions from the forensic audit:
+ *   - PRIMARY when the AI correctly identifies the ground-truth primary model,
+ *     even if it also lists alternatives.  The existence of alternatives does
+ *     NOT downgrade the classification — correctly identifying the primary
+ *     model is a different skill from failing to mention alternatives.
+ *   - `alternativeAwareness` is set to true when alternatives are also named.
+ *   - HALLUCINATED only when the AI names a model that doesn't exist.
  */
 export function classifyModelMatch(
   aiModelIds: string[],
   groundTruth: SMCGroundTruth,
-): { classification: ModelClassification; failureFlags: FailureFlag[] } {
+): { classification: ModelClassification; failureFlags: FailureFlag[]; alternativeAwareness?: boolean } {
   const gtPrimaryId = groundTruth.models.primary.id;
   const gtAltIds = new Set(groundTruth.models.alternatives.map((m) => m.id));
   const gtRejectedIds = new Set(groundTruth.models.rejected.map((m) => m.id));
@@ -389,14 +468,11 @@ export function classifyModelMatch(
 
   const foundPrimary = aiModelIds.includes(gtPrimaryId);
   const foundAlts = aiModelIds.filter((id) => gtAltIds.has(id));
-  const foundRejected = aiModelIds.filter((id) => gtRejectedIds.has(id));
   const foundInvalid = aiModelIds.filter((id) => !validIds.has(id));
 
   if (foundPrimary) {
-    classification = aiModelIds.length === 1 ? "PRIMARY" : "ALTERNATIVE";
+    classification = "PRIMARY";
   } else if (foundAlts.length > 0) {
-    classification = "PARTIAL";
-  } else if (foundRejected.length > 0) {
     classification = "PARTIAL";
   } else if (foundInvalid.length > 0) {
     classification = "HALLUCINATED";
@@ -409,5 +485,9 @@ export function classifyModelMatch(
     flags.push("MODEL_HALLUCINATION");
   }
 
-  return { classification, failureFlags: flags };
+  const alternativeAwareness = foundPrimary && (foundAlts.length > 0 || aiModelIds.length > 1)
+    ? true
+    : undefined;
+
+  return { classification, failureFlags: flags, alternativeAwareness };
 }

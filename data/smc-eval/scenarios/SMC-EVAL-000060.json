@@ -2,17 +2,17 @@
   "scenarioId": "SMC-EVAL-000060",
   "version": "1.0",
   "market": "forex",
-  "asset": "USDJPY=X",
+  "asset": "AUDUSD=X",
   "timestamp": "2026-07-24T08:00:00Z",
-  "session": "NY_PM",
+  "session": "LONDON_OPEN",
   "timeframes": [
     "5m"
   ],
   "groundTruth": {
     "scenarioId": "SMC-EVAL-000060",
     "market": {
-      "asset": "USDJPY=X",
-      "session": "NY_PM",
+      "asset": "AUDUSD=X",
+      "session": "LONDON_OPEN",
       "timestamp": "2026-07-24T08:00:00Z"
     },
     "structure": {
@@ -55,26 +55,26 @@
         "id": "temporal-power-of-three",
         "name": "Power of Three (PO3)",
         "ontology": "EXECUTION_MODEL",
-        "confidence": 0.82
+        "confidence": 0.76
       },
       "alternatives": [
         {
           "id": "smc-confluence-5",
           "name": "Five Box Setup",
           "ontology": "EXECUTION_MODEL",
-          "confidence": 0.52
+          "confidence": 0.67
         }
       ],
       "rejected": [
         {
-          "id": "classical-05",
-          "name": "Model 5 — Advanced Session Setup",
+          "id": "framework-2fvg",
+          "name": "2 FVG Model",
           "ontology": "EXECUTION_MODEL",
           "confidence": 0
         },
         {
-          "id": "smc-confluence-4",
-          "name": "HTF POI + BOS + IDM + FVG + OTE",
+          "id": "classical-06",
+          "name": "Model 6 — Universal Buy Model",
           "ontology": "EXECUTION_MODEL",
           "confidence": 0
         }

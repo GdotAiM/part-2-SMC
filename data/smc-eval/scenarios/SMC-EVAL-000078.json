@@ -2,7 +2,7 @@
   "scenarioId": "SMC-EVAL-000078",
   "version": "1.0",
   "market": "forex",
-  "asset": "AUDUSD=X",
+  "asset": "USDCAD=X",
   "timestamp": "2026-07-25T16:00:00Z",
   "session": "LONDON_OPEN",
   "timeframes": [
@@ -11,7 +11,7 @@
   "groundTruth": {
     "scenarioId": "SMC-EVAL-000078",
     "market": {
-      "asset": "AUDUSD=X",
+      "asset": "USDCAD=X",
       "session": "LONDON_OPEN",
       "timestamp": "2026-07-25T16:00:00Z"
     },
@@ -49,26 +49,26 @@
         "id": "smc-confluence-5",
         "name": "Five Box Setup",
         "ontology": "EXECUTION_MODEL",
-        "confidence": 0.76
+        "confidence": 0.86
       },
       "alternatives": [
         {
           "id": "smc-confluence-2",
           "name": "HTF POI + BOS + IDM + FVG",
           "ontology": "EXECUTION_MODEL",
-          "confidence": 0.63
+          "confidence": 0.51
         }
       ],
       "rejected": [
         {
-          "id": "temporal-judas-swing",
-          "name": "Judas Swing",
+          "id": "classical-05",
+          "name": "Model 5 — Advanced Session Setup",
           "ontology": "EXECUTION_MODEL",
           "confidence": 0
         },
         {
-          "id": "mmxm-mmbm",
-          "name": "Market Maker Buy Model (MMBM)",
+          "id": "temporal-silver-bullet-london",
+          "name": "Silver Bullet — London Open",
           "ontology": "EXECUTION_MODEL",
           "confidence": 0
         }

@@ -2,17 +2,17 @@
   "scenarioId": "SMC-EVAL-000006",
   "version": "1.0",
   "market": "crypto",
-  "asset": "ETHUSDT",
+  "asset": "SOLUSDT",
   "timestamp": "2026-07-18T14:00:00Z",
-  "session": "NY_PM",
+  "session": "NY_AM",
   "timeframes": [
     "5m"
   ],
   "groundTruth": {
     "scenarioId": "SMC-EVAL-000006",
     "market": {
-      "asset": "ETHUSDT",
-      "session": "NY_PM",
+      "asset": "SOLUSDT",
+      "session": "NY_AM",
       "timestamp": "2026-07-18T14:00:00Z"
     },
     "structure": {
@@ -59,28 +59,28 @@
       },
       "alternatives": [
         {
-          "id": "reversal-unicorn",
-          "name": "Unicorn Model",
+          "id": "classical-05",
+          "name": "Model 5 — Advanced Session Setup",
           "ontology": "EXECUTION_MODEL",
-          "confidence": 0.54
+          "confidence": 0.65
         },
         {
-          "id": "framework-sharp-turn",
-          "name": "Sharp Turn (ST) Model",
+          "id": "smc-confluence-4",
+          "name": "HTF POI + BOS + IDM + FVG + OTE",
           "ontology": "EXECUTION_MODEL",
-          "confidence": 0.59
+          "confidence": 0.61
         }
       ],
       "rejected": [
         {
-          "id": "classical-05",
-          "name": "Model 5 — Advanced Session Setup",
+          "id": "temporal-judas-swing",
+          "name": "Judas Swing",
           "ontology": "EXECUTION_MODEL",
           "confidence": 0
         },
         {
-          "id": "smc-confluence-2",
-          "name": "HTF POI + BOS + IDM + FVG",
+          "id": "smc-confluence-5",
+          "name": "Five Box Setup",
           "ontology": "EXECUTION_MODEL",
           "confidence": 0
         }
@@ -115,8 +115,8 @@
   },
   "modelCandidates": [
     "temporal-silver-bullet-london",
-    "reversal-unicorn",
-    "framework-sharp-turn"
+    "classical-05",
+    "smc-confluence-4"
   ],
   "requiredConcepts": [
     "fvg",

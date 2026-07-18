@@ -2,17 +2,17 @@
   "scenarioId": "SMC-EVAL-000027",
   "version": "1.0",
   "market": "crypto",
-  "asset": "BTCUSDT",
+  "asset": "XRPUSDT",
   "timestamp": "2026-07-20T15:00:00Z",
-  "session": "LATE",
+  "session": "LONDON_OPEN",
   "timeframes": [
     "5m"
   ],
   "groundTruth": {
     "scenarioId": "SMC-EVAL-000027",
     "market": {
-      "asset": "BTCUSDT",
-      "session": "LATE",
+      "asset": "XRPUSDT",
+      "session": "LONDON_OPEN",
       "timestamp": "2026-07-20T15:00:00Z"
     },
     "structure": {
@@ -31,7 +31,6 @@
       ]
     },
     "liquidity": {
-      "swept": "sell_side",
       "remaining": [
         {
           "type": "BSL",
@@ -48,26 +47,26 @@
         "id": "temporal-judas-swing",
         "name": "Judas Swing",
         "ontology": "EXECUTION_MODEL",
-        "confidence": 0.79
+        "confidence": 0.88
       },
       "alternatives": [
         {
-          "id": "smc-confluence-1",
-          "name": "HTF POI + BOS + FVG",
+          "id": "classical-11",
+          "name": "Model 11 — Daily Range Scalping",
           "ontology": "EXECUTION_MODEL",
-          "confidence": 0.5
+          "confidence": 0.65
         }
       ],
       "rejected": [
         {
-          "id": "smc-confluence-4",
-          "name": "HTF POI + BOS + IDM + FVG + OTE",
+          "id": "classical-10",
+          "name": "Model 10 — Swing Stalking",
           "ontology": "EXECUTION_MODEL",
           "confidence": 0
         },
         {
-          "id": "smc-confluence-3",
-          "name": "HTF POI + BOS + FVG + OTE",
+          "id": "classical-11",
+          "name": "Model 11 — Daily Range Scalping",
           "ontology": "EXECUTION_MODEL",
           "confidence": 0
         }
@@ -89,7 +88,7 @@
   },
   "modelCandidates": [
     "temporal-judas-swing",
-    "smc-confluence-1"
+    "classical-11"
   ],
   "requiredConcepts": [
     "bos",

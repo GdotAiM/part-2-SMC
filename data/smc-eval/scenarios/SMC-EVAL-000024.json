@@ -2,17 +2,17 @@
   "scenarioId": "SMC-EVAL-000024",
   "version": "1.0",
   "market": "crypto",
-  "asset": "XRPUSDT",
+  "asset": "BNBUSDT",
   "timestamp": "2026-07-20T12:00:00Z",
-  "session": "NY_AM",
+  "session": "LATE",
   "timeframes": [
     "5m"
   ],
   "groundTruth": {
     "scenarioId": "SMC-EVAL-000024",
     "market": {
-      "asset": "XRPUSDT",
-      "session": "NY_AM",
+      "asset": "BNBUSDT",
+      "session": "LATE",
       "timestamp": "2026-07-20T12:00:00Z"
     },
     "structure": {
@@ -31,7 +31,6 @@
       ]
     },
     "liquidity": {
-      "swept": "buy_side",
       "remaining": []
     },
     "concepts": [
@@ -43,26 +42,26 @@
         "id": "temporal-silver-bullet-london",
         "name": "Silver Bullet — London Open",
         "ontology": "EXECUTION_MODEL",
-        "confidence": 0.76
+        "confidence": 0.92
       },
       "alternatives": [
         {
           "id": "smc-confluence-5",
           "name": "Five Box Setup",
           "ontology": "EXECUTION_MODEL",
-          "confidence": 0.52
+          "confidence": 0.63
         }
       ],
       "rejected": [
         {
-          "id": "mmxm-mmbm",
-          "name": "Market Maker Buy Model (MMBM)",
+          "id": "temporal-power-of-three",
+          "name": "Power of Three (PO3)",
           "ontology": "EXECUTION_MODEL",
           "confidence": 0
         },
         {
-          "id": "smc-confluence-5",
-          "name": "Five Box Setup",
+          "id": "classical-05",
+          "name": "Model 5 — Advanced Session Setup",
           "ontology": "EXECUTION_MODEL",
           "confidence": 0
         }

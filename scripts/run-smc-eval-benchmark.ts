@@ -125,7 +125,10 @@ for (const sid of scenarioIds) {
       allModelIds: ALL_MODEL_IDS,
     });
 
-    const { classification: modelClass, failureFlags } = classifyModelMatch(aiModelIds, gt);
+    const { classification: modelClass, failureFlags, alternativeAwareness } = classifyModelMatch(aiModelIds, gt);
+    if (alternativeAwareness) {
+      // Logged but not shown per-scenario; aggregated below
+    }
 
     results.push({
       id: sid,

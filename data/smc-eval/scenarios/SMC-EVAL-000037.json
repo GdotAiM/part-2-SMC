@@ -31,7 +31,6 @@
       ]
     },
     "liquidity": {
-      "swept": "sell_side",
       "remaining": [
         {
           "type": "BSL",
@@ -48,26 +47,26 @@
         "id": "classical-05",
         "name": "Model 5 — Advanced Session Setup",
         "ontology": "EXECUTION_MODEL",
-        "confidence": 0.8
+        "confidence": 0.77
       },
       "alternatives": [
         {
-          "id": "classical-06",
-          "name": "Model 6 — Universal Buy Model",
+          "id": "reversal-turtle-soup",
+          "name": "Turtle Soup",
           "ontology": "EXECUTION_MODEL",
-          "confidence": 0.67
+          "confidence": 0.51
         }
       ],
       "rejected": [
         {
-          "id": "classical-07",
-          "name": "Model 7 — Universal Sell Model",
+          "id": "smc-confluence-5",
+          "name": "Five Box Setup",
           "ontology": "EXECUTION_MODEL",
           "confidence": 0
         },
         {
-          "id": "classical-09",
-          "name": "Model 9 — One Shot One Kill",
+          "id": "reversal-unicorn",
+          "name": "Unicorn Model",
           "ontology": "EXECUTION_MODEL",
           "confidence": 0
         }
@@ -89,14 +88,14 @@
   },
   "modelCandidates": [
     "classical-05",
-    "classical-06"
+    "reversal-turtle-soup"
   ],
   "requiredConcepts": [
     "bos",
     "mss"
   ],
   "invalidConcepts": [
-    "smt"
+    "induced"
   ],
   "evaluationRubric": {
     "category": "false-positive",

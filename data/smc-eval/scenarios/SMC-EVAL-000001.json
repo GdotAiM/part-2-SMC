@@ -2,7 +2,7 @@
   "scenarioId": "SMC-EVAL-000001",
   "version": "1.0",
   "market": "crypto",
-  "asset": "BNBUSDT",
+  "asset": "SOLUSDT",
   "timestamp": "2026-07-18T09:00:00Z",
   "session": "NY_AM",
   "timeframes": [
@@ -12,7 +12,7 @@
   "groundTruth": {
     "scenarioId": "SMC-EVAL-000001",
     "market": {
-      "asset": "BNBUSDT",
+      "asset": "SOLUSDT",
       "session": "NY_AM",
       "timestamp": "2026-07-18T09:00:00Z"
     },
@@ -69,28 +69,28 @@
       },
       "alternatives": [
         {
-          "id": "smc-confluence-5",
-          "name": "Five Box Setup",
+          "id": "framework-sharp-turn",
+          "name": "Sharp Turn (ST) Model",
           "ontology": "EXECUTION_MODEL",
           "confidence": 0.51
         },
         {
-          "id": "smc-confluence-4",
-          "name": "HTF POI + BOS + IDM + FVG + OTE",
+          "id": "reversal-turtle-soup",
+          "name": "Turtle Soup",
           "ontology": "EXECUTION_MODEL",
-          "confidence": 0.59
+          "confidence": 0.63
         }
       ],
       "rejected": [
         {
-          "id": "classical-05",
-          "name": "Model 5 — Advanced Session Setup",
+          "id": "classical-09",
+          "name": "Model 9 — One Shot One Kill",
           "ontology": "EXECUTION_MODEL",
           "confidence": 0
         },
         {
-          "id": "classical-10",
-          "name": "Model 10 — Swing Stalking",
+          "id": "smc-confluence-2",
+          "name": "HTF POI + BOS + IDM + FVG",
           "ontology": "EXECUTION_MODEL",
           "confidence": 0
         }
@@ -125,8 +125,8 @@
   },
   "modelCandidates": [
     "smc-confluence-1",
-    "smc-confluence-5",
-    "smc-confluence-4"
+    "framework-sharp-turn",
+    "reversal-turtle-soup"
   ],
   "requiredConcepts": [
     "fvg",

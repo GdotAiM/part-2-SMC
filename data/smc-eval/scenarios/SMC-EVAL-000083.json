@@ -2,17 +2,17 @@
   "scenarioId": "SMC-EVAL-000083",
   "version": "1.0",
   "market": "crypto",
-  "asset": "ETHUSDT",
+  "asset": "XRPUSDT",
   "timestamp": "2026-07-26T11:00:00Z",
-  "session": "ASIAN",
+  "session": "LONDON_OPEN",
   "timeframes": [
     "15m"
   ],
   "groundTruth": {
     "scenarioId": "SMC-EVAL-000083",
     "market": {
-      "asset": "ETHUSDT",
-      "session": "ASIAN",
+      "asset": "XRPUSDT",
+      "session": "LONDON_OPEN",
       "timestamp": "2026-07-26T11:00:00Z"
     },
     "structure": {
@@ -44,41 +44,41 @@
     ],
     "models": {
       "primary": {
-        "id": "classical-07",
-        "name": "Model 7 — Universal Sell Model",
+        "id": "framework-2fvg",
+        "name": "2 FVG Model",
         "ontology": "EXECUTION_MODEL",
-        "confidence": 0.87
+        "confidence": 0.94
       },
       "alternatives": [
+        {
+          "id": "classical-06",
+          "name": "Model 6 — Universal Buy Model",
+          "ontology": "EXECUTION_MODEL",
+          "confidence": 0.51
+        },
         {
           "id": "smc-confluence-1",
           "name": "HTF POI + BOS + FVG",
           "ontology": "EXECUTION_MODEL",
           "confidence": 0.56
-        },
-        {
-          "id": "classical-11",
-          "name": "Model 11 — Daily Range Scalping",
-          "ontology": "EXECUTION_MODEL",
-          "confidence": 0.66
         }
       ],
       "rejected": [
         {
-          "id": "reversal-turtle-soup",
-          "name": "Turtle Soup",
+          "id": "classical-10",
+          "name": "Model 10 — Swing Stalking",
           "ontology": "EXECUTION_MODEL",
           "confidence": 0
         },
         {
-          "id": "smc-confluence-4",
-          "name": "HTF POI + BOS + IDM + FVG + OTE",
+          "id": "smc-confluence-3",
+          "name": "HTF POI + BOS + FVG + OTE",
           "ontology": "EXECUTION_MODEL",
           "confidence": 0
         },
         {
-          "id": "smc-confluence-5",
-          "name": "Five Box Setup",
+          "id": "mmxm-mmbm",
+          "name": "Market Maker Buy Model (MMBM)",
           "ontology": "EXECUTION_MODEL",
           "confidence": 0
         }
@@ -104,9 +104,9 @@
     }
   },
   "modelCandidates": [
-    "classical-07",
-    "smc-confluence-1",
-    "classical-11"
+    "framework-2fvg",
+    "classical-06",
+    "smc-confluence-1"
   ],
   "requiredConcepts": [
     "ob",
@@ -115,7 +115,7 @@
   "invalidConcepts": [],
   "evaluationRubric": {
     "category": "ambiguous",
-    "expectedPrimaryModel": "classical-07",
+    "expectedPrimaryModel": "framework-2fvg",
     "minScore": 40,
     "criticalErrors": [],
     "ambiguousContext": "Multiple small OBs with equal strength — no clear institutional level",

@@ -4,7 +4,7 @@
   "market": "forex",
   "asset": "AUDUSD=X",
   "timestamp": "2026-07-25T10:00:00Z",
-  "session": "LATE",
+  "session": "LONDON_OPEN",
   "timeframes": [
     "15m"
   ],
@@ -12,7 +12,7 @@
     "scenarioId": "SMC-EVAL-000072",
     "market": {
       "asset": "AUDUSD=X",
-      "session": "LATE",
+      "session": "LONDON_OPEN",
       "timestamp": "2026-07-25T10:00:00Z"
     },
     "structure": {
@@ -49,26 +49,26 @@
         "id": "classical-07",
         "name": "Model 7 — Universal Sell Model",
         "ontology": "EXECUTION_MODEL",
-        "confidence": 0.79
+        "confidence": 0.86
       },
       "alternatives": [
         {
           "id": "smc-confluence-3",
           "name": "HTF POI + BOS + FVG + OTE",
           "ontology": "EXECUTION_MODEL",
-          "confidence": 0.57
+          "confidence": 0.53
         }
       ],
       "rejected": [
         {
-          "id": "classical-05",
-          "name": "Model 5 — Advanced Session Setup",
+          "id": "temporal-judas-swing",
+          "name": "Judas Swing",
           "ontology": "EXECUTION_MODEL",
           "confidence": 0
         },
         {
-          "id": "reversal-unicorn",
-          "name": "Unicorn Model",
+          "id": "classical-09",
+          "name": "Model 9 — One Shot One Kill",
           "ontology": "EXECUTION_MODEL",
           "confidence": 0
         }

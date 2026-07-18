@@ -86,6 +86,15 @@ function mkScenario(
 ) {
   const lid = id(n);
   const ts = `2026-07-${String(18 + Math.floor(n / 10)).padStart(2, "0")}T${String(8 + (n % 10)).padStart(2, "0")}:00:00Z`;
+
+  // Only set liquidity.swept if a LIQUIDITY_SWEEP event actually exists
+  const hasSweepEvent = events.some(e => e.type === "LIQUIDITY_SWEEP");
+  const resolvedSwept = liquiditySwept !== undefined
+    ? liquiditySwept
+    : hasSweepEvent
+      ? (direction === "BULLISH" ? "sell_side" : direction === "BEARISH" ? "buy_side" : undefined)
+      : undefined;
+
   return {
     scenarioId: lid,
     version: "1.0",
@@ -99,7 +108,7 @@ function mkScenario(
       market: { asset, session, timestamp: ts },
       structure: { direction, events },
       liquidity: {
-        swept: liquiditySwept ?? (direction === "BULLISH" ? "sell_side" : direction === "BEARISH" ? "buy_side" : undefined),
+        swept: resolvedSwept,
         remaining: events.filter(e => e.type === "LIQUIDITY_SWEEP" || e.type === "BOS").map((_, i) => ({
           type: direction === "BULLISH" ? "BSL" : "SSL",
           price: direction === "BULLISH" ? 65000 + i * 400 : 61000 - i * 400,

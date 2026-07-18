@@ -2,9 +2,9 @@
   "scenarioId": "SMC-EVAL-000018",
   "version": "1.0",
   "market": "forex",
-  "asset": "GBPUSD=X",
+  "asset": "USDJPY=X",
   "timestamp": "2026-07-19T16:00:00Z",
-  "session": "NY_PM",
+  "session": "LONDON_OPEN",
   "timeframes": [
     "4h",
     "1h"
@@ -12,8 +12,8 @@
   "groundTruth": {
     "scenarioId": "SMC-EVAL-000018",
     "market": {
-      "asset": "GBPUSD=X",
-      "session": "NY_PM",
+      "asset": "USDJPY=X",
+      "session": "LONDON_OPEN",
       "timestamp": "2026-07-19T16:00:00Z"
     },
     "structure": {
@@ -55,28 +55,28 @@
       },
       "alternatives": [
         {
-          "id": "classical-11",
-          "name": "Model 11 — Daily Range Scalping",
+          "id": "classical-07",
+          "name": "Model 7 — Universal Sell Model",
           "ontology": "EXECUTION_MODEL",
-          "confidence": 0.61
+          "confidence": 0.56
         },
-        {
-          "id": "smc-confluence-1",
-          "name": "HTF POI + BOS + FVG",
-          "ontology": "EXECUTION_MODEL",
-          "confidence": 0.57
-        }
-      ],
-      "rejected": [
         {
           "id": "smc-confluence-4",
           "name": "HTF POI + BOS + IDM + FVG + OTE",
           "ontology": "EXECUTION_MODEL",
+          "confidence": 0.55
+        }
+      ],
+      "rejected": [
+        {
+          "id": "classical-06",
+          "name": "Model 6 — Universal Buy Model",
+          "ontology": "EXECUTION_MODEL",
           "confidence": 0
         },
         {
-          "id": "smc-confluence-5",
-          "name": "Five Box Setup",
+          "id": "classical-05",
+          "name": "Model 5 — Advanced Session Setup",
           "ontology": "EXECUTION_MODEL",
           "confidence": 0
         }
@@ -111,8 +111,8 @@
   },
   "modelCandidates": [
     "mmxm-mmbm",
-    "classical-11",
-    "smc-confluence-1"
+    "classical-07",
+    "smc-confluence-4"
   ],
   "requiredConcepts": [
     "bos",

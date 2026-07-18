@@ -2,7 +2,7 @@
   "scenarioId": "SMC-EVAL-000088",
   "version": "1.0",
   "market": "crypto",
-  "asset": "ETHUSDT",
+  "asset": "BTCUSDT",
   "timestamp": "2026-07-26T16:00:00Z",
   "session": "LONDON_OPEN",
   "timeframes": [
@@ -11,7 +11,7 @@
   "groundTruth": {
     "scenarioId": "SMC-EVAL-000088",
     "market": {
-      "asset": "ETHUSDT",
+      "asset": "BTCUSDT",
       "session": "LONDON_OPEN",
       "timestamp": "2026-07-26T16:00:00Z"
     },
@@ -45,23 +45,23 @@
     ],
     "models": {
       "primary": {
-        "id": "framework-2fvg",
-        "name": "2 FVG Model",
+        "id": "smc-confluence-5",
+        "name": "Five Box Setup",
         "ontology": "EXECUTION_MODEL",
-        "confidence": 0.77
+        "confidence": 0.79
       },
       "alternatives": [
         {
-          "id": "classical-07",
-          "name": "Model 7 — Universal Sell Model",
+          "id": "classical-09",
+          "name": "Model 9 — One Shot One Kill",
           "ontology": "EXECUTION_MODEL",
-          "confidence": 0.68
+          "confidence": 0.69
         },
         {
-          "id": "smc-confluence-3",
-          "name": "HTF POI + BOS + FVG + OTE",
+          "id": "smc-confluence-4",
+          "name": "HTF POI + BOS + IDM + FVG + OTE",
           "ontology": "EXECUTION_MODEL",
-          "confidence": 0.56
+          "confidence": 0.53
         }
       ],
       "rejected": [
@@ -72,14 +72,14 @@
           "confidence": 0
         },
         {
-          "id": "temporal-judas-swing",
-          "name": "Judas Swing",
+          "id": "framework-2fvg",
+          "name": "2 FVG Model",
           "ontology": "EXECUTION_MODEL",
           "confidence": 0
         },
         {
-          "id": "reversal-scob",
-          "name": "Single Candle OB (SCOB)",
+          "id": "classical-06",
+          "name": "Model 6 — Universal Buy Model",
           "ontology": "EXECUTION_MODEL",
           "confidence": 0
         }
@@ -105,9 +105,9 @@
     }
   },
   "modelCandidates": [
-    "framework-2fvg",
-    "classical-07",
-    "smc-confluence-3"
+    "smc-confluence-5",
+    "classical-09",
+    "smc-confluence-4"
   ],
   "requiredConcepts": [
     "premium",
@@ -117,7 +117,7 @@
   "invalidConcepts": [],
   "evaluationRubric": {
     "category": "ambiguous",
-    "expectedPrimaryModel": "framework-2fvg",
+    "expectedPrimaryModel": "smc-confluence-5",
     "minScore": 40,
     "criticalErrors": [],
     "ambiguousContext": "Dealing range intact but price at extreme — no clear equilibrium bias",

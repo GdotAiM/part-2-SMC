@@ -2,17 +2,17 @@
   "scenarioId": "SMC-EVAL-000050",
   "version": "1.0",
   "market": "crypto",
-  "asset": "BNBUSDT",
+  "asset": "BTCUSDT",
   "timestamp": "2026-07-23T08:00:00Z",
-  "session": "NY_PM",
+  "session": "LONDON_OPEN",
   "timeframes": [
     "5m"
   ],
   "groundTruth": {
     "scenarioId": "SMC-EVAL-000050",
     "market": {
-      "asset": "BNBUSDT",
-      "session": "NY_PM",
+      "asset": "BTCUSDT",
+      "session": "LONDON_OPEN",
       "timestamp": "2026-07-23T08:00:00Z"
     },
     "structure": {
@@ -55,26 +55,26 @@
         "id": "smc-confluence-5",
         "name": "Five Box Setup",
         "ontology": "EXECUTION_MODEL",
-        "confidence": 0.92
+        "confidence": 0.76
       },
       "alternatives": [
         {
           "id": "temporal-power-of-three",
           "name": "Power of Three (PO3)",
           "ontology": "EXECUTION_MODEL",
-          "confidence": 0.64
+          "confidence": 0.6
         }
       ],
       "rejected": [
         {
-          "id": "smc-confluence-2",
-          "name": "HTF POI + BOS + IDM + FVG",
+          "id": "smc-confluence-4",
+          "name": "HTF POI + BOS + IDM + FVG + OTE",
           "ontology": "EXECUTION_MODEL",
           "confidence": 0
         },
         {
-          "id": "classical-10",
-          "name": "Model 10 — Swing Stalking",
+          "id": "framework-sharp-turn",
+          "name": "Sharp Turn (ST) Model",
           "ontology": "EXECUTION_MODEL",
           "confidence": 0
         }

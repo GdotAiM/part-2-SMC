@@ -2,17 +2,17 @@
   "scenarioId": "SMC-EVAL-000063",
   "version": "1.0",
   "market": "crypto",
-  "asset": "BNBUSDT",
+  "asset": "XRPUSDT",
   "timestamp": "2026-07-24T11:00:00Z",
-  "session": "NY_AM",
+  "session": "LATE",
   "timeframes": [
     "15m"
   ],
   "groundTruth": {
     "scenarioId": "SMC-EVAL-000063",
     "market": {
-      "asset": "BNBUSDT",
-      "session": "NY_AM",
+      "asset": "XRPUSDT",
+      "session": "LATE",
       "timestamp": "2026-07-24T11:00:00Z"
     },
     "structure": {
@@ -56,19 +56,19 @@
           "id": "classical-06",
           "name": "Model 6 — Universal Buy Model",
           "ontology": "EXECUTION_MODEL",
-          "confidence": 0.57
+          "confidence": 0.55
         }
       ],
       "rejected": [
         {
-          "id": "classical-10",
-          "name": "Model 10 — Swing Stalking",
+          "id": "smc-confluence-4",
+          "name": "HTF POI + BOS + IDM + FVG + OTE",
           "ontology": "EXECUTION_MODEL",
           "confidence": 0
         },
         {
-          "id": "temporal-silver-bullet-nyam",
-          "name": "Silver Bullet — New York AM",
+          "id": "smc-confluence-3",
+          "name": "HTF POI + BOS + FVG + OTE",
           "ontology": "EXECUTION_MODEL",
           "confidence": 0
         }

@@ -2,7 +2,7 @@
   "scenarioId": "SMC-EVAL-000039",
   "version": "1.0",
   "market": "forex",
-  "asset": "USDCAD=X",
+  "asset": "AUDUSD=X",
   "timestamp": "2026-07-21T17:00:00Z",
   "session": "NY_AM",
   "timeframes": [
@@ -11,7 +11,7 @@
   "groundTruth": {
     "scenarioId": "SMC-EVAL-000039",
     "market": {
-      "asset": "USDCAD=X",
+      "asset": "AUDUSD=X",
       "session": "NY_AM",
       "timestamp": "2026-07-21T17:00:00Z"
     },
@@ -31,7 +31,6 @@
       ]
     },
     "liquidity": {
-      "swept": "sell_side",
       "remaining": [
         {
           "type": "BSL",
@@ -48,20 +47,20 @@
         "id": "classical-07",
         "name": "Model 7 — Universal Sell Model",
         "ontology": "EXECUTION_MODEL",
-        "confidence": 0.88
+        "confidence": 0.76
       },
       "alternatives": [
         {
-          "id": "smc-confluence-1",
-          "name": "HTF POI + BOS + FVG",
+          "id": "reversal-scob",
+          "name": "Single Candle OB (SCOB)",
           "ontology": "EXECUTION_MODEL",
-          "confidence": 0.61
+          "confidence": 0.52
         }
       ],
       "rejected": [
         {
-          "id": "framework-2fvg",
-          "name": "2 FVG Model",
+          "id": "temporal-silver-bullet-nyam",
+          "name": "Silver Bullet — New York AM",
           "ontology": "EXECUTION_MODEL",
           "confidence": 0
         },
@@ -89,14 +88,14 @@
   },
   "modelCandidates": [
     "classical-07",
-    "smc-confluence-1"
+    "reversal-scob"
   ],
   "requiredConcepts": [
     "bos",
     "mss"
   ],
   "invalidConcepts": [
-    "breaker"
+    "induced"
   ],
   "evaluationRubric": {
     "category": "false-positive",

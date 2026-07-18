@@ -2,9 +2,9 @@
   "scenarioId": "SMC-EVAL-000016",
   "version": "1.0",
   "market": "forex",
-  "asset": "GBPUSD=X",
+  "asset": "EURUSD=X",
   "timestamp": "2026-07-19T14:00:00Z",
-  "session": "NY_AM",
+  "session": "ASIAN",
   "timeframes": [
     "4h",
     "15m"
@@ -12,8 +12,8 @@
   "groundTruth": {
     "scenarioId": "SMC-EVAL-000016",
     "market": {
-      "asset": "GBPUSD=X",
-      "session": "NY_AM",
+      "asset": "EURUSD=X",
+      "session": "ASIAN",
       "timestamp": "2026-07-19T14:00:00Z"
     },
     "structure": {
@@ -50,32 +50,32 @@
         "id": "classical-07",
         "name": "Model 7 — Universal Sell Model",
         "ontology": "EXECUTION_MODEL",
-        "confidence": 0.89
+        "confidence": 0.8
       },
       "alternatives": [
         {
-          "id": "smc-confluence-3",
-          "name": "HTF POI + BOS + FVG + OTE",
+          "id": "reversal-turtle-soup",
+          "name": "Turtle Soup",
           "ontology": "EXECUTION_MODEL",
           "confidence": 0.55
         },
         {
-          "id": "smc-confluence-2",
-          "name": "HTF POI + BOS + IDM + FVG",
+          "id": "classical-10",
+          "name": "Model 10 — Swing Stalking",
           "ontology": "EXECUTION_MODEL",
-          "confidence": 0.68
+          "confidence": 0.69
         }
       ],
       "rejected": [
         {
-          "id": "classical-08",
-          "name": "Model 8 — Weekly Range Strategy",
+          "id": "smc-confluence-1",
+          "name": "HTF POI + BOS + FVG",
           "ontology": "EXECUTION_MODEL",
           "confidence": 0
         },
         {
-          "id": "classical-10",
-          "name": "Model 10 — Swing Stalking",
+          "id": "temporal-silver-bullet-london",
+          "name": "Silver Bullet — London Open",
           "ontology": "EXECUTION_MODEL",
           "confidence": 0
         }
@@ -110,8 +110,8 @@
   },
   "modelCandidates": [
     "classical-07",
-    "smc-confluence-3",
-    "smc-confluence-2"
+    "reversal-turtle-soup",
+    "classical-10"
   ],
   "requiredConcepts": [
     "liquidity",

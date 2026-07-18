@@ -4,7 +4,7 @@
   "market": "forex",
   "asset": "USDCAD=X",
   "timestamp": "2026-07-19T15:00:00Z",
-  "session": "NY_PM",
+  "session": "NY_AM",
   "timeframes": [
     "4h",
     "1h"
@@ -13,7 +13,7 @@
     "scenarioId": "SMC-EVAL-000017",
     "market": {
       "asset": "USDCAD=X",
-      "session": "NY_PM",
+      "session": "NY_AM",
       "timestamp": "2026-07-19T15:00:00Z"
     },
     "structure": {
@@ -51,32 +51,32 @@
         "id": "mmxm-mmsm",
         "name": "Market Maker Sell Model (MMSM)",
         "ontology": "EXECUTION_MODEL",
-        "confidence": 0.77
+        "confidence": 0.88
       },
       "alternatives": [
         {
-          "id": "smc-confluence-2",
-          "name": "HTF POI + BOS + IDM + FVG",
+          "id": "classical-11",
+          "name": "Model 11 — Daily Range Scalping",
           "ontology": "EXECUTION_MODEL",
-          "confidence": 0.52
+          "confidence": 0.66
         },
         {
-          "id": "classical-07",
-          "name": "Model 7 — Universal Sell Model",
+          "id": "framework-2fvg",
+          "name": "2 FVG Model",
           "ontology": "EXECUTION_MODEL",
-          "confidence": 0.58
+          "confidence": 0.5
         }
       ],
       "rejected": [
         {
-          "id": "temporal-silver-bullet-nypm",
-          "name": "Silver Bullet — New York PM",
+          "id": "classical-10",
+          "name": "Model 10 — Swing Stalking",
           "ontology": "EXECUTION_MODEL",
           "confidence": 0
         },
         {
-          "id": "smc-confluence-1",
-          "name": "HTF POI + BOS + FVG",
+          "id": "smc-confluence-4",
+          "name": "HTF POI + BOS + IDM + FVG + OTE",
           "ontology": "EXECUTION_MODEL",
           "confidence": 0
         }
@@ -111,8 +111,8 @@
   },
   "modelCandidates": [
     "mmxm-mmsm",
-    "smc-confluence-2",
-    "classical-07"
+    "classical-11",
+    "framework-2fvg"
   ],
   "requiredConcepts": [
     "bos",

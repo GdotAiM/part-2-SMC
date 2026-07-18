@@ -4,7 +4,7 @@
   "market": "forex",
   "asset": "GBPUSD=X",
   "timestamp": "2026-07-23T12:00:00Z",
-  "session": "NY_AM",
+  "session": "ASIAN",
   "timeframes": [
     "5m"
   ],
@@ -12,7 +12,7 @@
     "scenarioId": "SMC-EVAL-000054",
     "market": {
       "asset": "GBPUSD=X",
-      "session": "NY_AM",
+      "session": "ASIAN",
       "timestamp": "2026-07-23T12:00:00Z"
     },
     "structure": {
@@ -55,26 +55,26 @@
         "id": "mmxm-mmbm",
         "name": "Market Maker Buy Model (MMBM)",
         "ontology": "EXECUTION_MODEL",
-        "confidence": 0.77
+        "confidence": 0.81
       },
       "alternatives": [
         {
           "id": "classical-06",
           "name": "Model 6 — Universal Buy Model",
           "ontology": "EXECUTION_MODEL",
-          "confidence": 0.62
+          "confidence": 0.65
         }
       ],
       "rejected": [
         {
-          "id": "smc-confluence-1",
-          "name": "HTF POI + BOS + FVG",
+          "id": "framework-sharp-turn",
+          "name": "Sharp Turn (ST) Model",
           "ontology": "EXECUTION_MODEL",
           "confidence": 0
         },
         {
-          "id": "smc-confluence-2",
-          "name": "HTF POI + BOS + IDM + FVG",
+          "id": "smc-confluence-3",
+          "name": "HTF POI + BOS + FVG + OTE",
           "ontology": "EXECUTION_MODEL",
           "confidence": 0
         }

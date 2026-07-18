@@ -2,17 +2,17 @@
   "scenarioId": "SMC-EVAL-000046",
   "version": "1.0",
   "market": "crypto",
-  "asset": "ETHUSDT",
+  "asset": "SOLUSDT",
   "timestamp": "2026-07-22T14:00:00Z",
-  "session": "NY_PM",
+  "session": "NY_AM",
   "timeframes": [
     "5m"
   ],
   "groundTruth": {
     "scenarioId": "SMC-EVAL-000046",
     "market": {
-      "asset": "ETHUSDT",
-      "session": "NY_PM",
+      "asset": "SOLUSDT",
+      "session": "NY_AM",
       "timestamp": "2026-07-22T14:00:00Z"
     },
     "structure": {
@@ -55,7 +55,7 @@
         "id": "temporal-judas-swing",
         "name": "Judas Swing",
         "ontology": "EXECUTION_MODEL",
-        "confidence": 0.9
+        "confidence": 0.85
       },
       "alternatives": [
         {
@@ -67,14 +67,14 @@
       ],
       "rejected": [
         {
-          "id": "smc-confluence-1",
-          "name": "HTF POI + BOS + FVG",
+          "id": "classical-07",
+          "name": "Model 7 — Universal Sell Model",
           "ontology": "EXECUTION_MODEL",
           "confidence": 0
         },
         {
-          "id": "reversal-unicorn",
-          "name": "Unicorn Model",
+          "id": "smc-confluence-2",
+          "name": "HTF POI + BOS + IDM + FVG",
           "ontology": "EXECUTION_MODEL",
           "confidence": 0
         }

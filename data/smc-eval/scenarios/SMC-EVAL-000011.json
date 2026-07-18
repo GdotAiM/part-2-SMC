@@ -2,7 +2,7 @@
   "scenarioId": "SMC-EVAL-000011",
   "version": "1.0",
   "market": "forex",
-  "asset": "USDJPY=X",
+  "asset": "AUDUSD=X",
   "timestamp": "2026-07-19T09:00:00Z",
   "session": "ASIAN",
   "timeframes": [
@@ -11,7 +11,7 @@
   "groundTruth": {
     "scenarioId": "SMC-EVAL-000011",
     "market": {
-      "asset": "USDJPY=X",
+      "asset": "AUDUSD=X",
       "session": "ASIAN",
       "timestamp": "2026-07-19T09:00:00Z"
     },
@@ -49,20 +49,20 @@
         "id": "reversal-unicorn",
         "name": "Unicorn Model",
         "ontology": "EXECUTION_MODEL",
-        "confidence": 0.89
+        "confidence": 0.77
       },
       "alternatives": [
         {
           "id": "classical-09",
           "name": "Model 9 — One Shot One Kill",
           "ontology": "EXECUTION_MODEL",
-          "confidence": 0.67
+          "confidence": 0.66
         },
         {
-          "id": "smc-confluence-1",
-          "name": "HTF POI + BOS + FVG",
+          "id": "smc-confluence-5",
+          "name": "Five Box Setup",
           "ontology": "EXECUTION_MODEL",
-          "confidence": 0.5
+          "confidence": 0.56
         }
       ],
       "rejected": [
@@ -73,8 +73,8 @@
           "confidence": 0
         },
         {
-          "id": "classical-07",
-          "name": "Model 7 — Universal Sell Model",
+          "id": "classical-05",
+          "name": "Model 5 — Advanced Session Setup",
           "ontology": "EXECUTION_MODEL",
           "confidence": 0
         }
@@ -110,7 +110,7 @@
   "modelCandidates": [
     "reversal-unicorn",
     "classical-09",
-    "smc-confluence-1"
+    "smc-confluence-5"
   ],
   "requiredConcepts": [
     "fvg",

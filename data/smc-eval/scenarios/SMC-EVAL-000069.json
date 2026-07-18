@@ -2,17 +2,17 @@
   "scenarioId": "SMC-EVAL-000069",
   "version": "1.0",
   "market": "crypto",
-  "asset": "XRPUSDT",
+  "asset": "BNBUSDT",
   "timestamp": "2026-07-24T17:00:00Z",
-  "session": "NY_AM",
+  "session": "LONDON_OPEN",
   "timeframes": [
     "15m"
   ],
   "groundTruth": {
     "scenarioId": "SMC-EVAL-000069",
     "market": {
-      "asset": "XRPUSDT",
-      "session": "NY_AM",
+      "asset": "BNBUSDT",
+      "session": "LONDON_OPEN",
       "timestamp": "2026-07-24T17:00:00Z"
     },
     "structure": {
@@ -49,26 +49,26 @@
         "id": "smc-confluence-1",
         "name": "HTF POI + BOS + FVG",
         "ontology": "EXECUTION_MODEL",
-        "confidence": 0.75
+        "confidence": 0.95
       },
       "alternatives": [
         {
           "id": "mmxm-mmbm",
           "name": "Market Maker Buy Model (MMBM)",
           "ontology": "EXECUTION_MODEL",
-          "confidence": 0.51
+          "confidence": 0.54
         }
       ],
       "rejected": [
         {
-          "id": "reversal-scob",
-          "name": "Single Candle OB (SCOB)",
+          "id": "temporal-silver-bullet-london",
+          "name": "Silver Bullet — London Open",
           "ontology": "EXECUTION_MODEL",
           "confidence": 0
         },
         {
-          "id": "mmxm-mmsm",
-          "name": "Market Maker Sell Model (MMSM)",
+          "id": "temporal-silver-bullet-nypm",
+          "name": "Silver Bullet — New York PM",
           "ontology": "EXECUTION_MODEL",
           "confidence": 0
         }

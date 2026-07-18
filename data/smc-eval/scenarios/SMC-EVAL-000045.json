@@ -4,7 +4,7 @@
   "market": "crypto",
   "asset": "BTCUSDT",
   "timestamp": "2026-07-22T13:00:00Z",
-  "session": "NY_AM",
+  "session": "NY_PM",
   "timeframes": [
     "5m"
   ],
@@ -12,7 +12,7 @@
     "scenarioId": "SMC-EVAL-000045",
     "market": {
       "asset": "BTCUSDT",
-      "session": "NY_AM",
+      "session": "NY_PM",
       "timestamp": "2026-07-22T13:00:00Z"
     },
     "structure": {
@@ -55,26 +55,26 @@
         "id": "mmxm-mmsm",
         "name": "Market Maker Sell Model (MMSM)",
         "ontology": "EXECUTION_MODEL",
-        "confidence": 0.88
+        "confidence": 0.79
       },
       "alternatives": [
         {
           "id": "smc-confluence-1",
           "name": "HTF POI + BOS + FVG",
           "ontology": "EXECUTION_MODEL",
-          "confidence": 0.62
+          "confidence": 0.5
         }
       ],
       "rejected": [
         {
-          "id": "classical-09",
-          "name": "Model 9 — One Shot One Kill",
+          "id": "classical-05",
+          "name": "Model 5 — Advanced Session Setup",
           "ontology": "EXECUTION_MODEL",
           "confidence": 0
         },
         {
-          "id": "smc-confluence-4",
-          "name": "HTF POI + BOS + IDM + FVG + OTE",
+          "id": "reversal-scob",
+          "name": "Single Candle OB (SCOB)",
           "ontology": "EXECUTION_MODEL",
           "confidence": 0
         }

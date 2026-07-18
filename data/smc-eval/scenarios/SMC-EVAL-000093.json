@@ -45,41 +45,41 @@
     ],
     "models": {
       "primary": {
-        "id": "reversal-turtle-soup",
-        "name": "Turtle Soup",
+        "id": "classical-07",
+        "name": "Model 7 — Universal Sell Model",
         "ontology": "EXECUTION_MODEL",
-        "confidence": 0.85
+        "confidence": 0.88
       },
       "alternatives": [
         {
-          "id": "smc-confluence-3",
-          "name": "HTF POI + BOS + FVG + OTE",
+          "id": "reversal-unicorn",
+          "name": "Unicorn Model",
           "ontology": "EXECUTION_MODEL",
-          "confidence": 0.51
+          "confidence": 0.55
         },
         {
-          "id": "framework-sharp-turn",
-          "name": "Sharp Turn (ST) Model",
+          "id": "smc-confluence-1",
+          "name": "HTF POI + BOS + FVG",
           "ontology": "EXECUTION_MODEL",
-          "confidence": 0.7
+          "confidence": 0.52
         }
       ],
       "rejected": [
         {
-          "id": "temporal-silver-bullet-nypm",
-          "name": "Silver Bullet — New York PM",
-          "ontology": "EXECUTION_MODEL",
-          "confidence": 0
-        },
-        {
-          "id": "smc-confluence-2",
-          "name": "HTF POI + BOS + IDM + FVG",
-          "ontology": "EXECUTION_MODEL",
-          "confidence": 0
-        },
-        {
           "id": "classical-10",
           "name": "Model 10 — Swing Stalking",
+          "ontology": "EXECUTION_MODEL",
+          "confidence": 0
+        },
+        {
+          "id": "classical-08",
+          "name": "Model 8 — Weekly Range Strategy",
+          "ontology": "EXECUTION_MODEL",
+          "confidence": 0
+        },
+        {
+          "id": "smc-confluence-4",
+          "name": "HTF POI + BOS + IDM + FVG + OTE",
           "ontology": "EXECUTION_MODEL",
           "confidence": 0
         }
@@ -105,9 +105,9 @@
     }
   },
   "modelCandidates": [
-    "reversal-turtle-soup",
-    "smc-confluence-3",
-    "framework-sharp-turn"
+    "classical-07",
+    "reversal-unicorn",
+    "smc-confluence-1"
   ],
   "requiredConcepts": [
     "ote",
@@ -117,7 +117,7 @@
   "invalidConcepts": [],
   "evaluationRubric": {
     "category": "ambiguous",
-    "expectedPrimaryModel": "reversal-turtle-soup",
+    "expectedPrimaryModel": "classical-07",
     "minScore": 40,
     "criticalErrors": [],
     "ambiguousContext": "OTEs on both sides within same dealing range — no directional edge",

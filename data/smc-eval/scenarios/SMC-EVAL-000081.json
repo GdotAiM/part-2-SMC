@@ -2,7 +2,7 @@
   "scenarioId": "SMC-EVAL-000081",
   "version": "1.0",
   "market": "crypto",
-  "asset": "XRPUSDT",
+  "asset": "BTCUSDT",
   "timestamp": "2026-07-26T09:00:00Z",
   "session": "NY_AM",
   "timeframes": [
@@ -11,7 +11,7 @@
   "groundTruth": {
     "scenarioId": "SMC-EVAL-000081",
     "market": {
-      "asset": "XRPUSDT",
+      "asset": "BTCUSDT",
       "session": "NY_AM",
       "timestamp": "2026-07-26T09:00:00Z"
     },
@@ -44,29 +44,29 @@
     ],
     "models": {
       "primary": {
-        "id": "smc-confluence-3",
-        "name": "HTF POI + BOS + FVG + OTE",
+        "id": "smc-confluence-4",
+        "name": "HTF POI + BOS + IDM + FVG + OTE",
         "ontology": "EXECUTION_MODEL",
-        "confidence": 0.78
+        "confidence": 0.85
       },
       "alternatives": [
         {
-          "id": "classical-07",
-          "name": "Model 7 — Universal Sell Model",
+          "id": "smc-confluence-3",
+          "name": "HTF POI + BOS + FVG + OTE",
           "ontology": "EXECUTION_MODEL",
-          "confidence": 0.65
+          "confidence": 0.64
         },
         {
-          "id": "classical-09",
-          "name": "Model 9 — One Shot One Kill",
+          "id": "classical-05",
+          "name": "Model 5 — Advanced Session Setup",
           "ontology": "EXECUTION_MODEL",
-          "confidence": 0.65
+          "confidence": 0.53
         }
       ],
       "rejected": [
         {
-          "id": "framework-2fvg",
-          "name": "2 FVG Model",
+          "id": "reversal-unicorn",
+          "name": "Unicorn Model",
           "ontology": "EXECUTION_MODEL",
           "confidence": 0
         },
@@ -77,8 +77,8 @@
           "confidence": 0
         },
         {
-          "id": "framework-sharp-turn",
-          "name": "Sharp Turn (ST) Model",
+          "id": "mmxm-mmsm",
+          "name": "Market Maker Sell Model (MMSM)",
           "ontology": "EXECUTION_MODEL",
           "confidence": 0
         }
@@ -104,9 +104,9 @@
     }
   },
   "modelCandidates": [
+    "smc-confluence-4",
     "smc-confluence-3",
-    "classical-07",
-    "classical-09"
+    "classical-05"
   ],
   "requiredConcepts": [
     "consolidation",
@@ -115,7 +115,7 @@
   "invalidConcepts": [],
   "evaluationRubric": {
     "category": "ambiguous",
-    "expectedPrimaryModel": "smc-confluence-3",
+    "expectedPrimaryModel": "smc-confluence-4",
     "minScore": 40,
     "criticalErrors": [],
     "ambiguousContext": "Indecisive auction — price oscillating at equilibrium",

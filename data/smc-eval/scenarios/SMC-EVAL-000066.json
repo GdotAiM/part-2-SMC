@@ -2,7 +2,7 @@
   "scenarioId": "SMC-EVAL-000066",
   "version": "1.0",
   "market": "crypto",
-  "asset": "ETHUSDT",
+  "asset": "BNBUSDT",
   "timestamp": "2026-07-24T14:00:00Z",
   "session": "NY_AM",
   "timeframes": [
@@ -11,7 +11,7 @@
   "groundTruth": {
     "scenarioId": "SMC-EVAL-000066",
     "market": {
-      "asset": "ETHUSDT",
+      "asset": "BNBUSDT",
       "session": "NY_AM",
       "timestamp": "2026-07-24T14:00:00Z"
     },
@@ -49,20 +49,20 @@
         "id": "mmxm-mmsm",
         "name": "Market Maker Sell Model (MMSM)",
         "ontology": "EXECUTION_MODEL",
-        "confidence": 0.82
+        "confidence": 0.84
       },
       "alternatives": [
         {
           "id": "smc-confluence-1",
           "name": "HTF POI + BOS + FVG",
           "ontology": "EXECUTION_MODEL",
-          "confidence": 0.51
+          "confidence": 0.53
         }
       ],
       "rejected": [
         {
-          "id": "classical-09",
-          "name": "Model 9 — One Shot One Kill",
+          "id": "smc-confluence-2",
+          "name": "HTF POI + BOS + IDM + FVG",
           "ontology": "EXECUTION_MODEL",
           "confidence": 0
         },

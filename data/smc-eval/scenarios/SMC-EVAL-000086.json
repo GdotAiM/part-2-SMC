@@ -4,7 +4,7 @@
   "market": "crypto",
   "asset": "ETHUSDT",
   "timestamp": "2026-07-26T14:00:00Z",
-  "session": "LONDON_OPEN",
+  "session": "NY_AM",
   "timeframes": [
     "15m"
   ],
@@ -12,7 +12,7 @@
     "scenarioId": "SMC-EVAL-000086",
     "market": {
       "asset": "ETHUSDT",
-      "session": "LONDON_OPEN",
+      "session": "NY_AM",
       "timestamp": "2026-07-26T14:00:00Z"
     },
     "structure": {
@@ -44,41 +44,41 @@
     ],
     "models": {
       "primary": {
-        "id": "framework-2fvg",
-        "name": "2 FVG Model",
+        "id": "smc-confluence-4",
+        "name": "HTF POI + BOS + IDM + FVG + OTE",
         "ontology": "EXECUTION_MODEL",
-        "confidence": 0.84
+        "confidence": 0.94
       },
       "alternatives": [
-        {
-          "id": "smc-confluence-5",
-          "name": "Five Box Setup",
-          "ontology": "EXECUTION_MODEL",
-          "confidence": 0.64
-        },
-        {
-          "id": "framework-sharp-turn",
-          "name": "Sharp Turn (ST) Model",
-          "ontology": "EXECUTION_MODEL",
-          "confidence": 0.51
-        }
-      ],
-      "rejected": [
         {
           "id": "reversal-turtle-soup",
           "name": "Turtle Soup",
           "ontology": "EXECUTION_MODEL",
-          "confidence": 0
+          "confidence": 0.52
         },
         {
-          "id": "smc-confluence-2",
-          "name": "HTF POI + BOS + IDM + FVG",
+          "id": "classical-10",
+          "name": "Model 10 — Swing Stalking",
+          "ontology": "EXECUTION_MODEL",
+          "confidence": 0.53
+        }
+      ],
+      "rejected": [
+        {
+          "id": "reversal-unicorn",
+          "name": "Unicorn Model",
           "ontology": "EXECUTION_MODEL",
           "confidence": 0
         },
         {
-          "id": "reversal-scob",
-          "name": "Single Candle OB (SCOB)",
+          "id": "temporal-silver-bullet-nypm",
+          "name": "Silver Bullet — New York PM",
+          "ontology": "EXECUTION_MODEL",
+          "confidence": 0
+        },
+        {
+          "id": "mmxm-mmbm",
+          "name": "Market Maker Buy Model (MMBM)",
           "ontology": "EXECUTION_MODEL",
           "confidence": 0
         }
@@ -104,9 +104,9 @@
     }
   },
   "modelCandidates": [
-    "framework-2fvg",
-    "smc-confluence-5",
-    "framework-sharp-turn"
+    "smc-confluence-4",
+    "reversal-turtle-soup",
+    "classical-10"
   ],
   "requiredConcepts": [
     "bos",
@@ -115,7 +115,7 @@
   "invalidConcepts": [],
   "evaluationRubric": {
     "category": "ambiguous",
-    "expectedPrimaryModel": "framework-2fvg",
+    "expectedPrimaryModel": "smc-confluence-4",
     "minScore": 40,
     "criticalErrors": [],
     "ambiguousContext": "Price broke structure five bars ago — retest never came, continuation unclear",

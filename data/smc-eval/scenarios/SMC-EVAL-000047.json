@@ -2,7 +2,7 @@
   "scenarioId": "SMC-EVAL-000047",
   "version": "1.0",
   "market": "crypto",
-  "asset": "SOLUSDT",
+  "asset": "XRPUSDT",
   "timestamp": "2026-07-22T15:00:00Z",
   "session": "NY_PM",
   "timeframes": [
@@ -11,7 +11,7 @@
   "groundTruth": {
     "scenarioId": "SMC-EVAL-000047",
     "market": {
-      "asset": "SOLUSDT",
+      "asset": "XRPUSDT",
       "session": "NY_PM",
       "timestamp": "2026-07-22T15:00:00Z"
     },
@@ -55,26 +55,26 @@
         "id": "smc-confluence-3",
         "name": "HTF POI + BOS + FVG + OTE",
         "ontology": "EXECUTION_MODEL",
-        "confidence": 0.84
+        "confidence": 0.92
       },
       "alternatives": [
         {
           "id": "smc-confluence-1",
           "name": "HTF POI + BOS + FVG",
           "ontology": "EXECUTION_MODEL",
-          "confidence": 0.65
+          "confidence": 0.57
         }
       ],
       "rejected": [
         {
-          "id": "smc-confluence-4",
-          "name": "HTF POI + BOS + IDM + FVG + OTE",
+          "id": "reversal-unicorn",
+          "name": "Unicorn Model",
           "ontology": "EXECUTION_MODEL",
           "confidence": 0
         },
         {
-          "id": "reversal-turtle-soup",
-          "name": "Turtle Soup",
+          "id": "smc-confluence-2",
+          "name": "HTF POI + BOS + IDM + FVG",
           "ontology": "EXECUTION_MODEL",
           "confidence": 0
         }

@@ -2,7 +2,7 @@
   "scenarioId": "SMC-EVAL-000029",
   "version": "1.0",
   "market": "crypto",
-  "asset": "BTCUSDT",
+  "asset": "SOLUSDT",
   "timestamp": "2026-07-20T17:00:00Z",
   "session": "NY_AM",
   "timeframes": [
@@ -11,7 +11,7 @@
   "groundTruth": {
     "scenarioId": "SMC-EVAL-000029",
     "market": {
-      "asset": "BTCUSDT",
+      "asset": "SOLUSDT",
       "session": "NY_AM",
       "timestamp": "2026-07-20T17:00:00Z"
     },
@@ -58,26 +58,26 @@
         "id": "mmxm-mmbm",
         "name": "Market Maker Buy Model (MMBM)",
         "ontology": "EXECUTION_MODEL",
-        "confidence": 0.75
+        "confidence": 0.88
       },
       "alternatives": [
         {
-          "id": "smc-confluence-1",
-          "name": "HTF POI + BOS + FVG",
+          "id": "classical-06",
+          "name": "Model 6 — Universal Buy Model",
           "ontology": "EXECUTION_MODEL",
           "confidence": 0.68
         }
       ],
       "rejected": [
         {
-          "id": "classical-06",
-          "name": "Model 6 — Universal Buy Model",
+          "id": "temporal-judas-swing",
+          "name": "Judas Swing",
           "ontology": "EXECUTION_MODEL",
           "confidence": 0
         },
         {
-          "id": "reversal-turtle-soup",
-          "name": "Turtle Soup",
+          "id": "classical-05",
+          "name": "Model 5 — Advanced Session Setup",
           "ontology": "EXECUTION_MODEL",
           "confidence": 0
         }
@@ -99,7 +99,7 @@
   },
   "modelCandidates": [
     "mmxm-mmbm",
-    "smc-confluence-1"
+    "classical-06"
   ],
   "requiredConcepts": [
     "bos",
@@ -107,7 +107,7 @@
     "liquidity"
   ],
   "invalidConcepts": [
-    "breaker"
+    "smt"
   ],
   "evaluationRubric": {
     "category": "false-positive",

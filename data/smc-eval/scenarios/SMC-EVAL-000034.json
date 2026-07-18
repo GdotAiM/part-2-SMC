@@ -58,26 +58,26 @@
         "id": "framework-2fvg",
         "name": "2 FVG Model",
         "ontology": "EXECUTION_MODEL",
-        "confidence": 0.88
+        "confidence": 0.87
       },
       "alternatives": [
         {
-          "id": "classical-10",
-          "name": "Model 10 — Swing Stalking",
+          "id": "smc-confluence-1",
+          "name": "HTF POI + BOS + FVG",
           "ontology": "EXECUTION_MODEL",
-          "confidence": 0.52
+          "confidence": 0.56
         }
       ],
       "rejected": [
         {
-          "id": "reversal-turtle-soup",
-          "name": "Turtle Soup",
+          "id": "classical-07",
+          "name": "Model 7 — Universal Sell Model",
           "ontology": "EXECUTION_MODEL",
           "confidence": 0
         },
         {
-          "id": "temporal-power-of-three",
-          "name": "Power of Three (PO3)",
+          "id": "smc-confluence-1",
+          "name": "HTF POI + BOS + FVG",
           "ontology": "EXECUTION_MODEL",
           "confidence": 0
         }
@@ -99,7 +99,7 @@
   },
   "modelCandidates": [
     "framework-2fvg",
-    "classical-10"
+    "smc-confluence-1"
   ],
   "requiredConcepts": [
     "bos",
@@ -107,7 +107,7 @@
     "liquidity"
   ],
   "invalidConcepts": [
-    "smt"
+    "breaker"
   ],
   "evaluationRubric": {
     "category": "false-positive",

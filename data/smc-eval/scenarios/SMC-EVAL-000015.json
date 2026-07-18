@@ -2,9 +2,9 @@
   "scenarioId": "SMC-EVAL-000015",
   "version": "1.0",
   "market": "forex",
-  "asset": "USDJPY=X",
+  "asset": "USDCAD=X",
   "timestamp": "2026-07-19T13:00:00Z",
-  "session": "ASIAN",
+  "session": "NY_PM",
   "timeframes": [
     "4h",
     "15m"
@@ -12,8 +12,8 @@
   "groundTruth": {
     "scenarioId": "SMC-EVAL-000015",
     "market": {
-      "asset": "USDJPY=X",
-      "session": "ASIAN",
+      "asset": "USDCAD=X",
+      "session": "NY_PM",
       "timestamp": "2026-07-19T13:00:00Z"
     },
     "structure": {
@@ -50,32 +50,32 @@
         "id": "classical-06",
         "name": "Model 6 — Universal Buy Model",
         "ontology": "EXECUTION_MODEL",
-        "confidence": 0.94
+        "confidence": 0.76
       },
       "alternatives": [
         {
-          "id": "reversal-unicorn",
-          "name": "Unicorn Model",
+          "id": "smc-confluence-3",
+          "name": "HTF POI + BOS + FVG + OTE",
           "ontology": "EXECUTION_MODEL",
-          "confidence": 0.63
+          "confidence": 0.58
         },
         {
-          "id": "framework-sharp-turn",
-          "name": "Sharp Turn (ST) Model",
+          "id": "classical-07",
+          "name": "Model 7 — Universal Sell Model",
           "ontology": "EXECUTION_MODEL",
-          "confidence": 0.59
+          "confidence": 0.58
         }
       ],
       "rejected": [
         {
-          "id": "temporal-judas-swing",
-          "name": "Judas Swing",
+          "id": "reversal-unicorn",
+          "name": "Unicorn Model",
           "ontology": "EXECUTION_MODEL",
           "confidence": 0
         },
         {
-          "id": "smc-confluence-5",
-          "name": "Five Box Setup",
+          "id": "framework-2fvg",
+          "name": "2 FVG Model",
           "ontology": "EXECUTION_MODEL",
           "confidence": 0
         }
@@ -110,8 +110,8 @@
   },
   "modelCandidates": [
     "classical-06",
-    "reversal-unicorn",
-    "framework-sharp-turn"
+    "smc-confluence-3",
+    "classical-07"
   ],
   "requiredConcepts": [
     "liquidity",

@@ -2,17 +2,17 @@
   "scenarioId": "SMC-EVAL-000040",
   "version": "1.0",
   "market": "forex",
-  "asset": "USDJPY=X",
+  "asset": "AUDUSD=X",
   "timestamp": "2026-07-22T08:00:00Z",
-  "session": "NY_AM",
+  "session": "LATE",
   "timeframes": [
     "5m"
   ],
   "groundTruth": {
     "scenarioId": "SMC-EVAL-000040",
     "market": {
-      "asset": "USDJPY=X",
-      "session": "NY_AM",
+      "asset": "AUDUSD=X",
+      "session": "LATE",
       "timestamp": "2026-07-22T08:00:00Z"
     },
     "structure": {
@@ -52,26 +52,26 @@
         "id": "framework-sharp-turn",
         "name": "Sharp Turn (ST) Model",
         "ontology": "EXECUTION_MODEL",
-        "confidence": 0.84
+        "confidence": 0.88
       },
       "alternatives": [
         {
           "id": "smc-confluence-2",
           "name": "HTF POI + BOS + IDM + FVG",
           "ontology": "EXECUTION_MODEL",
-          "confidence": 0.53
+          "confidence": 0.68
         }
       ],
       "rejected": [
         {
-          "id": "smc-confluence-5",
-          "name": "Five Box Setup",
+          "id": "smc-confluence-1",
+          "name": "HTF POI + BOS + FVG",
           "ontology": "EXECUTION_MODEL",
           "confidence": 0
         },
         {
-          "id": "framework-2fvg",
-          "name": "2 FVG Model",
+          "id": "classical-10",
+          "name": "Model 10 — Swing Stalking",
           "ontology": "EXECUTION_MODEL",
           "confidence": 0
         }
@@ -100,7 +100,7 @@
     "liquidity"
   ],
   "invalidConcepts": [
-    "induced"
+    "breaker"
   ],
   "evaluationRubric": {
     "category": "false-positive",

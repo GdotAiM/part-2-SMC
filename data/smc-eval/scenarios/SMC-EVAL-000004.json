@@ -2,7 +2,7 @@
   "scenarioId": "SMC-EVAL-000004",
   "version": "1.0",
   "market": "crypto",
-  "asset": "ETHUSDT",
+  "asset": "BTCUSDT",
   "timestamp": "2026-07-18T12:00:00Z",
   "session": "LONDON_OPEN",
   "timeframes": [
@@ -11,7 +11,7 @@
   "groundTruth": {
     "scenarioId": "SMC-EVAL-000004",
     "market": {
-      "asset": "ETHUSDT",
+      "asset": "BTCUSDT",
       "session": "LONDON_OPEN",
       "timestamp": "2026-07-18T12:00:00Z"
     },
@@ -55,32 +55,32 @@
         "id": "smc-confluence-4",
         "name": "HTF POI + BOS + IDM + FVG + OTE",
         "ontology": "EXECUTION_MODEL",
-        "confidence": 0.8
+        "confidence": 0.79
       },
       "alternatives": [
-        {
-          "id": "reversal-unicorn",
-          "name": "Unicorn Model",
-          "ontology": "EXECUTION_MODEL",
-          "confidence": 0.51
-        },
-        {
-          "id": "classical-06",
-          "name": "Model 6 — Universal Buy Model",
-          "ontology": "EXECUTION_MODEL",
-          "confidence": 0.59
-        }
-      ],
-      "rejected": [
         {
           "id": "reversal-scob",
           "name": "Single Candle OB (SCOB)",
           "ontology": "EXECUTION_MODEL",
+          "confidence": 0.63
+        },
+        {
+          "id": "smc-confluence-5",
+          "name": "Five Box Setup",
+          "ontology": "EXECUTION_MODEL",
+          "confidence": 0.69
+        }
+      ],
+      "rejected": [
+        {
+          "id": "temporal-judas-swing",
+          "name": "Judas Swing",
+          "ontology": "EXECUTION_MODEL",
           "confidence": 0
         },
         {
-          "id": "mmxm-mmsm",
-          "name": "Market Maker Sell Model (MMSM)",
+          "id": "temporal-silver-bullet-nyam",
+          "name": "Silver Bullet — New York AM",
           "ontology": "EXECUTION_MODEL",
           "confidence": 0
         }
@@ -115,8 +115,8 @@
   },
   "modelCandidates": [
     "smc-confluence-4",
-    "reversal-unicorn",
-    "classical-06"
+    "reversal-scob",
+    "smc-confluence-5"
   ],
   "requiredConcepts": [
     "fvg",

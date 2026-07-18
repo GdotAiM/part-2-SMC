@@ -2,7 +2,7 @@
   "scenarioId": "SMC-EVAL-000098",
   "version": "1.0",
   "market": "forex",
-  "asset": "AUDUSD=X",
+  "asset": "USDCAD=X",
   "timestamp": "2026-07-27T16:00:00Z",
   "session": "LONDON_OPEN",
   "timeframes": [
@@ -11,7 +11,7 @@
   "groundTruth": {
     "scenarioId": "SMC-EVAL-000098",
     "market": {
-      "asset": "AUDUSD=X",
+      "asset": "USDCAD=X",
       "session": "LONDON_OPEN",
       "timestamp": "2026-07-27T16:00:00Z"
     },
@@ -45,41 +45,41 @@
     ],
     "models": {
       "primary": {
-        "id": "smc-confluence-2",
-        "name": "HTF POI + BOS + IDM + FVG",
+        "id": "classical-07",
+        "name": "Model 7 — Universal Sell Model",
         "ontology": "EXECUTION_MODEL",
-        "confidence": 0.82
+        "confidence": 0.86
       },
       "alternatives": [
         {
-          "id": "framework-2fvg",
-          "name": "2 FVG Model",
+          "id": "classical-06",
+          "name": "Model 6 — Universal Buy Model",
           "ontology": "EXECUTION_MODEL",
-          "confidence": 0.64
-        },
-        {
-          "id": "smc-confluence-4",
-          "name": "HTF POI + BOS + IDM + FVG + OTE",
-          "ontology": "EXECUTION_MODEL",
-          "confidence": 0.56
-        }
-      ],
-      "rejected": [
-        {
-          "id": "temporal-power-of-three",
-          "name": "Power of Three (PO3)",
-          "ontology": "EXECUTION_MODEL",
-          "confidence": 0
+          "confidence": 0.53
         },
         {
           "id": "classical-05",
           "name": "Model 5 — Advanced Session Setup",
           "ontology": "EXECUTION_MODEL",
+          "confidence": 0.54
+        }
+      ],
+      "rejected": [
+        {
+          "id": "classical-08",
+          "name": "Model 8 — Weekly Range Strategy",
+          "ontology": "EXECUTION_MODEL",
           "confidence": 0
         },
         {
-          "id": "reversal-turtle-soup",
-          "name": "Turtle Soup",
+          "id": "classical-11",
+          "name": "Model 11 — Daily Range Scalping",
+          "ontology": "EXECUTION_MODEL",
+          "confidence": 0
+        },
+        {
+          "id": "temporal-silver-bullet-london",
+          "name": "Silver Bullet — London Open",
           "ontology": "EXECUTION_MODEL",
           "confidence": 0
         }
@@ -105,9 +105,9 @@
     }
   },
   "modelCandidates": [
-    "smc-confluence-2",
-    "framework-2fvg",
-    "smc-confluence-4"
+    "classical-07",
+    "classical-06",
+    "classical-05"
   ],
   "requiredConcepts": [
     "bos",
@@ -117,7 +117,7 @@
   "invalidConcepts": [],
   "evaluationRubric": {
     "category": "ambiguous",
-    "expectedPrimaryModel": "smc-confluence-2",
+    "expectedPrimaryModel": "classical-07",
     "minScore": 40,
     "criticalErrors": [],
     "ambiguousContext": "MSS triggered but immediately retraced 80% — shift may have failed",

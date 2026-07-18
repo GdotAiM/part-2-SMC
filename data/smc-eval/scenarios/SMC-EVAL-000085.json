@@ -2,17 +2,17 @@
   "scenarioId": "SMC-EVAL-000085",
   "version": "1.0",
   "market": "crypto",
-  "asset": "BTCUSDT",
+  "asset": "XRPUSDT",
   "timestamp": "2026-07-26T13:00:00Z",
-  "session": "ASIAN",
+  "session": "LONDON_OPEN",
   "timeframes": [
     "15m"
   ],
   "groundTruth": {
     "scenarioId": "SMC-EVAL-000085",
     "market": {
-      "asset": "BTCUSDT",
-      "session": "ASIAN",
+      "asset": "XRPUSDT",
+      "session": "LONDON_OPEN",
       "timestamp": "2026-07-26T13:00:00Z"
     },
     "structure": {
@@ -44,41 +44,41 @@
     ],
     "models": {
       "primary": {
-        "id": "classical-07",
-        "name": "Model 7 — Universal Sell Model",
+        "id": "classical-09",
+        "name": "Model 9 — One Shot One Kill",
         "ontology": "EXECUTION_MODEL",
-        "confidence": 0.94
+        "confidence": 0.77
       },
       "alternatives": [
         {
-          "id": "framework-sharp-turn",
-          "name": "Sharp Turn (ST) Model",
+          "id": "smc-confluence-1",
+          "name": "HTF POI + BOS + FVG",
           "ontology": "EXECUTION_MODEL",
-          "confidence": 0.63
-        },
-        {
-          "id": "framework-2fvg",
-          "name": "2 FVG Model",
-          "ontology": "EXECUTION_MODEL",
-          "confidence": 0.53
-        }
-      ],
-      "rejected": [
-        {
-          "id": "mmxm-mmsm",
-          "name": "Market Maker Sell Model (MMSM)",
-          "ontology": "EXECUTION_MODEL",
-          "confidence": 0
+          "confidence": 0.55
         },
         {
           "id": "smc-confluence-4",
           "name": "HTF POI + BOS + IDM + FVG + OTE",
           "ontology": "EXECUTION_MODEL",
+          "confidence": 0.62
+        }
+      ],
+      "rejected": [
+        {
+          "id": "temporal-silver-bullet-london",
+          "name": "Silver Bullet — London Open",
+          "ontology": "EXECUTION_MODEL",
           "confidence": 0
         },
         {
-          "id": "temporal-judas-swing",
-          "name": "Judas Swing",
+          "id": "reversal-scob",
+          "name": "Single Candle OB (SCOB)",
+          "ontology": "EXECUTION_MODEL",
+          "confidence": 0
+        },
+        {
+          "id": "temporal-silver-bullet-nyam",
+          "name": "Silver Bullet — New York AM",
           "ontology": "EXECUTION_MODEL",
           "confidence": 0
         }
@@ -104,9 +104,9 @@
     }
   },
   "modelCandidates": [
-    "classical-07",
-    "framework-sharp-turn",
-    "framework-2fvg"
+    "classical-09",
+    "smc-confluence-1",
+    "smc-confluence-4"
   ],
   "requiredConcepts": [
     "displacement",
@@ -115,7 +115,7 @@
   "invalidConcepts": [],
   "evaluationRubric": {
     "category": "ambiguous",
-    "expectedPrimaryModel": "classical-07",
+    "expectedPrimaryModel": "classical-09",
     "minScore": 40,
     "criticalErrors": [],
     "ambiguousContext": "Strong displacement occurs but on low volume — significance unclear",

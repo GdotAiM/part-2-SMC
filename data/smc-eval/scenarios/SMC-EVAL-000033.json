@@ -2,17 +2,17 @@
   "scenarioId": "SMC-EVAL-000033",
   "version": "1.0",
   "market": "forex",
-  "asset": "EURUSD=X",
+  "asset": "USDCAD=X",
   "timestamp": "2026-07-21T11:00:00Z",
-  "session": "LONDON_OPEN",
+  "session": "LATE",
   "timeframes": [
     "5m"
   ],
   "groundTruth": {
     "scenarioId": "SMC-EVAL-000033",
     "market": {
-      "asset": "EURUSD=X",
-      "session": "LONDON_OPEN",
+      "asset": "USDCAD=X",
+      "session": "LATE",
       "timestamp": "2026-07-21T11:00:00Z"
     },
     "structure": {
@@ -31,7 +31,6 @@
       ]
     },
     "liquidity": {
-      "swept": "sell_side",
       "remaining": []
     },
     "concepts": [
@@ -43,26 +42,26 @@
         "id": "temporal-silver-bullet-nyam",
         "name": "Silver Bullet — New York AM",
         "ontology": "EXECUTION_MODEL",
-        "confidence": 0.92
+        "confidence": 0.78
       },
       "alternatives": [
         {
-          "id": "classical-07",
-          "name": "Model 7 — Universal Sell Model",
+          "id": "smc-confluence-1",
+          "name": "HTF POI + BOS + FVG",
           "ontology": "EXECUTION_MODEL",
-          "confidence": 0.67
+          "confidence": 0.51
         }
       ],
       "rejected": [
         {
-          "id": "classical-10",
-          "name": "Model 10 — Swing Stalking",
+          "id": "smc-confluence-1",
+          "name": "HTF POI + BOS + FVG",
           "ontology": "EXECUTION_MODEL",
           "confidence": 0
         },
         {
-          "id": "classical-08",
-          "name": "Model 8 — Weekly Range Strategy",
+          "id": "reversal-unicorn",
+          "name": "Unicorn Model",
           "ontology": "EXECUTION_MODEL",
           "confidence": 0
         }
@@ -84,14 +83,14 @@
   },
   "modelCandidates": [
     "temporal-silver-bullet-nyam",
-    "classical-07"
+    "smc-confluence-1"
   ],
   "requiredConcepts": [
     "fvg",
     "mss"
   ],
   "invalidConcepts": [
-    "breaker"
+    "induced"
   ],
   "evaluationRubric": {
     "category": "false-positive",

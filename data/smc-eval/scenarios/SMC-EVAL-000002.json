@@ -2,7 +2,7 @@
   "scenarioId": "SMC-EVAL-000002",
   "version": "1.0",
   "market": "crypto",
-  "asset": "XRPUSDT",
+  "asset": "ETHUSDT",
   "timestamp": "2026-07-18T10:00:00Z",
   "session": "LONDON_OPEN",
   "timeframes": [
@@ -12,7 +12,7 @@
   "groundTruth": {
     "scenarioId": "SMC-EVAL-000002",
     "market": {
-      "asset": "XRPUSDT",
+      "asset": "ETHUSDT",
       "session": "LONDON_OPEN",
       "timestamp": "2026-07-18T10:00:00Z"
     },
@@ -65,32 +65,32 @@
         "id": "smc-confluence-2",
         "name": "HTF POI + BOS + IDM + FVG",
         "ontology": "EXECUTION_MODEL",
-        "confidence": 0.81
+        "confidence": 0.82
       },
       "alternatives": [
         {
-          "id": "classical-06",
-          "name": "Model 6 — Universal Buy Model",
+          "id": "framework-sharp-turn",
+          "name": "Sharp Turn (ST) Model",
           "ontology": "EXECUTION_MODEL",
-          "confidence": 0.6
+          "confidence": 0.64
         },
         {
-          "id": "classical-11",
-          "name": "Model 11 — Daily Range Scalping",
+          "id": "classical-10",
+          "name": "Model 10 — Swing Stalking",
           "ontology": "EXECUTION_MODEL",
-          "confidence": 0.65
+          "confidence": 0.61
         }
       ],
       "rejected": [
         {
-          "id": "classical-05",
-          "name": "Model 5 — Advanced Session Setup",
+          "id": "smc-confluence-1",
+          "name": "HTF POI + BOS + FVG",
           "ontology": "EXECUTION_MODEL",
           "confidence": 0
         },
         {
-          "id": "smc-confluence-1",
-          "name": "HTF POI + BOS + FVG",
+          "id": "smc-confluence-3",
+          "name": "HTF POI + BOS + FVG + OTE",
           "ontology": "EXECUTION_MODEL",
           "confidence": 0
         }
@@ -125,8 +125,8 @@
   },
   "modelCandidates": [
     "smc-confluence-2",
-    "classical-06",
-    "classical-11"
+    "framework-sharp-turn",
+    "classical-10"
   ],
   "requiredConcepts": [
     "fvg",

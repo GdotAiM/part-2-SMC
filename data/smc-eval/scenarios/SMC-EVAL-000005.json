@@ -2,7 +2,7 @@
   "scenarioId": "SMC-EVAL-000005",
   "version": "1.0",
   "market": "crypto",
-  "asset": "BTCUSDT",
+  "asset": "SOLUSDT",
   "timestamp": "2026-07-18T13:00:00Z",
   "session": "NY_AM",
   "timeframes": [
@@ -11,7 +11,7 @@
   "groundTruth": {
     "scenarioId": "SMC-EVAL-000005",
     "market": {
-      "asset": "BTCUSDT",
+      "asset": "SOLUSDT",
       "session": "NY_AM",
       "timestamp": "2026-07-18T13:00:00Z"
     },
@@ -49,32 +49,32 @@
         "id": "smc-confluence-5",
         "name": "Five Box Setup",
         "ontology": "EXECUTION_MODEL",
-        "confidence": 0.82
+        "confidence": 0.77
       },
       "alternatives": [
         {
-          "id": "reversal-turtle-soup",
-          "name": "Turtle Soup",
+          "id": "classical-10",
+          "name": "Model 10 — Swing Stalking",
           "ontology": "EXECUTION_MODEL",
           "confidence": 0.56
         },
         {
-          "id": "classical-05",
-          "name": "Model 5 — Advanced Session Setup",
+          "id": "smc-confluence-3",
+          "name": "HTF POI + BOS + FVG + OTE",
           "ontology": "EXECUTION_MODEL",
-          "confidence": 0.63
+          "confidence": 0.65
         }
       ],
       "rejected": [
         {
-          "id": "temporal-silver-bullet-nyam",
-          "name": "Silver Bullet — New York AM",
+          "id": "temporal-silver-bullet-nypm",
+          "name": "Silver Bullet — New York PM",
           "ontology": "EXECUTION_MODEL",
           "confidence": 0
         },
         {
-          "id": "temporal-power-of-three",
-          "name": "Power of Three (PO3)",
+          "id": "classical-07",
+          "name": "Model 7 — Universal Sell Model",
           "ontology": "EXECUTION_MODEL",
           "confidence": 0
         }
@@ -109,8 +109,8 @@
   },
   "modelCandidates": [
     "smc-confluence-5",
-    "reversal-turtle-soup",
-    "classical-05"
+    "classical-10",
+    "smc-confluence-3"
   ],
   "requiredConcepts": [
     "bos",

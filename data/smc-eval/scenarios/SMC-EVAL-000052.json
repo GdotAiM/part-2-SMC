@@ -2,7 +2,7 @@
   "scenarioId": "SMC-EVAL-000052",
   "version": "1.0",
   "market": "forex",
-  "asset": "USDJPY=X",
+  "asset": "USDCAD=X",
   "timestamp": "2026-07-23T10:00:00Z",
   "session": "ASIAN",
   "timeframes": [
@@ -11,7 +11,7 @@
   "groundTruth": {
     "scenarioId": "SMC-EVAL-000052",
     "market": {
-      "asset": "USDJPY=X",
+      "asset": "USDCAD=X",
       "session": "ASIAN",
       "timestamp": "2026-07-23T10:00:00Z"
     },
@@ -55,26 +55,26 @@
         "id": "classical-09",
         "name": "Model 9 — One Shot One Kill",
         "ontology": "EXECUTION_MODEL",
-        "confidence": 0.79
+        "confidence": 0.76
       },
       "alternatives": [
         {
           "id": "classical-10",
           "name": "Model 10 — Swing Stalking",
           "ontology": "EXECUTION_MODEL",
-          "confidence": 0.53
+          "confidence": 0.69
         }
       ],
       "rejected": [
         {
-          "id": "framework-sharp-turn",
-          "name": "Sharp Turn (ST) Model",
+          "id": "smc-confluence-5",
+          "name": "Five Box Setup",
           "ontology": "EXECUTION_MODEL",
           "confidence": 0
         },
         {
-          "id": "reversal-turtle-soup",
-          "name": "Turtle Soup",
+          "id": "reversal-scob",
+          "name": "Single Candle OB (SCOB)",
           "ontology": "EXECUTION_MODEL",
           "confidence": 0
         }

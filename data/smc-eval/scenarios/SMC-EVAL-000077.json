@@ -2,17 +2,17 @@
   "scenarioId": "SMC-EVAL-000077",
   "version": "1.0",
   "market": "forex",
-  "asset": "AUDUSD=X",
+  "asset": "USDJPY=X",
   "timestamp": "2026-07-25T15:00:00Z",
-  "session": "LATE",
+  "session": "NY_AM",
   "timeframes": [
     "15m"
   ],
   "groundTruth": {
     "scenarioId": "SMC-EVAL-000077",
     "market": {
-      "asset": "AUDUSD=X",
-      "session": "LATE",
+      "asset": "USDJPY=X",
+      "session": "NY_AM",
       "timestamp": "2026-07-25T15:00:00Z"
     },
     "structure": {
@@ -49,26 +49,26 @@
         "id": "mmxm-mmsm",
         "name": "Market Maker Sell Model (MMSM)",
         "ontology": "EXECUTION_MODEL",
-        "confidence": 0.89
+        "confidence": 0.77
       },
       "alternatives": [
         {
           "id": "temporal-power-of-three",
           "name": "Power of Three (PO3)",
           "ontology": "EXECUTION_MODEL",
-          "confidence": 0.52
+          "confidence": 0.53
         }
       ],
       "rejected": [
         {
-          "id": "smc-confluence-4",
-          "name": "HTF POI + BOS + IDM + FVG + OTE",
+          "id": "reversal-unicorn",
+          "name": "Unicorn Model",
           "ontology": "EXECUTION_MODEL",
           "confidence": 0
         },
         {
-          "id": "temporal-judas-swing",
-          "name": "Judas Swing",
+          "id": "reversal-scob",
+          "name": "Single Candle OB (SCOB)",
           "ontology": "EXECUTION_MODEL",
           "confidence": 0
         }

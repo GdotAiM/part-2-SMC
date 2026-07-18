@@ -2,17 +2,17 @@
   "scenarioId": "SMC-EVAL-000022",
   "version": "1.0",
   "market": "crypto",
-  "asset": "ETHUSDT",
+  "asset": "BNBUSDT",
   "timestamp": "2026-07-20T10:00:00Z",
-  "session": "LATE",
+  "session": "LONDON_OPEN",
   "timeframes": [
     "5m"
   ],
   "groundTruth": {
     "scenarioId": "SMC-EVAL-000022",
     "market": {
-      "asset": "ETHUSDT",
-      "session": "LATE",
+      "asset": "BNBUSDT",
+      "session": "LONDON_OPEN",
       "timestamp": "2026-07-20T10:00:00Z"
     },
     "structure": {
@@ -31,7 +31,6 @@
       ]
     },
     "liquidity": {
-      "swept": "buy_side",
       "remaining": [
         {
           "type": "SSL",
@@ -48,26 +47,26 @@
         "id": "smc-confluence-3",
         "name": "HTF POI + BOS + FVG + OTE",
         "ontology": "EXECUTION_MODEL",
-        "confidence": 0.94
+        "confidence": 0.95
       },
       "alternatives": [
         {
-          "id": "classical-05",
-          "name": "Model 5 — Advanced Session Setup",
+          "id": "reversal-scob",
+          "name": "Single Candle OB (SCOB)",
           "ontology": "EXECUTION_MODEL",
-          "confidence": 0.61
+          "confidence": 0.63
         }
       ],
       "rejected": [
         {
-          "id": "classical-07",
-          "name": "Model 7 — Universal Sell Model",
+          "id": "temporal-silver-bullet-nyam",
+          "name": "Silver Bullet — New York AM",
           "ontology": "EXECUTION_MODEL",
           "confidence": 0
         },
         {
-          "id": "temporal-judas-swing",
-          "name": "Judas Swing",
+          "id": "classical-11",
+          "name": "Model 11 — Daily Range Scalping",
           "ontology": "EXECUTION_MODEL",
           "confidence": 0
         }
@@ -89,14 +88,14 @@
   },
   "modelCandidates": [
     "smc-confluence-3",
-    "classical-05"
+    "reversal-scob"
   ],
   "requiredConcepts": [
     "fvg",
     "bos"
   ],
   "invalidConcepts": [
-    "induced"
+    "breaker"
   ],
   "evaluationRubric": {
     "category": "false-positive",

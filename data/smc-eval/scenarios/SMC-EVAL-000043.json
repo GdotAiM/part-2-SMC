@@ -55,26 +55,26 @@
         "id": "reversal-turtle-soup",
         "name": "Turtle Soup",
         "ontology": "EXECUTION_MODEL",
-        "confidence": 0.82
+        "confidence": 0.78
       },
       "alternatives": [
         {
           "id": "reversal-scob",
           "name": "Single Candle OB (SCOB)",
           "ontology": "EXECUTION_MODEL",
-          "confidence": 0.55
+          "confidence": 0.6
         }
       ],
       "rejected": [
         {
-          "id": "classical-05",
-          "name": "Model 5 — Advanced Session Setup",
+          "id": "classical-07",
+          "name": "Model 7 — Universal Sell Model",
           "ontology": "EXECUTION_MODEL",
           "confidence": 0
         },
         {
-          "id": "smc-confluence-1",
-          "name": "HTF POI + BOS + FVG",
+          "id": "framework-sharp-turn",
+          "name": "Sharp Turn (ST) Model",
           "ontology": "EXECUTION_MODEL",
           "confidence": 0
         }

@@ -2,7 +2,7 @@
   "scenarioId": "SMC-EVAL-000090",
   "version": "1.0",
   "market": "crypto",
-  "asset": "BNBUSDT",
+  "asset": "SOLUSDT",
   "timestamp": "2026-07-27T08:00:00Z",
   "session": "LONDON_OPEN",
   "timeframes": [
@@ -11,7 +11,7 @@
   "groundTruth": {
     "scenarioId": "SMC-EVAL-000090",
     "market": {
-      "asset": "BNBUSDT",
+      "asset": "SOLUSDT",
       "session": "LONDON_OPEN",
       "timestamp": "2026-07-27T08:00:00Z"
     },
@@ -44,41 +44,41 @@
     ],
     "models": {
       "primary": {
-        "id": "smc-confluence-1",
-        "name": "HTF POI + BOS + FVG",
+        "id": "smc-confluence-4",
+        "name": "HTF POI + BOS + IDM + FVG + OTE",
         "ontology": "EXECUTION_MODEL",
-        "confidence": 0.76
+        "confidence": 0.78
       },
       "alternatives": [
         {
-          "id": "framework-2fvg",
-          "name": "2 FVG Model",
+          "id": "classical-07",
+          "name": "Model 7 — Universal Sell Model",
           "ontology": "EXECUTION_MODEL",
-          "confidence": 0.64
-        },
-        {
-          "id": "reversal-scob",
-          "name": "Single Candle OB (SCOB)",
-          "ontology": "EXECUTION_MODEL",
-          "confidence": 0.58
-        }
-      ],
-      "rejected": [
-        {
-          "id": "mmxm-mmbm",
-          "name": "Market Maker Buy Model (MMBM)",
-          "ontology": "EXECUTION_MODEL",
-          "confidence": 0
-        },
-        {
-          "id": "temporal-judas-swing",
-          "name": "Judas Swing",
-          "ontology": "EXECUTION_MODEL",
-          "confidence": 0
+          "confidence": 0.54
         },
         {
           "id": "classical-11",
           "name": "Model 11 — Daily Range Scalping",
+          "ontology": "EXECUTION_MODEL",
+          "confidence": 0.57
+        }
+      ],
+      "rejected": [
+        {
+          "id": "classical-09",
+          "name": "Model 9 — One Shot One Kill",
+          "ontology": "EXECUTION_MODEL",
+          "confidence": 0
+        },
+        {
+          "id": "temporal-silver-bullet-london",
+          "name": "Silver Bullet — London Open",
+          "ontology": "EXECUTION_MODEL",
+          "confidence": 0
+        },
+        {
+          "id": "smc-confluence-3",
+          "name": "HTF POI + BOS + FVG + OTE",
           "ontology": "EXECUTION_MODEL",
           "confidence": 0
         }
@@ -104,9 +104,9 @@
     }
   },
   "modelCandidates": [
-    "smc-confluence-1",
-    "framework-2fvg",
-    "reversal-scob"
+    "smc-confluence-4",
+    "classical-07",
+    "classical-11"
   ],
   "requiredConcepts": [
     "liquidity",
@@ -115,7 +115,7 @@
   "invalidConcepts": [],
   "evaluationRubric": {
     "category": "ambiguous",
-    "expectedPrimaryModel": "smc-confluence-1",
+    "expectedPrimaryModel": "smc-confluence-4",
     "minScore": 40,
     "criticalErrors": [],
     "ambiguousContext": "News in 30 minutes — current structure may be noise or positioning",

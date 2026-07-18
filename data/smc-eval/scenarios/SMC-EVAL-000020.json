@@ -2,17 +2,17 @@
   "scenarioId": "SMC-EVAL-000020",
   "version": "1.0",
   "market": "forex",
-  "asset": "AUDUSD=X",
+  "asset": "GBPUSD=X",
   "timestamp": "2026-07-20T08:00:00Z",
-  "session": "NY_PM",
+  "session": "ASIAN",
   "timeframes": [
     "1h"
   ],
   "groundTruth": {
     "scenarioId": "SMC-EVAL-000020",
     "market": {
-      "asset": "AUDUSD=X",
-      "session": "NY_PM",
+      "asset": "GBPUSD=X",
+      "session": "ASIAN",
       "timestamp": "2026-07-20T08:00:00Z"
     },
     "structure": {
@@ -49,32 +49,32 @@
         "id": "framework-sharp-turn",
         "name": "Sharp Turn (ST) Model",
         "ontology": "EXECUTION_MODEL",
-        "confidence": 0.87
+        "confidence": 0.82
       },
       "alternatives": [
         {
-          "id": "smc-confluence-5",
-          "name": "Five Box Setup",
+          "id": "classical-09",
+          "name": "Model 9 — One Shot One Kill",
           "ontology": "EXECUTION_MODEL",
-          "confidence": 0.68
+          "confidence": 0.51
         },
         {
-          "id": "classical-05",
-          "name": "Model 5 — Advanced Session Setup",
+          "id": "classical-07",
+          "name": "Model 7 — Universal Sell Model",
           "ontology": "EXECUTION_MODEL",
           "confidence": 0.66
         }
       ],
       "rejected": [
         {
-          "id": "classical-06",
-          "name": "Model 6 — Universal Buy Model",
+          "id": "reversal-scob",
+          "name": "Single Candle OB (SCOB)",
           "ontology": "EXECUTION_MODEL",
           "confidence": 0
         },
         {
-          "id": "classical-09",
-          "name": "Model 9 — One Shot One Kill",
+          "id": "mmxm-mmsm",
+          "name": "Market Maker Sell Model (MMSM)",
           "ontology": "EXECUTION_MODEL",
           "confidence": 0
         }
@@ -109,8 +109,8 @@
   },
   "modelCandidates": [
     "framework-sharp-turn",
-    "smc-confluence-5",
-    "classical-05"
+    "classical-09",
+    "classical-07"
   ],
   "requiredConcepts": [
     "liquidity",

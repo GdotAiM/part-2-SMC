@@ -2,17 +2,17 @@
   "scenarioId": "SMC-EVAL-000007",
   "version": "1.0",
   "market": "crypto",
-  "asset": "XRPUSDT",
+  "asset": "BNBUSDT",
   "timestamp": "2026-07-18T15:00:00Z",
-  "session": "LONDON_OPEN",
+  "session": "NY_PM",
   "timeframes": [
     "5m"
   ],
   "groundTruth": {
     "scenarioId": "SMC-EVAL-000007",
     "market": {
-      "asset": "XRPUSDT",
-      "session": "LONDON_OPEN",
+      "asset": "BNBUSDT",
+      "session": "NY_PM",
       "timestamp": "2026-07-18T15:00:00Z"
     },
     "structure": {
@@ -55,32 +55,32 @@
         "id": "temporal-silver-bullet-nyam",
         "name": "Silver Bullet — New York AM",
         "ontology": "EXECUTION_MODEL",
-        "confidence": 0.85
+        "confidence": 0.9
       },
       "alternatives": [
         {
-          "id": "classical-11",
-          "name": "Model 11 — Daily Range Scalping",
+          "id": "framework-2fvg",
+          "name": "2 FVG Model",
           "ontology": "EXECUTION_MODEL",
-          "confidence": 0.62
+          "confidence": 0.68
         },
         {
-          "id": "smc-confluence-5",
-          "name": "Five Box Setup",
+          "id": "reversal-turtle-soup",
+          "name": "Turtle Soup",
           "ontology": "EXECUTION_MODEL",
-          "confidence": 0.51
+          "confidence": 0.56
         }
       ],
       "rejected": [
         {
-          "id": "reversal-unicorn",
-          "name": "Unicorn Model",
+          "id": "classical-07",
+          "name": "Model 7 — Universal Sell Model",
           "ontology": "EXECUTION_MODEL",
           "confidence": 0
         },
         {
-          "id": "temporal-silver-bullet-nypm",
-          "name": "Silver Bullet — New York PM",
+          "id": "smc-confluence-2",
+          "name": "HTF POI + BOS + IDM + FVG",
           "ontology": "EXECUTION_MODEL",
           "confidence": 0
         }
@@ -115,8 +115,8 @@
   },
   "modelCandidates": [
     "temporal-silver-bullet-nyam",
-    "classical-11",
-    "smc-confluence-5"
+    "framework-2fvg",
+    "reversal-turtle-soup"
   ],
   "requiredConcepts": [
     "fvg",

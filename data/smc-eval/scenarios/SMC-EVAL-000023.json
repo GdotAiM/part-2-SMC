@@ -2,7 +2,7 @@
   "scenarioId": "SMC-EVAL-000023",
   "version": "1.0",
   "market": "crypto",
-  "asset": "BTCUSDT",
+  "asset": "SOLUSDT",
   "timestamp": "2026-07-20T11:00:00Z",
   "session": "LATE",
   "timeframes": [
@@ -11,7 +11,7 @@
   "groundTruth": {
     "scenarioId": "SMC-EVAL-000023",
     "market": {
-      "asset": "BTCUSDT",
+      "asset": "SOLUSDT",
       "session": "LATE",
       "timestamp": "2026-07-20T11:00:00Z"
     },
@@ -36,7 +36,6 @@
       ]
     },
     "liquidity": {
-      "swept": "sell_side",
       "remaining": [
         {
           "type": "BSL",
@@ -54,26 +53,26 @@
         "id": "smc-confluence-2",
         "name": "HTF POI + BOS + IDM + FVG",
         "ontology": "EXECUTION_MODEL",
-        "confidence": 0.79
+        "confidence": 0.77
       },
       "alternatives": [
         {
-          "id": "classical-07",
-          "name": "Model 7 — Universal Sell Model",
+          "id": "smc-confluence-3",
+          "name": "HTF POI + BOS + FVG + OTE",
           "ontology": "EXECUTION_MODEL",
-          "confidence": 0.62
+          "confidence": 0.68
         }
       ],
       "rejected": [
         {
-          "id": "smc-confluence-1",
-          "name": "HTF POI + BOS + FVG",
+          "id": "classical-10",
+          "name": "Model 10 — Swing Stalking",
           "ontology": "EXECUTION_MODEL",
           "confidence": 0
         },
         {
-          "id": "classical-07",
-          "name": "Model 7 — Universal Sell Model",
+          "id": "reversal-scob",
+          "name": "Single Candle OB (SCOB)",
           "ontology": "EXECUTION_MODEL",
           "confidence": 0
         }
@@ -95,7 +94,7 @@
   },
   "modelCandidates": [
     "smc-confluence-2",
-    "classical-07"
+    "smc-confluence-3"
   ],
   "requiredConcepts": [
     "fvg",

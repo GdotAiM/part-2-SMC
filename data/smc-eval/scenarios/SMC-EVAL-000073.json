@@ -2,17 +2,17 @@
   "scenarioId": "SMC-EVAL-000073",
   "version": "1.0",
   "market": "forex",
-  "asset": "USDJPY=X",
+  "asset": "EURUSD=X",
   "timestamp": "2026-07-25T11:00:00Z",
-  "session": "LATE",
+  "session": "NY_AM",
   "timeframes": [
     "15m"
   ],
   "groundTruth": {
     "scenarioId": "SMC-EVAL-000073",
     "market": {
-      "asset": "USDJPY=X",
-      "session": "LATE",
+      "asset": "EURUSD=X",
+      "session": "NY_AM",
       "timestamp": "2026-07-25T11:00:00Z"
     },
     "structure": {
@@ -49,26 +49,26 @@
         "id": "mmxm-mmsm",
         "name": "Market Maker Sell Model (MMSM)",
         "ontology": "EXECUTION_MODEL",
-        "confidence": 0.81
+        "confidence": 0.75
       },
       "alternatives": [
         {
           "id": "smc-confluence-1",
           "name": "HTF POI + BOS + FVG",
           "ontology": "EXECUTION_MODEL",
-          "confidence": 0.56
+          "confidence": 0.64
         }
       ],
       "rejected": [
         {
-          "id": "temporal-silver-bullet-london",
-          "name": "Silver Bullet — London Open",
+          "id": "temporal-power-of-three",
+          "name": "Power of Three (PO3)",
           "ontology": "EXECUTION_MODEL",
           "confidence": 0
         },
         {
-          "id": "classical-06",
-          "name": "Model 6 — Universal Buy Model",
+          "id": "temporal-silver-bullet-nypm",
+          "name": "Silver Bullet — New York PM",
           "ontology": "EXECUTION_MODEL",
           "confidence": 0
         }

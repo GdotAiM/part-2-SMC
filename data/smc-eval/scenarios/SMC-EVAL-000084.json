@@ -2,17 +2,17 @@
   "scenarioId": "SMC-EVAL-000084",
   "version": "1.0",
   "market": "crypto",
-  "asset": "BTCUSDT",
+  "asset": "ETHUSDT",
   "timestamp": "2026-07-26T12:00:00Z",
-  "session": "ASIAN",
+  "session": "LONDON_OPEN",
   "timeframes": [
     "15m"
   ],
   "groundTruth": {
     "scenarioId": "SMC-EVAL-000084",
     "market": {
-      "asset": "BTCUSDT",
-      "session": "ASIAN",
+      "asset": "ETHUSDT",
+      "session": "LONDON_OPEN",
       "timestamp": "2026-07-26T12:00:00Z"
     },
     "structure": {
@@ -45,41 +45,41 @@
     ],
     "models": {
       "primary": {
-        "id": "reversal-unicorn",
-        "name": "Unicorn Model",
+        "id": "smc-confluence-2",
+        "name": "HTF POI + BOS + IDM + FVG",
         "ontology": "EXECUTION_MODEL",
-        "confidence": 0.9
+        "confidence": 0.79
       },
       "alternatives": [
         {
-          "id": "smc-confluence-1",
-          "name": "HTF POI + BOS + FVG",
+          "id": "smc-confluence-3",
+          "name": "HTF POI + BOS + FVG + OTE",
           "ontology": "EXECUTION_MODEL",
-          "confidence": 0.6
+          "confidence": 0.68
         },
         {
-          "id": "smc-confluence-2",
-          "name": "HTF POI + BOS + IDM + FVG",
+          "id": "classical-05",
+          "name": "Model 5 — Advanced Session Setup",
           "ontology": "EXECUTION_MODEL",
-          "confidence": 0.52
+          "confidence": 0.66
         }
       ],
       "rejected": [
         {
-          "id": "classical-09",
-          "name": "Model 9 — One Shot One Kill",
+          "id": "smc-confluence-5",
+          "name": "Five Box Setup",
           "ontology": "EXECUTION_MODEL",
           "confidence": 0
         },
         {
-          "id": "reversal-turtle-soup",
-          "name": "Turtle Soup",
+          "id": "temporal-judas-swing",
+          "name": "Judas Swing",
           "ontology": "EXECUTION_MODEL",
           "confidence": 0
         },
         {
-          "id": "mmxm-mmbm",
-          "name": "Market Maker Buy Model (MMBM)",
+          "id": "classical-06",
+          "name": "Model 6 — Universal Buy Model",
           "ontology": "EXECUTION_MODEL",
           "confidence": 0
         }
@@ -105,9 +105,9 @@
     }
   },
   "modelCandidates": [
-    "reversal-unicorn",
-    "smc-confluence-1",
-    "smc-confluence-2"
+    "smc-confluence-2",
+    "smc-confluence-3",
+    "classical-05"
   ],
   "requiredConcepts": [
     "session",
@@ -117,7 +117,7 @@
   "invalidConcepts": [],
   "evaluationRubric": {
     "category": "ambiguous",
-    "expectedPrimaryModel": "reversal-unicorn",
+    "expectedPrimaryModel": "smc-confluence-2",
     "minScore": 40,
     "criticalErrors": [],
     "ambiguousContext": "Session overlap London/NY — conflicting signals on each timeframe",

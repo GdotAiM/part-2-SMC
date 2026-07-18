@@ -139,9 +139,23 @@ describe("computeSmcEvalScore", () => {
 });
 
 describe("classifyModelMatch", () => {
-  it("returns PRIMARY when AI matches ground truth primary", () => {
+  it("returns PRIMARY when AI matches ground truth primary (single model)", () => {
     const { classification } = classifyModelMatch(["smc-confluence-1"], mockGroundTruth);
     expect(classification).toBe("PRIMARY");
+  });
+
+  it("returns PRIMARY even when alternatives are also listed", () => {
+    const { classification, alternativeAwareness } = classifyModelMatch(
+      ["smc-confluence-1", "smc-confluence-2", "mmxm-mmsm"],
+      mockGroundTruth,
+    );
+    expect(classification).toBe("PRIMARY");
+    expect(alternativeAwareness).toBe(true);
+  });
+
+  it("returns PARTIAL when primary miss but alternatives found", () => {
+    const { classification } = classifyModelMatch(["smc-confluence-2"], mockGroundTruth);
+    expect(classification).toBe("PARTIAL");
   });
 
   it("returns HALLUCINATED for fabricated models", () => {

@@ -180,4 +180,6 @@ export interface SmcEvalEvaluationResult {
   scores: SmcEvalScore;
   modelClassification: ModelClassification;
   failureFlags: FailureFlag[];
+  /** Whether the AI also identified valid alternative models beyond the primary. */
+  alternativeAwareness?: boolean;
 }

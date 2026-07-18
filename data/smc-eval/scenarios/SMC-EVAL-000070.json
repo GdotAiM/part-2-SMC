@@ -2,17 +2,17 @@
   "scenarioId": "SMC-EVAL-000070",
   "version": "1.0",
   "market": "crypto",
-  "asset": "XRPUSDT",
+  "asset": "ETHUSDT",
   "timestamp": "2026-07-25T08:00:00Z",
-  "session": "LONDON_OPEN",
+  "session": "NY_AM",
   "timeframes": [
     "15m"
   ],
   "groundTruth": {
     "scenarioId": "SMC-EVAL-000070",
     "market": {
-      "asset": "XRPUSDT",
-      "session": "LONDON_OPEN",
+      "asset": "ETHUSDT",
+      "session": "NY_AM",
       "timestamp": "2026-07-25T08:00:00Z"
     },
     "structure": {
@@ -49,26 +49,26 @@
         "id": "reversal-unicorn",
         "name": "Unicorn Model",
         "ontology": "EXECUTION_MODEL",
-        "confidence": 0.94
+        "confidence": 0.77
       },
       "alternatives": [
         {
           "id": "smc-confluence-2",
           "name": "HTF POI + BOS + IDM + FVG",
           "ontology": "EXECUTION_MODEL",
-          "confidence": 0.57
+          "confidence": 0.52
         }
       ],
       "rejected": [
         {
-          "id": "temporal-silver-bullet-london",
-          "name": "Silver Bullet — London Open",
+          "id": "classical-07",
+          "name": "Model 7 — Universal Sell Model",
           "ontology": "EXECUTION_MODEL",
           "confidence": 0
         },
         {
-          "id": "classical-09",
-          "name": "Model 9 — One Shot One Kill",
+          "id": "smc-confluence-4",
+          "name": "HTF POI + BOS + IDM + FVG + OTE",
           "ontology": "EXECUTION_MODEL",
           "confidence": 0
         }

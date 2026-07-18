@@ -4,7 +4,7 @@
   "market": "forex",
   "asset": "EURUSD=X",
   "timestamp": "2026-07-27T12:00:00Z",
-  "session": "NY_AM",
+  "session": "ASIAN",
   "timeframes": [
     "15m"
   ],
@@ -12,7 +12,7 @@
     "scenarioId": "SMC-EVAL-000094",
     "market": {
       "asset": "EURUSD=X",
-      "session": "NY_AM",
+      "session": "ASIAN",
       "timestamp": "2026-07-27T12:00:00Z"
     },
     "structure": {
@@ -45,41 +45,41 @@
     ],
     "models": {
       "primary": {
-        "id": "classical-09",
-        "name": "Model 9 — One Shot One Kill",
+        "id": "classical-10",
+        "name": "Model 10 — Swing Stalking",
         "ontology": "EXECUTION_MODEL",
-        "confidence": 0.75
+        "confidence": 0.77
       },
       "alternatives": [
         {
-          "id": "classical-07",
-          "name": "Model 7 — Universal Sell Model",
+          "id": "smc-confluence-1",
+          "name": "HTF POI + BOS + FVG",
           "ontology": "EXECUTION_MODEL",
-          "confidence": 0.68
+          "confidence": 0.59
         },
         {
-          "id": "reversal-scob",
-          "name": "Single Candle OB (SCOB)",
+          "id": "smc-confluence-5",
+          "name": "Five Box Setup",
           "ontology": "EXECUTION_MODEL",
-          "confidence": 0.68
+          "confidence": 0.6
         }
       ],
       "rejected": [
         {
-          "id": "framework-2fvg",
-          "name": "2 FVG Model",
+          "id": "classical-05",
+          "name": "Model 5 — Advanced Session Setup",
           "ontology": "EXECUTION_MODEL",
           "confidence": 0
         },
         {
-          "id": "framework-sharp-turn",
-          "name": "Sharp Turn (ST) Model",
+          "id": "classical-08",
+          "name": "Model 8 — Weekly Range Strategy",
           "ontology": "EXECUTION_MODEL",
           "confidence": 0
         },
         {
-          "id": "smc-confluence-1",
-          "name": "HTF POI + BOS + FVG",
+          "id": "mmxm-mmsm",
+          "name": "Market Maker Sell Model (MMSM)",
           "ontology": "EXECUTION_MODEL",
           "confidence": 0
         }
@@ -105,9 +105,9 @@
     }
   },
   "modelCandidates": [
-    "classical-09",
-    "classical-07",
-    "reversal-scob"
+    "classical-10",
+    "smc-confluence-1",
+    "smc-confluence-5"
   ],
   "requiredConcepts": [
     "consolidation",
@@ -117,7 +117,7 @@
   "invalidConcepts": [],
   "evaluationRubric": {
     "category": "ambiguous",
-    "expectedPrimaryModel": "classical-09",
+    "expectedPrimaryModel": "classical-10",
     "minScore": 40,
     "criticalErrors": [],
     "ambiguousContext": "Series of equal highs and equal lows — no breakout direction established",

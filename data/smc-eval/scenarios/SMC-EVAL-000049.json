@@ -55,20 +55,20 @@
         "id": "classical-05",
         "name": "Model 5 — Advanced Session Setup",
         "ontology": "EXECUTION_MODEL",
-        "confidence": 0.95
+        "confidence": 0.92
       },
       "alternatives": [
         {
           "id": "classical-11",
           "name": "Model 11 — Daily Range Scalping",
           "ontology": "EXECUTION_MODEL",
-          "confidence": 0.55
+          "confidence": 0.65
         }
       ],
       "rejected": [
         {
-          "id": "smc-confluence-4",
-          "name": "HTF POI + BOS + IDM + FVG + OTE",
+          "id": "smc-confluence-1",
+          "name": "HTF POI + BOS + FVG",
           "ontology": "EXECUTION_MODEL",
           "confidence": 0
         },

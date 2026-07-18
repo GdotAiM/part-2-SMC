@@ -49,32 +49,32 @@
         "id": "reversal-scob",
         "name": "Single Candle OB (SCOB)",
         "ontology": "EXECUTION_MODEL",
-        "confidence": 0.76
+        "confidence": 0.89
       },
       "alternatives": [
         {
           "id": "smc-confluence-4",
           "name": "HTF POI + BOS + IDM + FVG + OTE",
           "ontology": "EXECUTION_MODEL",
-          "confidence": 0.69
+          "confidence": 0.6
         },
         {
-          "id": "classical-10",
-          "name": "Model 10 — Swing Stalking",
+          "id": "smc-confluence-3",
+          "name": "HTF POI + BOS + FVG + OTE",
           "ontology": "EXECUTION_MODEL",
-          "confidence": 0.65
+          "confidence": 0.53
         }
       ],
       "rejected": [
         {
-          "id": "smc-confluence-1",
-          "name": "HTF POI + BOS + FVG",
+          "id": "temporal-silver-bullet-nyam",
+          "name": "Silver Bullet — New York AM",
           "ontology": "EXECUTION_MODEL",
           "confidence": 0
         },
         {
-          "id": "classical-06",
-          "name": "Model 6 — Universal Buy Model",
+          "id": "temporal-judas-swing",
+          "name": "Judas Swing",
           "ontology": "EXECUTION_MODEL",
           "confidence": 0
         }
@@ -110,7 +110,7 @@
   "modelCandidates": [
     "reversal-scob",
     "smc-confluence-4",
-    "classical-10"
+    "smc-confluence-3"
   ],
   "requiredConcepts": [
     "bos",

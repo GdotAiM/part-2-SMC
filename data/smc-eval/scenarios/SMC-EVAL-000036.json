@@ -2,17 +2,17 @@
   "scenarioId": "SMC-EVAL-000036",
   "version": "1.0",
   "market": "forex",
-  "asset": "USDCAD=X",
+  "asset": "USDJPY=X",
   "timestamp": "2026-07-21T14:00:00Z",
-  "session": "LATE",
+  "session": "LONDON_OPEN",
   "timeframes": [
     "5m"
   ],
   "groundTruth": {
     "scenarioId": "SMC-EVAL-000036",
     "market": {
-      "asset": "USDCAD=X",
-      "session": "LATE",
+      "asset": "USDJPY=X",
+      "session": "LONDON_OPEN",
       "timestamp": "2026-07-21T14:00:00Z"
     },
     "structure": {
@@ -36,7 +36,6 @@
       ]
     },
     "liquidity": {
-      "swept": "buy_side",
       "remaining": [
         {
           "type": "SSL",
@@ -54,26 +53,26 @@
         "id": "smc-confluence-4",
         "name": "HTF POI + BOS + IDM + FVG + OTE",
         "ontology": "EXECUTION_MODEL",
-        "confidence": 0.87
+        "confidence": 0.89
       },
       "alternatives": [
         {
-          "id": "classical-09",
-          "name": "Model 9 — One Shot One Kill",
+          "id": "classical-06",
+          "name": "Model 6 — Universal Buy Model",
           "ontology": "EXECUTION_MODEL",
-          "confidence": 0.51
+          "confidence": 0.62
         }
       ],
       "rejected": [
         {
-          "id": "reversal-scob",
-          "name": "Single Candle OB (SCOB)",
+          "id": "smc-confluence-1",
+          "name": "HTF POI + BOS + FVG",
           "ontology": "EXECUTION_MODEL",
           "confidence": 0
         },
         {
-          "id": "smc-confluence-3",
-          "name": "HTF POI + BOS + FVG + OTE",
+          "id": "classical-07",
+          "name": "Model 7 — Universal Sell Model",
           "ontology": "EXECUTION_MODEL",
           "confidence": 0
         }
@@ -95,7 +94,7 @@
   },
   "modelCandidates": [
     "smc-confluence-4",
-    "classical-09"
+    "classical-06"
   ],
   "requiredConcepts": [
     "fvg",
@@ -103,7 +102,7 @@
     "mss"
   ],
   "invalidConcepts": [
-    "breaker"
+    "induced"
   ],
   "evaluationRubric": {
     "category": "false-positive",
