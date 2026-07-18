@@ -286,3 +286,9 @@ export const agentMemory = pgTable(
 // ── Learning & Validation Framework ─────────────────────────────────
 export * from "./learning";
 
+// ── Model Definitions ────────────────────────────────────────────────
+export * from "./model-definitions";
+
+// ── Economic Events Calendar ─────────────────────────────────────────
+export * from "./economic-events";
+
