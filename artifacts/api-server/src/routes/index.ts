@@ -10,6 +10,7 @@ import agentLoopRouter from "./agent-loop.js";
 import learningRouter from "./learning.js";
 import strategiesRouter from "./strategies.js";
 import externalIntelRouter from "./external-intel.js";
+import smcEvalRouter from "./smc-eval.js";
 
 const router: IRouter = Router();
 
@@ -24,5 +25,6 @@ router.use(agentLoopRouter);
 router.use("/learning", learningRouter);
 router.use(strategiesRouter);
 router.use(externalIntelRouter);
+router.use(smcEvalRouter);
 
 export default router;

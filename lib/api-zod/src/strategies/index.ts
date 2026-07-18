@@ -25,3 +25,23 @@ export { CHARTER_BLUEPRINT_TEMPLATES, getCharterBlueprintTemplate } from "./temp
 export { CLASSICAL_HORIZON_TEMPLATES, getClassicalHorizonTemplate } from "./templates/classical-horizon";
 export { MMXM_TEMPLATES, TEMPORAL_REVERSAL_TEMPLATES } from "./templates/mmxm-and-temporal";
 export { CONCEPT_TEMPLATES, STRUCTURAL_PATTERN_TEMPLATES, TRADING_HORIZON_TEMPLATES } from "./templates/concepts-and-patterns";
+
+// SMC-EVAL types & scoring
+export type {
+  SMCGroundTruth, SMCEvent, LiquidityTarget, ModelCandidate,
+  TimeframeRelationship, ExecutionContext, EvaluationMetadata,
+  ModelClassification, FailureFlag,
+  StructuralAccuracyScore, ModelAlignmentScore, ConfluenceReasoningScore,
+  TradePrecisionScore, HallucinationAvoidanceScore, SmcEvalScore,
+  AiReasoningInput, SmcEvalEvaluationResult,
+} from "./smc-eval-types";
+
+export {
+  scoreStructuralAccuracy,
+  scoreModelAlignment,
+  scoreConfluenceReasoning,
+  scoreTradePrecision,
+  scoreHallucinationAvoidance,
+  computeSmcEvalScore,
+  classifyModelMatch,
+} from "./smc-eval-scoring";
