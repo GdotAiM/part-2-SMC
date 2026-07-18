@@ -5,17 +5,11 @@
  * structure, liquidity, and multi-timeframe context.
  */
 
-import { useState } from "react";
 import type { SmcReport } from "@workspace/api-client-react";
-import {
-  useAnalyzeCrypto, useAnalyzeForex,
-  getAnalyzeCryptoQueryKey, getAnalyzeForexQueryKey,
-} from "@workspace/api-client-react";
-import { Activity, TrendingUp, TrendingDown, Minus, ChevronRight, Zap } from "lucide-react";
+import { Activity } from "lucide-react";
 import { MarketBriefing } from "@/components/MarketBriefing";
 import { TvStatus } from "@/components/TvStatus";
 import { fmtPrice, getBias, getConfidence, TF_LABEL_MAP, type Market } from "@/lib/smc-display";
-import { apiUrl } from "@/lib/api";
 
 interface MarketViewProps {
   symbol: string;

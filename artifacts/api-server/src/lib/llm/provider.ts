@@ -47,6 +47,9 @@ export interface LlmUsage {
 // Extend this map as new models are added.
 
 const MODEL_COST_MAP: Record<string, { input: number; output: number }> = {
+  // DeepSeek (direct API)
+  "deepseek-chat": { input: 0.27, output: 1.10 },
+  "deepseek-reasoner": { input: 0.55, output: 2.19 },
   // Fireworks AI — DeepSeek V4 Pro
   "accounts/fireworks/models/deepseek-v4-pro": { input: 1.20, output: 4.80 },
   // OpenAI

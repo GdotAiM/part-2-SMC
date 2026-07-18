@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { X, TrendingUp, TrendingDown, Minus, Layers, BarChart2, Activity, Zap, ChevronUp, ChevronDown, Target, Check, AlertTriangle, Copy, ClipboardCheck, Play, Radio, BrainCircuit, ExternalLink } from "lucide-react";
+import { X, TrendingUp, TrendingDown, Layers, BarChart2, Activity, Zap, ChevronUp, ChevronDown, Target, Check, AlertTriangle, Copy, ClipboardCheck, Play, Radio, BrainCircuit, ExternalLink } from "lucide-react";
 import { isChartable } from "@/lib/alpaca-url";
 import { TradingViewChart } from "./TradingViewChart";
 import type { SmcReport } from "@workspace/api-client-react";

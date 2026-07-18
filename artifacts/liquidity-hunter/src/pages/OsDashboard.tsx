@@ -63,10 +63,31 @@ function useTfData(market: Market, symbol: string, tf: Tf, corrSym: string | und
   return market === "crypto" ? crypto : forex;
 }
 
+const OS_VIEWS: OsView[] = ["overview", "market", "analyze", "trade", "learn", "evaluate", "agent"];
+
 export default function OsDashboard() {
-  const [, setLocation] = useLocation();
+  const [location, setLocation] = useLocation();
   const queryClient = useQueryClient();
-  const [view, setView] = useState<OsView>("overview");
+  const [view, setView] = useState<OsView>(() => {
+    // Derive initial view from URL path for deep-link support
+    const path = location.replace(/^\//, "");
+    return (OS_VIEWS as readonly string[]).includes(path) ? (path as OsView) : "overview";
+  });
+
+  // Sync view from URL when location changes (browser back/forward)
+  useEffect(() => {
+    const path = location.replace(/^\//, "");
+    if ((OS_VIEWS as readonly string[]).includes(path) && path !== view) {
+      setView(path as OsView);
+    }
+  }, [location]);
+
+  // When the user changes view via sidebar or command palette, update the URL
+  function handleViewChange(newView: OsView) {
+    setView(newView);
+    const path = newView === "overview" ? "/" : `/${newView}`;
+    setLocation(path);
+  }
   const [market, setMarket] = useState<Market>("crypto");
   const [symbol, setSymbol] = useState("BTCUSDT");
   const [corrSym, setCorrSym] = useState("ETHUSDT");
@@ -169,6 +190,7 @@ export default function OsDashboard() {
     }, [market, symbol, corrParam, queryClient]),
   });
 
+  const tfIsLoading = activeStyle.timeframes.some(tf => tfMap[tf as Tf].isLoading);
   const livePrice = liveData[activeStyle.timeframes[activeStyle.timeframes.length - 1]]?.currentPrice;
   const effectivePrice = livePrice ?? primaryReport?.currentPrice;
 
@@ -195,7 +217,12 @@ export default function OsDashboard() {
             market={market}
             matchedStrategies={matchedStrategies}
             cascade={cascade}
-            onViewChange={setView}
+            onViewChange={handleViewChange}
+            onSelectTf={(tf) => {
+              const r = tfMap[tf as Tf].data;
+              if (r) setSheet({ tf: tf as Tf, report: r });
+            }}
+            onOpenConfluence={() => setConfluenceSheetOpen(true)}
             strategyProps={strategyProps}
           />
         );
@@ -208,6 +235,7 @@ export default function OsDashboard() {
             onSymbolChange={setSymbol}
             onMarketChange={handleMarketSwitch}
             report={primaryReport}
+            isLoading={tfIsLoading}
           />
         );
 
@@ -215,7 +243,7 @@ export default function OsDashboard() {
         return <StrategyAtlas />;
 
       case "trade":
-        return <TradeView />;
+        return <TradeView symbol={symbol} market={market} />;
 
       case "learn":
         return <LearnView />;
@@ -238,7 +266,7 @@ export default function OsDashboard() {
   return (
     <AppShell
       currentView={view}
-      onViewChange={setView}
+      onViewChange={handleViewChange}
       symbol={symbol}
       market={market}
     >

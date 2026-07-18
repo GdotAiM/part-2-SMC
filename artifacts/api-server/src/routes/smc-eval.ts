@@ -24,7 +24,9 @@ import { logger } from "../lib/logger.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
-const SCENARIOS_DIR = join(__dirname, "..", "..", "..", "..", "data", "smc-eval", "scenarios");
+// At runtime the code is bundled into dist/index.mjs, so __dirname = dist/.
+// From dist/ we need 3 levels up to reach the project root: dist/ → api-server/ → artifacts/ → project-root/
+const SCENARIOS_DIR = join(__dirname, "..", "..", "..", "data", "smc-eval", "scenarios");
 
 // ─── Router ──────────────────────────────────────────────────────────────────
 

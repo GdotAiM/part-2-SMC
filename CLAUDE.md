@@ -223,3 +223,22 @@ Start-Process "shell:AppsFolder\<AUMID>!TradingView.Desktop" -ArgumentList "--re
 The AUMID can be discovered via `New-Object -ComObject Shell.Application` → `shell:AppsFolder` items.
 
 Set `TV_CONNECTION_TYPE=desktop` in `.env` for CDP mode, `web` for Puppeteer mode (default). The `tradingview-desktop` connection layer handles page target matching, CSP-restricted health checks, and the `_exposed_chartWidgetCollection` API (TV Desktop lacks `window.tvWidget`).
+
+### Env-var loading fix (Jul 18)
+
+The ESM import hoisting problem meant `dotenv.config()` in `index.ts` ran AFTER static imports in config modules, so `TV_ENABLED` and API keys were never seen by the modules that need them.
+
+**Fix:** The `start` script in `package.json` now uses `node --env-file ../../.env` which loads .env before any code runs. Config modules that read `process.env` at import time now see the correct values.
+
+### `agent-loop.ts` cleanup (Jul 18)
+
+All barrel imports from `lib/integrations/tradingview/index.js` were replaced with direct imports from the specific sub-modules:
+- `tradingview/config.js` — `getTvConfig`, `setTvConfig`
+- `tradingview/cdp/connection.js` — `connect`, `isConnected`, `evaluate`, `evaluateWithArgs`, `keyboardPress`, `mouseClick`
+- `tradingview/cdp/chart.js` — `getChartState`, `getSymbol`, `getTimeframe`, `getBars`
+- `tradingview/cdp/actions.js` — `syncSmcLevels`
+- `tradingview/types.js` — `toTvSymbol`, `fromTvSymbol`
+
+### Scenarios path fix (Jul 18)
+
+`smc-eval.ts` had `SCENARIOS_DIR` pointing 4 levels up from `dist/` (`../../../../data/...`) instead of 3 (`../../../data/...`). Fixed and rebuilt.

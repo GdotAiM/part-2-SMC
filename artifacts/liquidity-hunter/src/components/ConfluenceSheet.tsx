@@ -1,6 +1,6 @@
 import { useState } from "react";
 import {
-  X, TrendingUp, TrendingDown, Minus, ArrowRight,
+  X, TrendingUp, TrendingDown, ArrowRight,
   Target, Check, AlertTriangle, Copy, ClipboardCheck, Layers, Activity, BarChart2, Zap,
 } from "lucide-react";
 import type { SmcReport } from "@workspace/api-client-react";

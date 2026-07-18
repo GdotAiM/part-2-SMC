@@ -91,20 +91,24 @@ router.post("/agent-loop/run", async (req: Request, res: Response): Promise<void
   if (candles.length < 10) {
     // Fallback: try reading bars from TradingView Desktop (it has a live connection)
     try {
-      const tv = await import("../lib/integrations/tradingview/index.js");
-      if (tv.isTvEnabled()) {
+      const { getTvConfig } = await import("../lib/integrations/tradingview/config.js");
+      if (getTvConfig().enabled) {
+        const { connect } = await import("../lib/integrations/tradingview/cdp/connection.js");
+        const { getSymbol, getTimeframe, getBars } = await import("../lib/integrations/tradingview/cdp/chart.js");
+        const { fromTvSymbol } = await import("../lib/integrations/tradingview/types.js");
+
         logger.info({ symbol: sym, tf }, "Binance/Yahoo unavailable — trying TradingView Desktop...");
         // Ensure we're connected
-        await tv.connect();
+        await connect();
         // Read the current symbol/timeframe from TV to see if it matches
-        const tvSymbol = await tv.getSymbol();
-        const tvTf = await tv.getTimeframe();
+        const tvSymbol = await getSymbol();
+        const tvTf = await getTimeframe();
         if (tvSymbol && tvTf) {
           logger.info({ tvSymbol, tvTf }, "TV Desktop chart is showing");
           // Attempt conversion
-          const rawSymbol = tv.fromTvSymbol ? tv.fromTvSymbol(tvSymbol) : tvSymbol;
+          const rawSymbol = fromTvSymbol ? fromTvSymbol(tvSymbol) : tvSymbol;
           // Read bars — TV has the most recent data cached
-          const tvBars = await tv.getBars(500);
+          const tvBars = await getBars(500);
           if (tvBars && tvBars.length >= 10) {
             candles = tvBars.map(b => [b.time, b.open, b.high, b.low, b.close, b.volume]);
             logger.info({ symbol: sym, tf, count: candles.length, source: "tradingview_desktop" }, "Using TV Desktop bars");
@@ -403,9 +407,10 @@ router.get("/agent-loop/langfuse-status", (_req: Request, res: Response): void =
 // ─── GET /api/agent-loop/tv-status — TradingView connection status
 router.get("/agent-loop/tv-status", async (_req, res) => {
   try {
-    const tv = await import("../lib/integrations/tradingview/index.js");
-    const connected = await tv.isConnected();
-    res.json({ connected, config: tv.getTvConfig(), url: connected ? await tv.getPageUrl() : null });
+    const { isConnected, getPageUrl } = await import("../lib/integrations/tradingview/cdp/connection.js");
+    const { getTvConfig } = await import("../lib/integrations/tradingview/config.js");
+    const connected = await isConnected();
+    res.json({ connected, config: getTvConfig(), url: connected ? await getPageUrl() : null });
   } catch (err) {
     res.json({ connected: false, error: (err as Error).message });
   }
@@ -425,8 +430,8 @@ router.post("/agent-loop/tv-config", async (req, res) => {
 // ─── POST /api/agent-loop/tv-connect — Force reconnect
 router.post("/agent-loop/tv-connect", async (_req, res) => {
   try {
-    const tv = await import("../lib/integrations/tradingview/index.js");
-    const ok = await tv.connect();
+    const { connect } = await import("../lib/integrations/tradingview/cdp/connection.js");
+    const ok = await connect();
     res.json({ connected: ok });
   } catch (err) {
     res.status(500).json({ error: (err as Error).message });
@@ -436,10 +441,10 @@ router.post("/agent-loop/tv-connect", async (_req, res) => {
 // ─── POST /api/agent-loop/tv-sync — Sync SMC levels to TV chart
 router.post("/agent-loop/tv-sync", async (req, res) => {
   try {
-    const tv = await import("../lib/integrations/tradingview/index.js");
+    const { syncSmcLevels } = await import("../lib/integrations/tradingview/cdp/actions.js");
     const { report } = req.body;
     if (!report) { res.status(400).json({ error: "report is required" }); return; }
-    const count = await tv.syncSmcLevels(report);
+    const count = await syncSmcLevels(report);
     res.json({ synced: count });
   } catch (err) {
     res.status(500).json({ error: (err as Error).message });
@@ -449,8 +454,8 @@ router.post("/agent-loop/tv-sync", async (req, res) => {
 // ─── GET /api/agent-loop/tv-read — Read chart state (symbol, timeframe)
 router.get("/agent-loop/tv-read", async (_req, res) => {
   try {
-    const tv = await import("../lib/integrations/tradingview/index.js");
-    const state = await tv.getChartState();
+    const { getChartState } = await import("../lib/integrations/tradingview/cdp/chart.js");
+    const state = await getChartState();
     res.json({ state });
   } catch (err) {
     res.status(500).json({ error: (err as Error).message });
@@ -460,28 +465,30 @@ router.get("/agent-loop/tv-read", async (_req, res) => {
 // ─── POST /api/agent-loop/tv-draw — Draw SMC levels on TV chart
 router.post("/agent-loop/tv-draw", async (req, res) => {
   try {
-    const tv = await import("../lib/integrations/tradingview/index.js");
+    const { getTvConfig } = await import("../lib/integrations/tradingview/config.js");
+    const { connect, isConnected, evaluate, evaluateWithArgs, keyboardPress, mouseClick } = await import("../lib/integrations/tradingview/cdp/connection.js");
+    const { toTvSymbol } = await import("../lib/integrations/tradingview/types.js");
     const { action, symbol, timeframe } = req.body as { action?: string; symbol?: string; timeframe?: string };
 
-    if (!tv.isTvEnabled()) {
+    if (!getTvConfig().enabled) {
       res.status(400).json({ error: "TV Desktop not enabled" });
       return;
     }
 
     // Ensure connected
-    if (!(await tv.isConnected())) {
-      await tv.connect();
+    if (!(await isConnected())) {
+      await connect();
     }
 
     // If symbol/timeframe provided, switch TV Desktop chart to that context
     if (symbol && timeframe) {
-      if (await tv.isConnected()) {
-        const converted = tv.toTvSymbol ? tv.toTvSymbol(symbol) : symbol;
+      if (await isConnected()) {
+        const converted = toTvSymbol ? toTvSymbol(symbol) : symbol;
         const tvTf = timeframe.replace("m", "").replace("h", "").replace("d", "D").replace("w", "W");
         const kind = timeframe.endsWith("m") ? "minutes" : timeframe.endsWith("h") ? "hours" : timeframe.endsWith("d") ? "days" : "weeks";
         const mult = parseInt(timeframe) || 1;
 
-        await tv.evaluateWithArgs((sym: string, tf: string, k: string, m: number) => {
+        await evaluateWithArgs((sym: string, tf: string, k: string, m: number) => {
           try {
             const coll = (window as any)._exposed_chartWidgetCollection;
             const src = coll?.activeChartWidget?._value
@@ -508,9 +515,9 @@ router.post("/agent-loop/tv-draw", async (req, res) => {
 
     if (action === "clear") {
       // Clear all drawings via keyboard: Escape to deselect, then remove all
-      for (let i = 0; i < 3; i++) { await tv.keyboardPress("Escape"); await new Promise(r => setTimeout(r, 200)); }
+      for (let i = 0; i < 3; i++) { await keyboardPress("Escape"); await new Promise(r => setTimeout(r, 200)); }
       // Also call removeAllDrawingTools via evaluate
-      await tv.evaluate(() => {
+      await evaluate(() => {
         try {
           const w = (window as any)._exposed_chartWidgetCollection;
           if (w?._chartWidgetsDefs?.[0]?.chartWidget?.model) {
@@ -523,7 +530,7 @@ router.post("/agent-loop/tv-draw", async (req, res) => {
 
     if (action === "levels" || action === "all") {
       // Compute and draw BSL/SSL/Current
-      const coords = await tv.evaluate(() => {
+      const coords = await evaluate(() => {
         try {
           const cw = (window as any)._exposed_chartWidgetCollection._chartWidgetsDefs[0].chartWidget;
           const pane = cw.model().model().mainPane();
@@ -567,9 +574,9 @@ router.post("/agent-loop/tv-draw", async (req, res) => {
       if (coords && coords.levels) {
         for (const lvl of coords.levels) {
           if (lvl.y === null) continue;
-          await tv.keyboardPress("Alt+h");
+          await keyboardPress("Alt+h");
           await new Promise(r => setTimeout(r, 1200));
-          await tv.mouseClick(coords.paneLeft + 200, coords.paneTop + lvl.y);
+          await mouseClick(coords.paneLeft + 200, coords.paneTop + lvl.y);
           await new Promise(r => setTimeout(r, 1000));
           result.levels.push(lvl);
           log(`Drawn ${lvl.type} at ${lvl.price}`);
@@ -579,7 +586,7 @@ router.post("/agent-loop/tv-draw", async (req, res) => {
 
     if (action === "fvgs" || action === "all") {
       // Compute and draw FVG boxes
-      const fvgData = await tv.evaluate(() => {
+      const fvgData = await evaluate(() => {
         try {
           const cw = (window as any)._exposed_chartWidgetCollection._chartWidgetsDefs[0].chartWidget;
           const pane = cw.model().model().mainPane();
@@ -610,15 +617,15 @@ router.post("/agent-loop/tv-draw", async (req, res) => {
         for (const f of fvgData.fvgs) {
           if (f.yTop === null || f.yBottom === null || f.x === null) continue;
 
-          await tv.keyboardPress("Alt+Shift+r");
+          await keyboardPress("Alt+Shift+r");
           await new Promise(r => setTimeout(r, 1200));
 
           // Draw rectangle spanning ~30px around the candle
           const span = 30;
           const cx = fvgData.paneLeft + f.x;
-          await tv.mouseClick(cx - span, fvgData.paneTop + f.yTop);
+          await mouseClick(cx - span, fvgData.paneTop + f.yTop);
           await new Promise(r => setTimeout(r, 600));
-          await tv.mouseClick(cx + span, fvgData.paneTop + f.yBottom);
+          await mouseClick(cx + span, fvgData.paneTop + f.yBottom);
           await new Promise(r => setTimeout(r, 1500));
           result.fvgs.push(f);
           log(`Drawn FVG $${f.bottom.toFixed(2)} -> $${f.top.toFixed(2)}`);
@@ -628,7 +635,7 @@ router.post("/agent-loop/tv-draw", async (req, res) => {
 
     if (action === "killzones" || action === "all") {
       // Draw session killzone boxes
-      const kzData = await tv.evaluate(() => {
+      const kzData = await evaluate(() => {
         try {
           const cw = (window as any)._exposed_chartWidgetCollection._chartWidgetsDefs[0].chartWidget;
           const pane = cw.model().model().mainPane();
@@ -673,19 +680,19 @@ router.post("/agent-loop/tv-draw", async (req, res) => {
 
       if (kzData && kzData.zones) {
         for (const z of kzData.zones) {
-          await tv.keyboardPress("Alt+Shift+r");
+          await keyboardPress("Alt+Shift+r");
           await new Promise(r => setTimeout(r, 1200));
 
-          await tv.mouseClick(kzData.paneLeft + z.startX, kzData.paneTop + 5);
+          await mouseClick(kzData.paneLeft + z.startX, kzData.paneTop + 5);
           await new Promise(r => setTimeout(r, 600));
-          await tv.mouseClick(kzData.paneLeft + z.endX, kzData.paneTop + 500);
+          await mouseClick(kzData.paneLeft + z.endX, kzData.paneTop + 500);
           await new Promise(r => setTimeout(r, 1500));
           log(`Drawn ${z.zone} killzone`);
         }
       }
     }
 
-    await tv.keyboardPress("Escape");
+    await keyboardPress("Escape");
     res.json(result);
   } catch (err: any) {
     res.status(500).json({ error: (err as Error).message });

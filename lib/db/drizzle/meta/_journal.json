@@ -15,6 +15,13 @@
       "when": 1784359661226,
       "tag": "0001_silent_wilson_fisk",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1784371751288,
+      "tag": "0002_breezy_lyja",
+      "breakpoints": true
     }
   ]
 }

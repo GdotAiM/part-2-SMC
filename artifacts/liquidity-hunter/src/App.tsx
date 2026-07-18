@@ -20,10 +20,21 @@ const queryClient = new QueryClient({
 function Router() {
   return (
     <Switch>
-      <Route path="/" component={OsDashboard} />
+      {/* Legacy routes (keep these first so they match before OS routes) */}
       <Route path="/analytics" component={Analytics} />
       <Route path="/broker" component={Broker} />
       <Route path="/agent-loop" component={AgentLoop} />
+      {/* SMC Pulse OS routes — each is a deep-linkable view */}
+      <Route path="/overview" component={OsDashboard} />
+      <Route path="/market" component={OsDashboard} />
+      <Route path="/analyze" component={OsDashboard} />
+      <Route path="/trade" component={OsDashboard} />
+      <Route path="/learn" component={OsDashboard} />
+      <Route path="/evaluate" component={OsDashboard} />
+      <Route path="/agent" component={OsDashboard} />
+      {/* Default OS route */}
+      <Route path="/" component={OsDashboard} />
+      {/* 404 catch-all */}
       <Route component={NotFound} />
     </Switch>
   );

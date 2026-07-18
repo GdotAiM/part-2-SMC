@@ -1,12 +1,13 @@
 /**
  * SMC-EVAL Benchmark Lab
  *
- * Exposes the 100-scenario benchmark suite as a first-class product surface.
- * Uses the existing POST /api/smc-eval/evaluate and GET /api/smc-eval/scenarios endpoints.
+ * Dual workflow:
+ * 1. "Evaluate Scenario" — runs the engine-only evaluation (POST /api/smc-eval/evaluate)
+ * 2. "Score AI Answer" — submits human/AI reasoning for scoring (POST /api/smc-eval/score)
  */
 
 import { useState, useEffect } from "react";
-import { FlaskConical, ChevronRight, TrendingUp, TrendingDown, Minus, Check, AlertTriangle, Brain, Target } from "lucide-react";
+import { FlaskConical, ChevronRight, Check, AlertTriangle, Loader2, Brain, Target } from "lucide-react";
 import { apiUrl } from "@/lib/api";
 
 interface ScenarioMeta {
@@ -30,6 +31,7 @@ interface EvalScore {
     failureFlags?: string[];
   };
   modelClassification?: string;
+  failureFlags?: string[];
 }
 
 const CATEGORIES = [
@@ -50,35 +52,94 @@ const SCORE_DIMS = [
 
 export function SmcEvalLab() {
   const [scenarios, setScenarios] = useState<ScenarioMeta[]>([]);
+  const [loading, setLoading] = useState(true);
   const [running, setRunning] = useState(false);
+  const [scoring, setScoring] = useState(false);
   const [result, setResult] = useState<EvalScore | null>(null);
-  const [selectedScenario, setSelectedScenario] = useState<string>("SMC-EVAL-000001");
+  const [selectedScenario, setSelectedScenario] = useState("SMC-EVAL-000001");
+  const [error, setError] = useState<string | null>(null);
+
+  // AI answer inputs
+  const [reasoning, setReasoning] = useState("");
+  const [modelIds, setModelIds] = useState("");
+  const [entry, setEntry] = useState("");
+  const [stop, setStop] = useState("");
+  const [target, setTarget] = useState("");
+  const [rr, setRr] = useState("");
+  const [invalidation, setInvalidation] = useState("");
 
   useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    setError(null);
     fetch(apiUrl("/smc-eval/scenarios"))
-      .then(r => r.json())
-      .then(d => setScenarios(d.scenarios ?? []))
-      .catch(() => {});
+      .then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); })
+      .then(d => { if (!cancelled) setScenarios(d.scenarios ?? []); })
+      .catch(e => { if (!cancelled) setError(e.message ?? "Failed to load scenarios"); })
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
   }, []);
 
+  /** Engine-only evaluation — sends { scenarioId } */
   async function runEval() {
     setRunning(true);
     setResult(null);
+    setError(null);
     try {
       const res = await fetch(apiUrl("/smc-eval/evaluate"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ scenarioId: selectedScenario }),
       });
+      if (!res.ok) { setError(`HTTP ${res.status}: ${res.statusText}`); return; }
       const data = await res.json();
       setResult({
         scenarioId: data.scenarioId,
         scores: data.scores,
         modelClassification: data.modelClassification,
       });
-    } catch { /* ignore */ }
+    } catch (e: any) { setError(e.message ?? "Evaluation failed"); }
     setRunning(false);
   }
+
+  /** Score AI reasoning — sends { scenarioId, reasoning, modelIds, ...trade } */
+  async function scoreAnswer() {
+    if (!reasoning.trim()) { setError("Enter AI reasoning text before scoring."); return; }
+    setScoring(true);
+    setResult(null);
+    setError(null);
+    try {
+      const body: Record<string, unknown> = { scenarioId: selectedScenario, reasoning: reasoning.trim() };
+      const parsedModels = modelIds.split(",").map(s => s.trim()).filter(Boolean);
+      if (parsedModels.length > 0) body.modelIds = parsedModels;
+      if (entry.trim()) body.entry = entry.trim();
+      if (stop.trim()) body.stop = stop.trim();
+      if (target.trim()) body.target = target.trim();
+      if (rr.trim()) body.rr = parseFloat(rr);
+      if (invalidation.trim()) body.invalidation = invalidation.trim();
+
+      const res = await fetch(apiUrl("/smc-eval/score"), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      if (!res.ok) { const err = await res.json().catch(() => ({ error: res.statusText })); setError(err.error ?? `HTTP ${res.status}`); return; }
+      const data = await res.json();
+      setResult({
+        scenarioId: data.scenarioId,
+        scores: data.scores,
+        modelClassification: data.modelClassification,
+        failureFlags: data.failureFlags,
+      });
+    } catch (e: any) { setError(e.message ?? "Scoring failed"); }
+    setScoring(false);
+  }
+
+  const classificationColor = (c?: string) => {
+    if (c === "Strong" || c === "Expert-Level") return "text-[hsl(var(--bullish))]";
+    if (c === "Competent") return "text-primary";
+    return "text-amber-400";
+  };
 
   return (
     <div className="p-5 lg:p-7 max-w-[1800px] mx-auto space-y-5">
@@ -100,11 +161,22 @@ export function SmcEvalLab() {
               <div className="mt-4 flex items-end gap-3">
                 <span className="text-6xl font-black">{Math.round(result.scores.total)}</span>
                 <span className="text-xs text-muted-foreground pb-2">/ 100<br />
-                  <span className={result.scores.classification === "Strong" || result.scores.classification === "Expert-Level" ? "text-[hsl(var(--bullish))]" : result.scores.classification === "Competent" ? "text-primary" : "text-amber-400"}>
-                    {result.scores.classification}
+                  <span className={classificationColor(result.scores.classification)}>
+                    {result.scores.classification ?? "Unclassified"}
                   </span>
                 </span>
               </div>
+
+              {result.failureFlags && result.failureFlags.length > 0 && (
+                <div className="mt-3 space-y-1">
+                  {result.failureFlags.map(flag => (
+                    <div key={flag} className="flex items-center gap-1.5 text-[10px] text-destructive">
+                      <AlertTriangle className="w-3 h-3" /> {flag.replace(/_/g, " ")}
+                    </div>
+                  ))}
+                </div>
+              )}
+
               <div className="mt-5 space-y-3">
                 {SCORE_DIMS.map(dim => {
                   const val = (result.scores as any)[dim.key]?.total ?? 0;
@@ -121,6 +193,7 @@ export function SmcEvalLab() {
                   );
                 })}
               </div>
+
               {result.modelClassification && (
                 <div className="mt-4 p-3 rounded-sm bg-primary/5 border border-primary/20">
                   <span className="text-[10px] text-muted-foreground uppercase tracking-wider">Classification: </span>
@@ -130,12 +203,18 @@ export function SmcEvalLab() {
             </>
           ) : (
             <div className="mt-8 flex items-center justify-center h-40 text-xs text-muted-foreground italic font-mono">
-              Run an evaluation to see scores
+              Run an evaluation or score an AI answer to see results
+            </div>
+          )}
+
+          {error && (
+            <div className="mt-3 flex items-center gap-2 text-[10px] text-destructive">
+              <AlertTriangle className="w-3 h-3" /> {error}
             </div>
           )}
         </section>
 
-        {/* Scenario Matrix */}
+        {/* Scenario Matrix + Submission */}
         <section className="col-span-12 xl:col-span-7 rounded-sm border border-border/30 bg-card/40 p-5">
           <div className="flex items-center justify-between mb-4">
             <div>
@@ -144,6 +223,7 @@ export function SmcEvalLab() {
             </div>
             <span className="text-[9px] text-primary font-mono">SMC-EVAL-000001 → 000100</span>
           </div>
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mb-4">
             {CATEGORIES.map((cat) => (
               <div key={cat.key} className="rounded-sm bg-muted/20 border border-border/20 p-3">
@@ -159,12 +239,12 @@ export function SmcEvalLab() {
             ))}
           </div>
 
-          {/* Run evaluation */}
-          <div className="flex items-center gap-3">
+          {/* Scenario selector + buttons */}
+          <div className="flex items-center gap-3 mb-4">
             <select
               value={selectedScenario}
-              onChange={e => setSelectedScenario(e.target.value)}
-              className="bg-muted border border-border text-xs rounded-sm px-2 py-1.5 font-mono"
+              onChange={e => { setSelectedScenario(e.target.value); setResult(null); setError(null); }}
+              className="bg-muted border border-border text-xs rounded-sm px-2 py-1.5 font-mono flex-1"
             >
               {scenarios.length > 0 ? scenarios.map(s => (
                 <option key={s.id} value={s.id}>{s.id} — {s.asset}</option>
@@ -177,7 +257,53 @@ export function SmcEvalLab() {
               disabled={running}
               className="px-4 py-1.5 rounded-sm bg-primary/10 border border-primary/20 text-xs text-primary font-semibold hover:bg-primary/15 disabled:opacity-40 transition-colors"
             >
-              {running ? "Running..." : "Evaluate Scenario"}
+              {running ? "Running..." : "Engine Eval"}
+            </button>
+          </div>
+
+          {/* AI Answer Submission */}
+          <div className="rounded-sm bg-muted/20 border border-border/20 p-4 space-y-3">
+            <div className="flex items-center gap-2">
+              <Brain className="w-3.5 h-3.5 text-primary" />
+              <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Score AI Answer</span>
+            </div>
+
+            <textarea
+              value={reasoning}
+              onChange={e => setReasoning(e.target.value)}
+              placeholder="Paste the AI's reasoning text here…"
+              rows={4}
+              className="w-full bg-muted border border-border rounded-sm px-3 py-2 text-xs font-mono text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary resize-y"
+            />
+
+            <div className="grid grid-cols-2 gap-2">
+              <input
+                value={modelIds}
+                onChange={e => setModelIds(e.target.value)}
+                placeholder="Model IDs (comma-separated, e.g. SILVER_BULLET,CHOCH)"
+                className="bg-muted border border-border rounded-sm px-2 py-1.5 text-[10px] font-mono text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+              />
+              <input
+                value={invalidation}
+                onChange={e => setInvalidation(e.target.value)}
+                placeholder="Invalidation reason"
+                className="bg-muted border border-border rounded-sm px-2 py-1.5 text-[10px] font-mono text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+              />
+            </div>
+
+            <div className="grid grid-cols-4 gap-2">
+              <input value={entry} onChange={e => setEntry(e.target.value)} placeholder="Entry" className="bg-muted border border-border rounded-sm px-2 py-1.5 text-[10px] font-mono text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary" />
+              <input value={stop} onChange={e => setStop(e.target.value)} placeholder="Stop" className="bg-muted border border-border rounded-sm px-2 py-1.5 text-[10px] font-mono text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary" />
+              <input value={target} onChange={e => setTarget(e.target.value)} placeholder="Target" className="bg-muted border border-border rounded-sm px-2 py-1.5 text-[10px] font-mono text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary" />
+              <input value={rr} onChange={e => setRr(e.target.value)} placeholder="R:R" className="bg-muted border border-border rounded-sm px-2 py-1.5 text-[10px] font-mono text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary" />
+            </div>
+
+            <button
+              onClick={scoreAnswer}
+              disabled={scoring || !reasoning.trim()}
+              className="w-full py-2 rounded-sm bg-primary/10 border border-primary/20 text-xs text-primary font-semibold hover:bg-primary/15 disabled:opacity-40 transition-colors flex items-center justify-center gap-2"
+            >
+              {scoring ? <><Loader2 className="w-3 h-3 animate-spin" /> Scoring…</> : <><Check className="w-3 h-3" /> Score AI Answer</>}
             </button>
           </div>
         </section>
