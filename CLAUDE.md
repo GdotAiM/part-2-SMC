@@ -99,6 +99,30 @@ A complete ICT/SMC model-matching engine. Key files:
 
 **Frontend:** `useCascadeStrategy` hook → `ConfluenceCard` shows primary strategy name/score + Execute Now → opens `IntelligenceSheet` with `OSOutputPanel`. `CAL` button for economic calendar refresh.
 
+## SMC-EVAL Benchmark Integration (`lib/api-zod/src/strategies/`)
+
+A 100-point evaluation system for AI reasoning on ICT/SMC market structure, matching the SMC-EVAL-Benchmark.md v1.0 specification.
+
+**Types** (`smc-eval-types.ts`): `SMCGroundTruth` interface, `SMCEvent`, `ModelCandidate`, `ModelClassification` (PRIMARY/ALTERNATIVE/PARTIAL/INCORRECT/HALLUCINATED), `FailureFlag` (MODEL_HALLUCINATION, STRUCTURAL_CONTRADICTION, TIME_CONSTRAINT_VIOLATION, HTF_LTF_CONFLICT, UNSUPPORTED_TRADE).
+
+**Scoring Engine** (`smc-eval-scoring.ts`) — 5 weighted dimensions:
+| Dimension | Max | Scorer Function |
+|---|---|---|
+| Structural Accuracy | 30 | `scoreStructuralAccuracy()` |
+| Model Alignment | 25 | `scoreModelAlignment()` |
+| Confluence & Reasoning | 20 | `scoreConfluenceReasoning()` |
+| Trade Precision | 15 | `scoreTradePrecision()` |
+| Hallucination Avoidance | 10 | `scoreHallucinationAvoidance()` |
+
+Composite via `computeSmcEvalScore()` → total 0-100 + classification (Expert-Level / Strong / Competent / Developing / Weak). `classifyModelMatch()` returns PRIMARY/ALTERNATIVE/PARTIAL/INCORRECT/HALLUCINATED with failure flags. 129 vitest tests total.
+
+**Routes** (`artifacts/api-server/src/routes/smc-eval.ts`):
+- `POST /api/smc-eval/evaluate` — full pipeline (scenario or live symbol → SMC engine → registry → scoring)
+- `POST /api/smc-eval/score` — score AI reasoning against a known scenario
+- `GET /api/smc-eval/scenarios` — list available benchmark scenarios
+
+**Dataset:** `data/smc-eval/scenarios/` — first scenario SMC-EVAL-000001 (BTCUSDT bullish, Model 1 confluence).
+
 ## Model Definitions DB (`lib/db/src/schema/`)
 
 - `model-definitions.ts` — `model_definitions` table with **Taxonomy v2 columns**: ontology (7-layer SMC-EVAL category), priority (PRIMARY/ALTERNATIVE/INFORMATIONAL), invalidation rules (jsonb), temporalRules, confusionGuards, prerequisites. Migrations `0000` + `0002` (additive).
