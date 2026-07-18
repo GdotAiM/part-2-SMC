@@ -3,7 +3,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/not-found";
-import Dashboard from "@/pages/dashboard";
+import OsDashboard from "@/pages/OsDashboard";
 import Analytics from "@/pages/Analytics";
 import Broker from "@/pages/Broker";
 import AgentLoop from "@/pages/AgentLoop";
@@ -20,7 +20,7 @@ const queryClient = new QueryClient({
 function Router() {
   return (
     <Switch>
-      <Route path="/" component={Dashboard} />
+      <Route path="/" component={OsDashboard} />
       <Route path="/analytics" component={Analytics} />
       <Route path="/broker" component={Broker} />
       <Route path="/agent-loop" component={AgentLoop} />
