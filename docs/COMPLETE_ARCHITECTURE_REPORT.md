@@ -1,989 +1,1157 @@
 # SMC Pulse Predict — Complete Architecture Report
 
-## Principal Software Architect's Reverse Engineering & System Audit
+**Principal Software Architect's System Audit & Reverse Engineering**
 
-**Repository:** `part-2-SMC`  
-**Generated:** 2026-07-14  
-**Type:** pnpm monorepo — Node.js 22+, Express 5, React 19  
-**Primary Language:** TypeScript (esbuild-bundled server, Vite-bundled frontend)  
+| Attribute | Value |
+|---|---|
+| **Repository** | `part-2-SMC` |
+| **Generated** | 2026-07-18 |
+| **Package Manager** | pnpm (workspace monorepo) |
+| **Runtime** | Node.js 22+, Express 5, React 19 |
+| **Language** | TypeScript (strict) — esbuild-bundled server, Vite-bundled frontend |
+| **Database** | PostgreSQL 16 via Drizzle ORM |
+| **LLM Provider** | Multi-provider: Fireworks AI (default), OpenAI, Groq, AMD vLLM, Ollama |
+| **TradingView** | CDP integration (104+ tools via chrome-remote-interface) |
+| **Test Framework** | vitest (api-zod: 96 tests), hand-rolled assertions (api-server: ~200 tests) |
+| **CI/CD** | GitHub Actions (typecheck → build → Docker), Railway/Render blueprints |
 
 ---
 
 ## Table of Contents
 
-1. Executive Summary
-2. Repository Structure & Module Map
-3. Project Stack & Dependencies
-4. Architecture Overview
-5. SMC Engine Architecture
-6. AI & LLM Pipeline
-7. Agent Loop Engine Flow
-8. AI Flow Diagram
-9. Backend Architecture
-10. Frontend Architecture
-11. Database ER Diagram
-12. API Documentation
-13. Sequence Diagrams
-14. User Journey
-15. Technical Debt Report
-16. Risk Assessment
-17. Improvement Roadmap
-18. Complete Glossary
-19. Onboarding Guide
-20. "How the Entire System Works" Narrative
+1. [Executive Summary](#1-executive-summary)
+2. [Comparison: Before vs. After](#2-comparison-before-vs-after)
+3. [Repository Structure & Module Map](#3-repository-structure--module-map)
+4. [Monorepo Package Map](#4-monorepo-package-map)
+5. [Stack & Dependencies](#5-stack--dependencies)
+6. [SMC/ICT Analysis Engine](#6-smcict-analysis-engine)
+7. [Strategy Evaluation System](#7-strategy-evaluation-system)
+8. [Backend Architecture](#8-backend-architecture)
+9. [Frontend Architecture](#9-frontend-architecture)
+10. [AI & LLM Pipeline](#10-ai--llm-pipeline)
+11. [Agent Loop Engine](#11-agent-loop-engine)
+12. [Real-Time Data Pipeline](#12-real-time-data-pipeline)
+13. [TradingView Desktop Integration](#13-tradingview-desktop-integration)
+14. [Memory & Learning Systems](#14-memory--learning-systems)
+15. [Database Schema (Drizzle ORM)](#15-database-schema-drizzle-orm)
+16. [Narrative Generator & Reasoning Agent](#16-narrative-generator--reasoning-agent)
+17. [External Intelligence & Economic Calendar](#17-external-intelligence--economic-calendar)
+18. [Deployment & Infrastructure](#18-deployment--infrastructure)
+19. [API Endpoint Reference](#19-api-endpoint-reference)
+20. [Technical Debt & Risk Assessment](#20-technical-debt--risk-assessment)
+21. [Glossary](#21-glossary)
 
 ---
 
 ## 1. Executive Summary
 
-SMC Pulse Predict is an AI Trading Operating System that applies ICT (Inner Circle Trader) / SMC (Smart Money Concepts) methodology to live market data. It runs as a monorepo with 3 artifacts, 3 shared libraries, and 2 deployment targets.
+SMC Pulse Predict is an **AI Trading Operating System** that applies ICT (Inner Circle Trader) / SMC (Smart Money Concepts) methodology to live market data. It runs as a pnpm monorepo with 5 backend artifacts, 3 shared libraries, and 2 deployment targets.
 
-**Core Capabilities:**
-- Real-time OHLCV ingestion (Binance WS for crypto, Finnhub/Yahoo for forex)
-- 7-module SMC detection engine (structure, liquidity, OB, FVG, PD Array, daily bias, SMT divergence)
-- Multi-agent AI pipeline (Fireworks AI / DeepSeek V4 Pro) with streaming SSE
-- Autonomous Agent Loop with memory, guardrails, and observability
-- TradingView Desktop CDP integration (86 MCP tools)
-- Learning & Validation Framework comparing internal engine vs TV indicators
-- **Truth Engine** — decision arbitration layer that resolves "who do I trust?" by combining reliability, outcome history, and market context into one authoritative answer per level
-- Trade ledger with 7-dimension performance matrix
-- Backtesting with sliding-window SMC simulation
-- Broker-agnostic execution (MockBroker / Alpaca paper trading)
+The system ingests OHLCV data from Binance (crypto) and Yahoo Finance (forex), runs an 8-module SMC analysis engine to detect institutional price patterns (liquidity pools, order blocks, fair value gaps, market structure shifts, SMT divergence), and presents results through a React SPA dashboard. A multi-provider LLM system powers AI agents that can read, interpret, and draw on TradingView charts via Chrome DevTools Protocol.
+
+Since July 2026, the system has undergone a **major expansion** adding:
+- **Strategy Evaluation System** — 41 ICT/SMC models encoded as predicate rule trees with a registry and evaluator
+- **Narrative Generator** — deterministic template-based market commentary
+- **Reasoning Agent** — adversarial LLM-based trade setup evaluation
+- **Economic Calendar Refresh** — Firecrawl + ScrapeGraphAI pipeline
+- **Groq LLM Provider** — additional fast-inference option
+- **Deployment Blueprints** — Railway + Render + Supabase migration
+- **104+ TradingView Desktop Tools** — chart control, drawing, Pine Script, alerts, replay, UI clicking
+- **Obsidian Vault** — integrated documentation and knowledge management
 
 ---
 
-## 2. Repository Structure & Module Map
+## 2. Comparison: Before vs. After
+
+### Capability Matrix
+
+| Capability | Pre-Sessions (Jun 5–23) | Current (Jul 18, 2026) |
+|---|---|---|
+| **SMC Engine Modules** | structure, liquidity, OB, FVG | +pd-array, daily-bias, smt, report (8 total) |
+| **Strategy Matching** | None | 41 models via predicate rule trees |
+| **Narrative Generation** | None | Deterministic template-based (5 sections) |
+| **LLM Reasoning** | None | Adversarial prompt, calibrated 0–100 score |
+| **LLM Providers** | Fireworks AI only | Fireworks, OpenAI, Custom, AMD vLLM, Ollama, **Groq** |
+| **TradingView Tools** | 0 | 104+ (chart, drawing, Pine, alerts, replay, UI click) |
+| **TV Desktop Launch** | Not working | MSIX fix via `shell:AppsFolder` with `--remote-debugging-port` |
+| **Real-Time Data** | None | Binance WS (crypto) + Finnhub/Yahoo (forex) + SSE |
+| **Agent Loop** | None | Observe→Interpret→Reason→Decide→Act→Evaluate→Update |
+| **Memory Systems** | None | Episodic + Semantic + Qdrant vector memory |
+| **Database** | None | PostgreSQL 16 via Drizzle ORM (13 tables) |
+| **Model Definitions DB** | None | `model_definitions` + `economic_events` tables |
+| **Economic Calendar** | None | Firecrawl + ScrapeGraphAI pipeline |
+| **Deployment** | Replit only | Railway + Render + Supabase blueprints |
+| **Documentation** | Sporadic | Obsidian vault, CLAUDE.md, COMPLETE_ARCHITECTURE_REPORT.md |
+| **Test Coverage** | ~150 assertions (api-server) | +96 vitest tests (api-zod), +68 standalone assertions |
+| **CI/CD** | None | GitHub Actions (typecheck → build → Docker) |
+| **Docker** | None | Multi-stage (builder → runner → frontend) |
+| **Frontend State** | Basic dashboard | Cascade hooks, strategy display, OS Output panel, CAL button |
+
+### Route Expansion
+
+| Route | Pre-Sessions | Current |
+|---|---|---|
+| `/api/analysis/crypto` | ✅ | ✅ |
+| `/api/analysis/forex` | ✅ | ✅ |
+| `/api/agents/ask` | ❌ | ✅ |
+| `/api/agents/ask-mcp` | ❌ | ✅ (37+ tools) |
+| `/api/agents/pipeline` | ❌ | ✅ |
+| `/api/agent-loop/*` | ❌ | ✅ (10 endpoints) |
+| `/api/learning/*` | ❌ | ✅ (8 endpoints) |
+| `/api/stream/*` | ❌ | ✅ |
+| `/api/strategies` | ❌ | ✅ (list + detect) |
+| `/api/external-intel/refresh` | ❌ | ✅ |
+| `/api/strategies/detect?reason=true` | ❌ | ✅ (narrative + reasoning) |
+| `/api/learning/read-tv-indicator-levels` | ❌ | ✅ |
+
+---
+
+## 3. Repository Structure & Module Map
 
 ```
-workspace/
-│
+part-2-SMC/
 ├── artifacts/
-│   ├── api-server/              # Node.js/Express 5 backend
-│   │   └── src/
-│   │       ├── index.ts          # Process entry: dotenv → port bind → WS subscribe → MCP
-│   │       ├── app.ts            # Express factory: compression → cors → json → routes
-│   │       ├── routes/           # 10 route modules
-│   │       │   ├── index.ts          # Router mount
-│   │       │   ├── health.ts         # GET /api/healthz
-│   │       │   ├── symbols.ts        # GET /api/symbols
-│   │       │   ├── analysis.ts       # GET /api/analysis/{crypto,forex}
-│   │       │   ├── agents.ts         # POST /api/agents/{ask,pipeline}
-│   │       │   ├── agents-mcp.ts     # POST /api/agents/ask-mcp
-│   │       │   ├── agent-loop.ts     # Agent Loop REST+SSE endpoints
-│   │       │   ├── stream.ts         # GET /api/stream/:symbol (SSE)
-│   │       │   ├── ledger.ts         # Ledger, signals, broker, backtest
-│   │       │   └── learning.ts       # 10 learning/validation endpoints
-│   │       └── lib/ (see module sections below)
+│   ├── api-server/                     # Express 5 + FastMCP backend
+│   │   ├── src/
+│   │   │   ├── index.ts                # Entry: dotenv, port bind, WS init, MCP server
+│   │   │   ├── app.ts                  # Express app factory (compression, CORS, routes)
+│   │   │   ├── lib/
+│   │   │   │   ├── logger.ts           # Pino structured logger
+│   │   │   │   ├── smc/                # SMC/ICT analysis engine (8 modules)
+│   │   │   │   ├── fetchers/           # Binance + Yahoo OHLCV fetchers
+│   │   │   │   ├── realtime/           # WebSocket, candle store, SSE, analysis bridge
+│   │   │   │   ├── llm/                # Multi-provider LLM + structured output
+│   │   │   │   ├── mcp/                # FastMCP server, tools, resources, prompts
+│   │   │   │   ├── integrations/
+│   │   │   │   │   ├── tradingview/          # Legacy Puppeteer-based TV (~11 tools)
+│   │   │   │   │   └── tradingview-desktop/  # CDP-based TV (104+ tools)
+│   │   │   │   ├── loop/               # Agent Loop engine (Observe→Update)
+│   │   │   │   ├── memory/             # Episodic + Semantic + Qdrant
+│   │   │   │   ├── harness/            # LoopTracer + LoopEvaluator
+│   │   │   │   ├── agents/             # Reasoning agent (adversarial LLM)
+│   │   │   │   ├── narrative/          # Deterministic narrative generator
+│   │   │   │   ├── external-intel/     # Economic calendar refresh job
+│   │   │   │   ├── services/           # SignalGenerator, TradeLedger, PerformanceMatrix
+│   │   │   │   ├── learning/           # Comparison engine, outcome evaluator
+│   │   │   │   ├── reflection/         # Reflection engine
+│   │   │   │   ├── reliability/        # Reliability engine
+│   │   │   │   ├── evaluation/         # LLM-as-Judge evaluator
+│   │   │   │   ├── optimization/       # Prompt optimizer (DSPy-equivalent)
+│   │   │   │   ├── news/               # NewsFetcher, PdfParser, Chunker
+│   │   │   │   ├── observability/      # Langfuse tracing
+│   │   │   │   ├── truth/              # Truth engine (arbitration)
+│   │   │   │   ├── backtest/           # Backtest runner
+│   │   │   │   ├── fusion/             # Evidence fusion layer
+│   │   │   │   └── realtime/           # Real-time analysis bridge
+│   │   │   └── routes/
+│   │   │       ├── index.ts            # Router mount (aggregates all routes)
+│   │   │       ├── analysis.ts         # GET /api/analysis/* (crypto, forex, from-tv, from-bars)
+│   │   │       ├── agents.ts           # POST /api/agents/{ask,pipeline}
+│   │   │       ├── agents-mcp.ts       # POST /api/agents/ask-mcp (37+ tools)
+│   │   │       ├── agent-loop.ts       # POST /api/agent-loop/* (10 routes)
+│   │   │       ├── learning.ts         # GET /api/learning/* (comparison, reliability)
+│   │   │       ├── ledger.ts           # Signals, broker, backtest
+│   │   │       ├── strategies.ts       # GET/POST /api/strategies (NEW)
+│   │   │       ├── external-intel.ts   # GET /api/external-intel/refresh (NEW)
+│   │   │       ├── stream.ts           # GET /api/stream/:symbol (SSE)
+│   │   │       ├── symbols.ts          # GET /api/symbols
+│   │   │       └── health.ts           # GET /api/healthz
+│   │   ├── build.mjs                   # esbuild bundler
+│   │   └── dist/index.mjs              # Built binary (~11.4 MB)
 │   │
-│   ├── liquidity-hunter/         # React 19 SPA frontend
-│   │   └── src/
-│   │       ├── pages/
-│   │       │   ├── dashboard.tsx     # Main multi-TF dashboard
-│   │       │   ├── Analytics.tsx     # Trade ledger + performance matrix
-│   │       │   ├── Broker.tsx        # Broker execution dashboard
-│   │       │   ├── AgentLoop.tsx     # Agent Loop control panel
-│   │       │   └── LearningDashboard.tsx  # Learning framework dashboard (unwired)
-│   │       └── components/
-│   │           ├── ConfluenceCard.tsx
-│   │           ├── ConfluenceSheet.tsx
-│   │           ├── IntelligenceSheet.tsx
-│   │           ├── ChartView.tsx     # TradingView Lightweight Charts v5
-│   │           ├── AgentChat.tsx
-│   │           ├── AgentPipeline.tsx
-│   │           └── ui/              # shadcn/ui primitives
+│   ├── liquidity-hunter/               # React SPA (Vite, Tailwind 4, shadcn/ui)
+│   │   ├── src/
+│   │   │   ├── main.tsx                # React root mount
+│   │   │   ├── App.tsx                 # Wouter router
+│   │   │   ├── pages/
+│   │   │   │   ├── dashboard.tsx       # Main dashboard (state orchestration)
+│   │   │   │   ├── AgentLoop.tsx       # Agent Loop management page
+│   │   │   │   ├── Analytics.tsx       # Trade ledger + performance matrix
+│   │   │   │   ├── BrokerView.tsx      # Broker connection & orders
+│   │   │   │   └── not-found.tsx       # 404
+│   │   │   ├── components/
+│   │   │   │   ├── ConfluenceCard.tsx   # Multi-TF cascade + strategy display
+│   │   │   │   ├── ConfluenceSheet.tsx  # Multi-TF deep dive overlay
+│   │   │   │   ├── IntelligenceSheet.tsx # Single-TF full analysis + TradeActions
+│   │   │   │   ├── OSOutputPanel.tsx    # Narrative + reasoning display (NEW)
+│   │   │   │   ├── ChartView.tsx        # Lightweight Charts v5
+│   │   │   │   ├── AgentChat.tsx        # Q&A chat with AI analyst
+│   │   │   │   ├── AgentPipeline.tsx    # 4-agent sequential pipeline
+│   │   │   │   ├── MarketBriefing.tsx   # AI market briefing
+│   │   │   │   ├── TradeActions.tsx     # Execute/LIVE/Monitor controls
+│   │   │   │   ├── MarketIntelligence.tsx
+│   │   │   │   ├── AgentLoopDashboard.tsx # Loop runner + history
+│   │   │   │   ├── BacktestRunnerUI.tsx
+│   │   │   │   ├── CandlestickChart.tsx
+│   │   │   │   ├── TvStatus.tsx        # TV connection indicator
+│   │   │   │   ├── TvCardControl.tsx   # Per-TF TV drawing control
+│   │   │   │   └── ui/                 # 58 shadcn/ui primitives
+│   │   │   ├── hooks/
+│   │   │   │   ├── useCascadeStrategy.ts # Strategy detection hook (NEW)
+│   │   │   │   ├── use-mobile.tsx
+│   │   │   │   ├── use-toast.ts
+│   │   │   │   └── realtime.ts         # SSE real-time hook
+│   │   │   └── lib/
+│   │   │       ├── api.ts              # All fetch wrappers (detectStrategies, refreshCalendar, ...)
+│   │   │       ├── smc-display.ts       # Bias/confidence/formatting helpers
+│   │   │       ├── alpaca-url.ts        # Alpaca chart URL builder
+│   │   │       ├── format.ts            # Price formatting
+│   │   │       └── realtime.ts          # Realtime data hook
+│   │   ├── vite.config.ts
+│   │   └── package.json
 │   │
-│   └── mockup-sandbox/           # Vite sandbox (experimental)
+│   └── mockup-sandbox/                 # Design preview server
 │
 ├── lib/
-│   ├── db/                       # Drizzle ORM schema + lazy pool
-│   │   └── schema/
-│   │       ├── index.ts          # trades, performance_matrix, agent_loop_*, agent_memory
-│   │       └── learning.ts       # detection_comparisons, outcomes, model_performance, etc.
-│   ├── api-client-react/         # React Query hooks + shared types
-│   ├── api-spec/                 # OpenAPI 3.1 contract
-│   └── api-zod/                  # Zod schemas
+│   ├── api-spec/                       # OpenAPI 3.1 spec + orval config
+│   ├── api-client-react/               # Generated React Query hooks
+│   ├── api-zod/
+│   │   ├── src/
+│   │   │   ├── generated/              # Orval-generated Zod + TS types (SmcReport, etc.)
+│   │   │   ├── strategies/             # Strategy evaluation system (NEW)
+│   │   │   │   ├── predicates.ts       # 14 predicate functions + EconomicEvent
+│   │   │   │   ├── rules.ts            # Rule discriminated union + StrategyDefinition
+│   │   │   │   ├── evaluator.ts        # StrategyEvaluator (walks rule tree)
+│   │   │   │   ├── registry.ts         # StrategyRegistry (41 templates, detectAll)
+│   │   │   │   ├── index.ts            # Barrel export
+│   │   │   │   ├── templates/
+│   │   │   │   │   ├── modern-confluence.ts   # 5 models
+│   │   │   │   │   ├── charter-blueprint.ts   # 12 models
+│   │   │   │   │   ├── classical-horizon.ts   # 12 models
+│   │   │   │   │   └── mmxm-and-temporal.ts   # 12 models
+│   │   │   │   ├── predicates.test.ts  # 96 vitest tests
+│   │   │   │   ├── evaluator.test.ts   # 12 tests
+│   │   │   │   └── registry.test.ts    # 16 tests
+│   │   │   └── index.ts
+│   │   ├── vitest.config.ts
+│   │   └── package.json
+│   └── db/
+│       ├── src/
+│       │   ├── index.ts                # Lazy DB pool + deep-noop Proxy
+│       │   └── schema/
+│       │       ├── index.ts            # Barrel (aggregates all tables)
+│       │       ├── learning.ts          # Detection comparisons, outcomes, model perf
+│       │       ├── model-definitions.ts # 41 ICT/SMC models (NEW)
+│       │       └── economic-events.ts   # Economic calendar (NEW)
+│       ├── seeds/
+│       │   └── model-definitions.ts    # 41-model seed (NEW)
+│       ├── drizzle/
+│       │   ├── 0000_thin_frightful_four.sql  # Initial schema migration
+│       │   └── 0001_silent_wilson_fisk.sql   # Economic events migration (NEW)
+│       ├── drizzle.config.ts
+│       └── package.json
 │
 ├── deploy/
-│   ├── local/                    # Docker Compose (Intel/AMD CPU)
-│   └── amd-developer-cloud/      # Docker Compose + vLLM (AMD MI300X GPU)
+│   ├── local/                           # Intel/AMD CPU Docker Compose
+│   │   ├── docker-compose.yml           # api + db + frontend + qdrant + ollama
+│   │   ├── nginx/default.conf
+│   │   └── .env.example
+│   └── amd-developer-cloud/            # AMD MI300X GPU Docker Compose
+│       ├── docker-compose.yml           # vllm + api + db + frontend
+│       ├── nginx/default.conf
+│       ├── .env.amd
+│       └── setup.sh
 │
-├── claude-code-proxy/            # OpenAI-compatible proxy for Claude Code
-├── scripts/                      # cd p-proxy, launch-tv.bat, start scripts
-├── data/                         # mock_broker/ volumes
-└── docs/                         # Architecture, migration, learning framework docs
+├── scripts/
+│   ├── launch-tv.bat                    # TV Desktop CDP launcher (Windows)
+│   └── cdp-proxy.mjs                    # CDP port proxy for Docker
+│
+├── docs/
+│   ├── COMPLETE_ARCHITECTURE_REPORT.md  # This file
+│   ├── CAPABILITIES_REPORT.md           # Before/after capability comparison
+│   ├── EXPERT_REPORT.md                 # Expert-level system audit
+│   ├── LEARNING_FRAMEWORK.md            # Learning framework docs
+│   ├── MCP_CHAT_CAPABILITIES.md         # MCP agent capabilities
+│   └── archive/                         # Archived previous versions
+│
+├── .claude/
+│   └── settings.local.json              # Claude Code permissions config
+│
+├── .obsidian/                           # Obsidian vault config
+│   ├── obsidian.json                    # Workspace settings (dataview, tasks)
+│   ├── app.json, core-plugins.json
+│   └── community-plugins.json
+│
+├── CLAUDE.md                            # Codebase guide (145 lines)
+├── railway.json                         # Railway deployment blueprint
+├── render.yaml                          # Render deployment blueprint
+├── MIGRATION.md                         # Supabase migration checklist
+├── Dockerfile                           # Multi-stage (builder → runner → frontend)
+└── pnpm-workspace.yaml
 ```
 
 ---
 
-## 3. Project Stack & Dependencies
+## 4. Monorepo Package Map
 
-### Backend (`@workspace/api-server`)
+| Package | Path | Type | Role | Tests |
+|---|---|---|---|---|
+| `@workspace/api-spec` | `lib/api-spec/` | lib | OpenAPI 3.0 spec + orval config | — |
+| `@workspace/api-zod` | `lib/api-zod/` | lib | Zod schemas + TS types + **strategy evaluation** | 96 vitest |
+| `@workspace/api-client-react` | `lib/api-client-react/` | lib | React Query hooks + fetch wrappers | — |
+| `@workspace/db` | `lib/db/` | lib | Drizzle ORM schema + migrations + seeds | — |
+| `@workspace/api-server` | `artifacts/api-server/` | app | Express 5 + FastMCP backend | ~200 assertions |
+| `@workspace/liquidity-hunter` | `artifacts/liquidity-hunter/` | app | React SPA (Vite + Tailwind 4) | — |
+| `@workspace/scripts` | `scripts/` | app | CLI utilities (launch-tv, cdp-proxy) | — |
 
-| Category | Package | Purpose |
-|---|---|---|
-| Server | `express@^5.2.1` | HTTP framework (Express 5, async router) |
-| Build | `esbuild@0.27.3` | TypeScript bundler (single-file output) |
-| ORM | `drizzle-orm@0.45.2` | PostgreSQL ORM (type-safe queries) |
-| DB | `pg@^8.20.0` | Node-postgres driver |
-| Real-time | `ws@^8.21.0` | WebSocket client (Binance) |
-| Logging | `pino@^9.14.0` + `pino-http` | Structured JSON logging |
-| CDP | `puppeteer@^25.3.0` | Legacy TV Desktop CDP |
-| CDP | `chrome-remote-interface@^0.34.0` | New TV Desktop CDP |
-| MCP | `fastmcp@^4.3.2` | Model Context Protocol server |
-| LLM | `langfuse@^3.38.20` | LLM observability/tracing |
-| AI | `axios@^1.17.0` | HTTP client for Fireworks AI API |
-| Env | `dotenv@^17.4.2` | .env loading |
-| Validation | `zod@3.25.76` | Schema validation |
+---
 
-### Frontend (`@workspace/liquidity-hunter`)
+## 5. Stack & Dependencies
 
-| Category | Package | Purpose |
-|---|---|---|
-| Framework | `react@19.1.0` + `react-dom@19.1.0` | UI |
-| Bundler | `vite@^7.3.2` | Build + dev server |
-| Routing | `wouter@^3.3.5` | Lightweight router |
-| Data | `@tanstack/react-query@^5.90.21` | Server state |
-| Charts | `lightweight-charts@^5.2.0` | TV Lightweight Charts |
-| UI | `shadcn/ui` + `tailwindcss@4.1.14` | Component system |
-| Anim | `framer-motion@^12.23.24` | Animations |
+### Backend (`artifacts/api-server`)
 
-### Shared Libraries
-
-| Package | Purpose |
+| Category | Libraries |
 |---|---|
-| `@workspace/db` | Drizzle schema + lazy-initialized pg pool proxy |
-| `@workspace/api-client-react` | React Query hooks + TypeScript types |
-| `@workspace/api-zod` | Zod schemas matching OpenAPI contract |
+| **Framework** | Express 5, FastMCP 4 |
+| **LLM** | Fireworks AI API, OpenAI API, Groq API, Ollama |
+| **Database** | Drizzle ORM, pg, drizzle-zod |
+| **Browser Automation** | chrome-remote-interface, Puppeteer 25 |
+| **Web Scraping** | **Firecrawl** (NEW), ScrapeGraphAI API |
+| **Real-Time** | ws (WebSocket), SSE |
+| **Observability** | Langfuse, Pino |
+| **Build** | esbuild 0.27, tsx |
+| **Vector DB** | Qdrant (js-client-rest) |
+| **Other** | cheerio, pdf-parse, axios, compression, cookie-parser, cors |
+
+### Frontend (`artifacts/liquidity-hunter`)
+
+| Category | Libraries |
+|---|---|
+| **Framework** | React 19, React DOM 19 |
+| **Routing** | Wouter |
+| **Server State** | TanStack React Query 5 |
+| **UI** | Tailwind CSS 4, shadcn/ui (58 primitives), Radix UI |
+| **Charts** | Lightweight Charts 5, Recharts 2 |
+| **Animation** | Framer Motion 12 |
+| **Icons** | Lucide React |
+| **Build** | Vite 7, vite-plugin-react |
+| **Forms** | React Hook Form, Zod |
 
 ---
 
-## 4. Architecture Overview
+## 6. SMC/ICT Analysis Engine
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                         Browser (React SPA)                      │
-│  ┌─────────────┐ ┌──────────────┐ ┌──────────┐ ┌────────────┐  │
-│  │  Dashboard   │ │  Analytics   │ │  Broker  │ │Agent Loop  │  │
-│  │  (7 TF cards)│ │  (ledger)    │ │  (trades)│ │(monitoring)│  │
-│  └──────┬───────┘ └──────┬───────┘ └────┬─────┘ └─────┬──────┘  │
-│         │                │              │              │         │
-│         └────────────────┴──────┬───────┴──────────────┘         │
-│                          │ SSE / REST │                          │
-└──────────────────────────┼──────────────────────────────────────┘
-                           │
-                    ┌──────┴──────┐
-                    │ Express 5   │
-                    │  (port 3001)│
-                    └──────┬──────┘
-                           │
-      ┌────────────────────┼──────────────────────────┐
-      │                    │                          │
-┌─────┴─────┐    ┌────────┴────────┐        ┌─────────┴────────┐
-│ Routes    │    │  SMC Engine     │        │  Real-Time       │
-│ (10 mods) │    │  (7 detectors)  │        │  (WS + Store)    │
-└─────┬─────┘    └────────┬────────┘        └─────────┬────────┘
-      │                   │                          │
-      │           ┌───────┴───────┐         ┌────────┴────────┐
-      │           │ buildReport() │         │ Binance WS     │
-      │           │ confluence()  │         │ Finnhub/Yahoo  │
-      │           │ narrative()   │         │ candle-store   │
-      │           └───────────────┘         │ SSE broadcast  │
-      │                                     └────────────────┘
-      │
-      ├──→ FastMCP Server (port 3002)
-      │         │
-      │    ┌────┴────┐
-      │    │ 86 TV   │
-      │    │ tools   │←── TradingView Desktop (CDP port 9222)
-      │    │ 12 SMC  │
-      │    │ tools   │
-      │    └─────────┘
-      │
-      ├──→ PostgreSQL 16 (Docker)
-      │     ├─ trades / performance_matrix
-      │     ├─ agent_loop_runs / steps / memory
-      │     ├─ detection_comparisons / outcomes
-      │     └─ learning_events / model_performance / parameter_history / pattern_statistics
-      │
-      └──→ Fireworks AI (DeepSeek V4 Pro)
-            ├─ /api/agents/ask (Q&A)
-            ├─ /api/agents/pipeline (4-agent)
-            └─ /api/agents/ask-mcp (tool-calling)
-```
+**Location:** `artifacts/api-server/src/lib/smc/`
 
----
+The core analysis engine — 8 modules that process OHLCV candle arrays into structured ICT/SMC detections.
 
-## 5. SMC Engine Architecture
+### Module Map
 
-The SMC engine is located at `artifacts/api-server/src/lib/smc/` with 7 pure detection modules orchestrated by `report.ts`.
-
-### Module Dependency Graph
-
-```
-report.ts (orchestrator)
-├── structure.ts      { function: analyzeStructure }
-│   ├── config.ts     { SMC_CONFIG — shared constants }
-│   └── types.ts      { all shared interfaces }
-├── liquidity.ts      { function: analyzeLiquidity }
-├── fvg.ts            { function: analyzeFVG }
-├── order-blocks.ts   { function: analyzeOrderBlocks }
-├── pd-array.ts       { function: analyzePdArray }
-├── daily-bias.ts     { function: analyzeDailyBias }
-└── smt.ts            { function: analyzeSMT }
-```
-
-### Detection Algorithm Summary
-
-| Module | Input | Output | Algorithm | Complexity |
+| Module | File | Input | Output | Key Logic |
 |---|---|---|---|---|
-| **structure.ts** | Candle[], timeframe | StructureResult (trend, bias, confidence, pivots, breaks, phase) | ATR-normalised window pivot detection → HH/HL/LH/LL classification → BOS/CHoCH labelling → phase inference | O(n × lookback) |
-| **liquidity.ts** | Candle[], timeframe, market | LiquidityResult (BSL/SSL pools with scores + sweep probability) | Window extremum finder → pool grouping → session-weighted scoring → exponential probability-of-sweep | O(n × window) |
-| **order-blocks.ts** | Candle[], FVG[] | OrderBlock[] (type, proximal/distal, confidence, breaker) | Displacement detection (ATR threshold) → backward OB search → FVG confluence check → mitigation scan → confidence scoring | O(n × lookForward) |
-| **fvg.ts** | Candle[], market | FairValueGap[] (top, bottom, fillFraction, isInversion) | 3-candle gap detection → forward fill tracking → inversion identification → minimum size filter | O(n²) worst |
-| **pd-array.ts** | Candle[], timeframe | PdArrayResult (premium/discount, equilibrium, zones) | Dealing range from window → equilibrium midpoint → zone generation | O(n) |
-| **daily-bias.ts** | Candle[] (1D) | DailyBiasResult (bias, strength, evidence) | Structure-primary (pivot sequence) → PD confirmation → SMA secondary tiebreaker → strength table | O(n) |
-| **smt.ts** | Candles[] (primary + correlated) | SmtDivergence (detected, type, confidence, time) | Aligned extremum finder → HH/LL divergence check → magnitude + timing confidence | O(n²) |
+| **Structure** | `structure.ts` | `Candle[]`, timeframe | `StructureResult` | ATR-normalized pivot detection (NASOS loop), BOS/CHoCH classification, market phase inference (accumulation/manipulation/expansion/distribution/continuation) |
+| **Liquidity** | `liquidity.ts` | `Candle[]`, timeframe, market | `LiquidityResult` | BSL/SSL/EQH/EQL pool scanning, sweep probability scoring, nearest pool identification |
+| **Order Blocks** | `order-blocks.ts` | `Candle[]`, `FVG[]` | `OrderBlock[]` | Contiguous displacement detection, 6-factor confidence scoring (MSS proximity, FVG overlap, volume profile, displacement ratio, penetration, efficiency) |
+| **FVG** | `fvg.ts` | `Candle[]`, market | `FairValueGap[]` | Gap detection (bullish/bearish), fill-fraction tracking, inversion mechanics |
+| **PD Array** | `pd-array.ts` | `Candle[]`, timeframe | `PdArrayResult` | Premium/discount/equilibrium zones, dealing range HL/equilibrium, current bias |
+| **Daily Bias** | `daily-bias.ts` | daily `Candle[]` | `DailyBiasResult` | HTF bias, strength, consecutive-day counting, swing reference |
+| **SMT** | `smt.ts` | primary + correlated `Candle[]` | `SmtDivergence` | Divergence detection between two correlated symbols |
+| **Report** | `report.ts` | All of the above + options | `SmcReport` | Orchestrator — calls all 7 modules, assigns roles, builds narrative, derives session state, scores draw targets with confluence boost |
 
-### buildReport() Orchestration Flow
-
-```
-analyzeStructure()  ──→ structure ──┐
-analyzeFVG()        ──→ fvg ────────┤
-analyzeLiquidity()  ──→ liquidity ──┤
-analyzeOrderBlocks() ──→ obs ──────┼─→ confluenceBoost() → DrawTarget[]
-analyzePdArray()    ──→ pdArray ───┤
-analyzeDailyBias()  ──→ dailyBias ─┤
-analyzeSMT()        ──→ smt ───────┘
-                                    ↓
-                          deriveSessionState()
-                          buildMarketNarrative()
-                                    ↓
-                              SmcReport
-```
-
-### Configuration Engine (`config.ts`)
-
-All tunable parameters are centralized in `SMC_CONFIG`. Per-timeframe overrides exist for pivot lookback (2–5) and ATR period (6–14). Key parameters: `equalLevelThreshold: 0.001`, `fvgMinBodyRatio: 0.5`, `obRequireFvg: true`, `sessionWeights.overlap: 1.5`.
-
----
-
-## 6. AI & LLM Pipeline
-
-### Provider Architecture (`lib/llm/provider.ts`)
+### Report Builder Flow (`report.ts`)
 
 ```
-LLM_PROVIDER env var
-├── "fireworks" (default) → https://api.fireworks.ai/inference/v1
-│     Model: accounts/fireworks/models/deepseek-v4-pro
-│     Cost: $1.20/1M input, $4.80/1M output
-├── "openai" → https://api.openai.com/v1
-│     Model: gpt-4o ($2.50/$10.00 per 1M)
-├── "amd" → self-hosted vLLM (http://host:8000/v1)
-│     Model: google/gemma-4-26B-A4B-it
-├── "custom" → any OpenAI-compatible endpoint
-└── "ollama" → http://host.docker.internal:11434/v1
+buildReport(candles, symbol, market, timeframe, options)
+├── analyzeStructure()     → StructureResult
+├── analyzeFVG()           → FairValueGap[]
+├── analyzeLiquidity()     → LiquidityResult
+├── analyzeOrderBlocks()   → OrderBlock[]
+├── analyzePdArray()       → PdArrayResult
+├── analyzeDailyBias()     → DailyBiasResult
+├── analyzeSMT()           → SmtDivergence
+├── HTF bias → OB confidence adjustment
+├── confluenceBoost()      → scored DrawTarget[]
+├── deriveSessionState()   → "London Expansion — Bullish"
+└── buildMarketNarrative() → plain-English narrative string
 ```
 
-### Three AI Interaction Modes
-
-| Mode | Route | Streaming | Context | Use Case |
-|---|---|---|---|---|
-| **Q&A** | `POST /api/agents/ask` | SSE | SmcReport + 8-turn history | User asks questions about current chart |
-| **Pipeline** | `POST /api/agents/pipeline` | SSE (4-agent) | SmcReport | Structured analysis (Structure → Liquidity → FVG → Confluence) |
-| **Agent Loop** | `POST /api/agent-loop/run` | SSE (7-step) | Report + memory + news | Autonomous reasoning → decision → signal |
-| **MCP Agent** | `POST /api/agents/ask-mcp` | SSE | Tool definitions + context | LLM autonomously calls 11 SMC tools |
-
-### Prompt Construction
-
-The `buildSystemPrompt()` function injects the live SmcReport as a structured market brief: structure bias, liquidity pools, OBs, FVGs, PD array, SMT, and top draw targets. All prices are literal — the model cannot hallucinate levels.
-
----
-
-## 7. Agent Loop Engine Flow
-
-The Agent Loop (`lib/loop/AgentLoop.ts`) implements a 7-step autonomous cycle:
+### Data Fallback Chain
 
 ```
-LoopConfig → AgentLoop.run(report)
-  │
-  ├── 1. OBSERVE
-  │     └── Store SmcReport in LoopContext
-  │         Check guardrails (confidence floor, risk limits)
-  │
-  ├── 2. INTERPRET
-  │     └── Call 8 SMC tools via toolRegistry:
-  │         analyze_structure, analyze_liquidity, analyze_order_blocks,
-  │         analyze_fvg, analyze_pd_array, get_daily_bias,
-  │         detect_smt, get_draw_targets
-  │
-  ├── 3. REASON  (← LLM call)
-  │     └── Build prompt: interpreted data + episodic memory +
-  │         semantic memory + news context + TV reconciliation
-  │         → Call LLM → receive structured Decision
-  │
-  ├── 4. DECIDE
-  │     └── Validate Decision through AgentGuardrails:
-  │         - confidenceFloor: must meet minimum confidence
-  │         - maxRiskPerTrade: R:R must not exceed limit
-  │         - requiredConfluenceMin: enough confluence factors
-  │
-  ├── 5. ACT
-  │     └── If decision = generate_signal:
-  │         → SignalGenerator.generateFromReport()
-  │         → TradeLedgerService.logSignal()
-  │
-  ├── 6. EVALUATE
-  │     └── LoopEvaluator.score(): base score + confidence bonus + tool efficiency
-  │
-  └── 7. UPDATE
-        └── LoopTracer.persist() → agent_loop_runs + agent_loop_steps
-            MemoryService.recordOutcome() → agent_memory
-```
-
-### Memory Architecture
-
-```
-MemoryService
-├── EpisodicMemory ← TradeLedgerService
-│   ├── getRecentBySymbol(symbol, limit)
-│   ├── getBySetupType(type, limit)
-│   └── getWinRate(symbol, type?)
-│
-├── SemanticMemory ← agent_memory table
-│   ├── getTopPatterns(symbol)
-│   ├── getRulesForRegime(regime)
-│   └── storeEntry(key, content, tags)
-│
-└── QdrantMemory (optional, vector)
-    ├── storeSignal(signal, candles, report)
-    └── findSimilar(setup, limit) → similar past setups
+getCandlesWithFallback(symbol, timeframe)
+├── 1. CandleStore (in-memory real-time accumulator)
+├── 2. TV Desktop CDP (chrome-remote-interface → chart bars)
+├── 3. Binance API (crypto) / Yahoo Finance API (forex)
+└── Returns: Candle[]
 ```
 
 ---
 
-## 8. AI Flow Diagram
+## 7. Strategy Evaluation System
+
+**Location:** `lib/api-zod/src/strategies/` (NEW — July 18)
+
+A complete system for matching ICT/SMC trading models against multi-timeframe SMC reports using predicate rule trees.
+
+### Architecture
 
 ```
-Client                        Server                    Fireworks AI
-  │                             │                          │
-  │  POST /api/agents/ask       │                          │
-  │  { question, report }       │                          │
-  │────────────────────────────►│                          │
-  │                             │  buildSystemPrompt()     │
-  │                             │  inject SmcReport        │
-  │                             │                          │
-  │                             │  POST /chat/completions  │
-  │                             │─────────────────────────►│
-  │                             │                          │
-  │  ◄── SSE: {"content":"The"} │  ◄── stream delta ──────│
-  │  ◄── SSE: {"content":" "}   │  ◄── stream delta ──────│
-  │  ◄── SSE: {"content":"nearest"} │                       │
-  │  ...                         │  ...                    │
-  │  ◄── SSE: {"done":true}     │  ◄── [DONE] ────────────│
+┌─────────────────────────────────────────────────────────────┐
+│                    Strategy Evaluation System                │
+├────────────┬──────────┬─────────────┬──────────┬────────────┤
+│ predicates │  rules   │  evaluator  │ registry │ templates  │
+│ 14 fns     │  Zod     │ Rule →      │ 41       │ .ts files  │
+│ returning  │  schema  │ Predicate   │ models   │ matching   │
+│ {matched,  │  (and,   │ Result via  │ auto-    │ seed data  │
+│ evidence,  │  or,     │ function    │ loaded   │ 1:1        │
+│ score?}    │  not)    │ registry    │          │            │
+└────────────┴──────────┴─────────────┴──────────┴────────────┘
 ```
 
-For the Agent Loop, step 3 (Reason) uses the same streaming pattern but with a much richer prompt including memory, news, and TV reconciliation.
+### Predicate Functions (14)
 
----
-
-## 9. Backend Architecture
-
-### Layers
-
-| Layer | Directory | Notes |
+| Function | Description | Extra Args |
 |---|---|---|
-| **Entry** | `src/index.ts` | dotenv → port validation → Express listen → WS subscribe → MCP start |
-| **Express** | `src/app.ts` | compression + cors + pino-http + json parser → mount /api |
-| **Routes** | `src/routes/` | 10 modules, each a sub-router |
-| **SMC Engine** | `src/lib/smc/` | 7 detection modules + config + types + report |
-| **Real-time** | `src/lib/realtime/` | binance-ws + forex-ws + candle-store + sse-manager + analysis-bridge |
-| **AI** | `src/lib/llm/` | provider.ts + structured.ts |
-| **Agent Loop** | `src/lib/loop/` | AgentLoop + LoopContext + AgentGuardrails + MonitoringManager |
-| **Memory** | `src/lib/memory/` | EpisodicMemory + SemanticMemory + MemoryService + vector/ |
-| **Observability** | `src/lib/harness/` | LoopTracer + LoopEvaluator |
-| **Execution** | `src/lib/execution/` | BrokerAbstraction + AlpacaAdapter + ExecutionManager |
-| **Services** | `src/lib/services/` | SignalGenerator + TradeLedgerService + PerformanceMatrixService + TradeSettlementService |
-| **Backtest** | `src/lib/backtest/` | BacktestRunner (sliding-window) |
-| **MCP** | `src/lib/mcp/` | server.ts + tool-registry + tools/ + resources/ + prompts/ |
-| **Learning** | `src/lib/comparison/` | ComparisonEngine |
-| | `src/lib/fusion/` | EvidenceFusionLayer |
-| | `src/lib/truth/` | TruthEngine (Decision Arbitration) |
-| | `src/lib/learning/` | LearningService |
-| | `src/lib/reliability/` | ReliabilityEngine |
-| | `src/lib/reflection/` | ReflectionEngine |
-| | `src/lib/evaluation/` | OutcomeEvaluator |
-| | `src/lib/optimization/` | ParameterRecommendationService |
-| **Integrations** | `src/lib/integrations/tradingview/` | Legacy TV CDP (Puppeteer) |
-| | `src/lib/integrations/tradingview-desktop/` | New TV CDP (chrome-remote-interface, 86 tools) |
+| `hasBias` | Structure bias or daily bias is non-neutral | — |
+| `hasOrderBlock` | At least one valid, unmitigated OB | — |
+| `hasLiquidityPool` | Unswept liquidity pool exists | — |
+| `hasFVG` | Unfilled FVG (fillFraction < 0.5) | — |
+| `biasAligned` | Structure bias matches target direction | `direction` |
+| `hasDailyBias` | Non-neutral daily bias with strength ≥ 0.3 | — |
+| `confluenceScore` | Multi-factor confluence (0–1) | — |
+| `priceNearOBProximal` | Price within tolerance of OB proximal | `tolerancePct` |
+| `hasMarketStructureShift` | BOS/CHoCH breaks detected | — |
+| `hasInducementZone` | LH/HL pivot in trend | — |
+| `priceWithinOTEzone` | Price in 62–79% retracement zone | `direction?` |
+| `hasConsolidationZone` | Ranging trend / equilibrium / tight range | — |
+| `isWithinSession` | Pool tags or contextual session match | `session` |
+| `hasSMTConfirmation` | SMT divergence with min confidence | `minConfidence?` |
+| **`hasHighImpactNewsWithin`** | Upcoming high-impact economic event | `events[]`, `windowMs` (NEW) |
+| **`isNewsBlackoutWindow`** | Inside blackout around high-impact event | `events[]`, `blackoutMs` (NEW) |
 
-### Route Table
+### Rule Tree Operators
 
-| Path | Method | Router Module |
+| Operator | Behavior | Score |
 |---|---|---|
-| `/api/healthz` | GET | health.ts |
-| `/api/symbols` | GET | symbols.ts |
-| `/api/analysis/crypto` | GET | analysis.ts |
-| `/api/analysis/forex` | GET | analysis.ts |
-| `/api/agents/ask` | POST | agents.ts |
-| `/api/agents/pipeline` | POST | agents.ts |
-| `/api/agents/ask-mcp` | POST | agents-mcp.ts |
-| `/api/agent-loop/run` | POST | agent-loop.ts |
-| `/api/agent-loop/start-monitoring` | POST | agent-loop.ts |
-| `/api/agent-loop/stop-monitoring` | POST | agent-loop.ts |
-| `/api/agent-loop/status` | GET | agent-loop.ts |
-| `/api/agent-loop/runs` | GET | agent-loop.ts |
-| `/api/stream/:symbol` | GET | stream.ts |
-| `/api/ledger` | GET | ledger.ts |
-| `/api/ledger/pending` | GET | ledger.ts |
-| `/api/signals/generate` | POST | ledger.ts |
-| `/api/signals/execute` | POST | ledger.ts |
-| `/api/broker/status` | GET | ledger.ts |
-| `/api/broker/mode` | POST | ledger.ts |
-| `/api/account` | GET | ledger.ts |
-| `/api/performance-matrix` | GET | ledger.ts |
-| `/api/performance-matrix/rebuild` | POST | ledger.ts |
-| `/api/backtest/run` | POST | ledger.ts |
-| `/api/backtest/run-multi` | POST | ledger.ts |
-| `/api/agent-loop/tv-status` | GET | agent-loop.ts |
-| `/api/agent-loop/tv-config` | POST | agent-loop.ts |
-| `/api/agent-loop/tv-connect` | POST | agent-loop.ts |
-| `/api/learning/comparisons` | GET/POST | learning.ts |
-| `/api/learning/evaluate-outcomes` | POST | learning.ts |
-| `/api/learning/reliability` | GET | learning.ts |
-| `/api/learning/parameter-suggestions` | GET/POST | learning.ts |
-| `/api/learning/events` | GET | learning.ts |
-| `/api/learning/patterns` | GET | learning.ts |
-| `/api/learning/dashboard` | GET | learning.ts |
+| `predicate` | Calls function from registry | Function's score |
+| `and` | All sub-rules must match | Average of all |
+| `or` | Any sub-rule matches | Best of all |
+| `not` | Negates inner result | `1 - inner` |
+
+### Templates (41 Models)
+
+| Category | Count | IDs |
+|---|---|---|
+| Classical Horizon (2019) | 12 | `classical-01` through `classical-12` |
+| Charter Blueprint | 12 | `charter-01` through `charter-12` |
+| Modern Confluence | 5 | `smc-confluence-1` through `smc-confluence-5` |
+| Market Maker Cycles | 2 | `mmxm-mmsm`, `mmxm-mmbm` |
+| Temporal & Reversal | 10 | `temporal-silver-bullet-*`, `reversal-*`, `framework-*` |
+
+### Route
+
+```http
+POST /api/strategies/detect
+Content-Type: application/json
+{"symbol": "BTCUSDT", "timeframes": ["4h", "1h", "15m"]}
+```
+Optional query param `?reason=true` appends:
+- `narrative` — deterministic narrative from `generateNarrative()`
+- `reasoning` — LLM assessment from `reasoning-agent.ts`
 
 ---
 
-## 10. Frontend Architecture
+## 8. Backend Architecture
 
-### Routing (Wouter)
-
-```
-/              → Dashboard (multi-TF analysis)
-/analytics     → Trade ledger + performance matrix
-/broker        → Broker execution controls
-/agent-loop    → Agent Loop dashboard + monitoring
-*              → 404
-```
-
-### Dashboard Component Tree
+### Server Startup (`index.ts`)
 
 ```
-Dashboard (page)
-├── Header (market selector, bias icons, real-time badge)
-├── ConfluenceCard (multi-TF cascade summary)
-│   └── TfAgentCard × N (one per timeframe)
-│       ├── BiasIcon
-│       ├── TfLabel
-│       ├── TvCardControl
-│       └── OnClick → IntelligenceSheet
-├── ConfluenceSheet (overlay — deep multi-TF cascade)
-├── IntelligenceSheet (overlay — single-TF deep dive)
-├── ChartView (overlay — lightweight-charts v5)
-├── MarketBriefing (footer bar)
-└── TvStatus (footer)
+1. Load dotenv
+2. Import Express app + SMC MCP server + real-time modules
+3. Bind PORT (REST/SSE) + MCP_PORT (FastMCP HTTP Stream)
+4. Start Binance WS + Forex WS subscriptions
+5. Start TradeSettlementService
+6. Start MCP server on port 3002
+7. Install SIGTERM/SIGINT handlers (graceful shutdown)
+```
+
+### Express Middleware Stack (`app.ts`)
+
+```
+compression → pino-http logging → CORS → JSON body parser → router
+```
+
+### Route Mounting (`routes/index.ts`)
+
+| Router | Mount | Updated |
+|---|---|---|
+| `healthRouter` | `/api` | — |
+| `symbolsRouter` | `/api` | — |
+| `analysisRouter` | `/api` | — |
+| `agentsRouter` | `/api` | Jul 14 (TV-aware prompt) |
+| `streamRouter` | `/api` | — |
+| `agentsMcpRouter` | `/api` | Jul 14 (10 new tools) |
+| `ledgerRouter` | `/api` | — |
+| `agentLoopRouter` | `/api` | — |
+| `learningRouter` | `/api/learning` | Jul 14 (TV indicator reader) |
+| `strategiesRouter` | `/api` | **Jul 18 (NEW)** |
+| `externalIntelRouter` | `/api` | **Jul 18 (NEW)** |
+
+### Key Design Patterns
+
+**1. Cached Analysis Pipeline** (`analysis.ts`):
+- 60-second in-memory TTL cache (Map-based)
+- Parallel OHLCV fetches via `Promise.all`
+- Candle store fallback when external APIs fail
+- `updateCachedReport()` for SSE pre-warming
+
+**2. Lazy DB Connection** (`lib/db/src/index.ts`):
+- Proxy-based deep-noop when `DATABASE_URL` unset
+- Pool created on first access, not at import time
+- Routes gracefully degrade to empty states
+
+**3. Multi-Provider LLM** (`lib/llm/provider.ts`):
+- Provider selected via `LLM_PROVIDER` env var
+- All providers use the same OpenAI-compatible chat completions API
+- `extractStructured()` retries on JSON parse failure (Instructor pattern)
+
+**4. StrategyEvaluation Pipeline** (`routes/strategies.ts`):
+- Parallel OHLCV fetch across timeframes
+- Per-timeframe `buildReport()` with error isolation
+- `registry.detectAll()` → ranked results (matched > failed > error, desc score)
+- Optional `?reason=true` gates narrative + LLM reasoning
+
+---
+
+## 9. Frontend Architecture
+
+### Component Hierarchy
+
+```
+App (Wouter Router)
+├── Dashboard (page)
+│   ├── Header (sticky)
+│   │   ├── Market/Symbol/Timeframe/Controls
+│   │   ├── SMT Toggle + Correlated Symbol
+│   │   ├── CHART / ANALYTICS / BROKER / AGENT / INTEL / CAL buttons
+│   │   └── Auto-refresh countdown ring + Live Price
+│   ├── MarketBriefing (AI narrative banner)
+│   ├── ConfluenceCard (multi-TF cascade + strategy detection)
+│   │   ├── StrategySection (primary name/score + Execute Now + alternatives)
+│   │   ├── Cascade Flow (TF boxes with arrows)
+│   │   └── Per-TF Mini Cards (draw target, confidence)
+│   ├── TfAgentCard × N (per-timeframe agent cards)
+│   └── Session footer (daily bias, PD, BSL/SSL, SMT, cascade anchor)
+│   └── Overlays:
+│       ├── ConfluenceSheet (slide-over panel, multi-TF synthesis)
+│       ├── IntelligenceSheet (slide-over panel, single-TF deep-dive)
+│       │   ├── Strategy Context Badge
+│       │   ├── Trade Setup Summary + TradeActions
+│       │   ├── Structure / Liquidity / FVG / Order Flow sections
+│       │   ├── Confidence Drivers
+│       │   ├── OSOutputPanel (narrative + reasoning) ← NEW
+│       │   ├── AgentPipeline + AgentLoopSection + MarketIntelligence
+│       │   └── AgentChat (bottom-fixed)
+│       └── ChartView (Lightweight Charts v5)
+├── AgentLoop (page)
+│   └── AgentLoopDashboard (tabs: Run/Monitors/History/Memory)
+├── Analytics (page) — Trade ledger + Performance Matrix
+└── BrokerView (page) — Broker connection + order management
 ```
 
 ### State Management
 
-**No global state manager** (no Redux/Zustand). State is split:
-- **Server state**: TanStack Query (React Query) — analysis reports, symbols
-- **UI state**: `useState` in dashboard.tsx — selected market, style, sheets
-- **Real-time**: `useRealtimeStream` hook — SSE candle updates
-- **History**: `useState<Message[]>` in AgentChat, `useState<LoopStepEvent[]>` in AgentLoop
+No global state manager — state is distributed across components:
 
-### UI Component Library
-
-shadcn/ui with Tailwind CSS v4, dark mode enforced (`documentElement.classList.add("dark")`).
-
----
-
-## 11. Database ER Diagram
-
-### Tables (11 total)
-
-```
-trades
-├── id UUID PK
-├── asset_class VARCHAR(20)    — STOCK | FOREX | CRYPTO
-├── symbol VARCHAR(20)
-├── setup_type VARCHAR(50)     — OB | FVG | MSS | CHoCH | BOS | ...
-├── setup_subtype VARCHAR(50)  — BULLISH_OB | BEARISH_OB | ...
-├── entry_price DECIMAL(20,8)
-├── stop_loss DECIMAL(20,8)
-├── take_profit DECIMAL(20,8)
-├── confidence_score INTEGER
-├── analysis_context JSONB     — timeframe_cascade, market_regime, session, htf_bias, confluence
-├── parameter_snapshot JSONB
-├── execution_mode VARCHAR(10)  — REVIEW | LIVE
-├── outcome JSONB              — pnl, win, exit_reason
-├── rationale JSONB            — structure_confluence, liquidity_quality
-├── structure_confluence INTEGER
-├── liquidity_quality INTEGER
-├── confluence_count INTEGER
-├── risk_reward_ratio DECIMAL(8,4)
-├── signal_timestamp TIMESTAMP
-├── created_at TIMESTAMP
-├── closed_at TIMESTAMP?
-└── order_id VARCHAR(100)?
-    Indexes: asset+setup, symbol+setup, execution_mode, created_at
-
-performance_matrix
-├── id UUID PK
-├── asset_class VARCHAR(20)
-├── symbol VARCHAR(20)
-├── setup_type VARCHAR(50)
-├── setup_subtype VARCHAR(50)
-├── timeframe_cascade VARCHAR(50)
-├── market_regime VARCHAR(50)
-├── session_context VARCHAR(50)
-├── win_rate DECIMAL(5,4)
-├── sharpe_ratio DECIMAL(8,4)
-├── profit_factor DECIMAL(8,4)
-├── avg_win / avg_loss DECIMAL(16,4)
-├── max_drawdown DECIMAL(5,4)
-├── trials INTEGER
-├── is_significant BOOLEAN
-├── parameters JSONB
-├── last_calculated / last_optimized TIMESTAMP
-    UNIQUE: (asset_class, symbol, setup_type, setup_subtype, timeframe_cascade, market_regime, session_context)
-
-agent_loop_runs
-├── id UUID PK
-├── symbol VARCHAR(20)
-├── timeframe VARCHAR(5)
-├── market VARCHAR(10)
-├── config_snapshot JSONB
-├── status VARCHAR(20)          — running | completed | error | stopped
-├── triggered_by VARCHAR(20)    — candle_close | api | scheduled | manual
-├── total_iterations INTEGER
-├── total_tokens INTEGER
-├── result JSONB
-├── evaluation_score INTEGER?
-├── evaluation JSONB?
-├── started_at / completed_at TIMESTAMP
-    Indexes: symbol, status, started_at
-
-agent_loop_steps (FK → agent_loop_runs CASCADE)
-├── id UUID PK
-├── run_id UUID FK
-├── iteration_sequence INTEGER
-├── step_type VARCHAR(30)       — observe | interpret | reason | decide | act | evaluate | update_memory
-├── started_at / completed_at TIMESTAMP
-├── duration_ms INTEGER
-├── input_snapshot / output_snapshot JSONB
-├── tool_calls JSONB
-├── error VARCHAR(500)?
-    Indexes: run_id, step_type
-
-agent_memory
-├── id UUID PK
-├── memory_key VARCHAR(200) UNIQUE
-├── content TEXT
-├── source VARCHAR(30)          — matrix | episode | manual | evaluation
-├── score DECIMAL(5,4)
-├── tags VARCHAR(50)[]
-├── is_durable BOOLEAN
-├── source_run_id VARCHAR(100)?
-├── created_at / last_accessed_at TIMESTAMP
-
-detection_comparisons
-├── id UUID PK
-├── symbol VARCHAR(20)
-├── timeframe VARCHAR(5)
-├── market VARCHAR(10)
-├── detection_type VARCHAR(30)  — OB | FVG | BOS | CHOCH | LIQUIDITY_SWEEP | ...
-├── price_level DECIMAL(20,8)
-├── tv_detected BOOLEAN
-├── tv_confidence DECIMAL(5,4)?
-├── tv_price DECIMAL(20,8)?
-├── tv_metadata JSONB
-├── engine_detected BOOLEAN
-├── engine_confidence DECIMAL(5,4)?
-├── engine_price DECIMAL(20,8)?
-├── engine_metadata JSONB
-├── agreement VARCHAR(20)       — BOTH_DETECTED | TV_ONLY | ENGINE_ONLY | NEITHER
-├── price_discrepancy_pct DECIMAL(10,4)?
-├── confidence_gap DECIMAL(5,4)?
-├── candle_time TIMESTAMP
-├── signal_id VARCHAR(100)?
-
-detection_outcomes (FK → detection_comparisons CASCADE)
-├── id UUID PK
-├── comparison_id UUID FK
-├── outcome VARCHAR(30)         — RESPECTED | SWEPT | IGNORED | FILLED | REVERSAL | ...
-├── touch_price / max_extension DECIMAL?
-├── bars_until_touch INTEGER?
-├── correct_source VARCHAR(20)? — TV | ENGINE | BOTH | NEITHER
-├── would_win BOOLEAN?
-├── hypothetical_pnl_pct DECIMAL?
-
-model_performance
-├── id UUID PK
-├── source VARCHAR(10)          — TV | ENGINE
-├── detection_type VARCHAR(30)
-├── total_detections INTEGER
-├── correct_detections INTEGER
-├── false_positives INTEGER
-├── reliability_score DECIMAL(5,4)
-├── symbol_reliability / timeframe_reliability / session_reliability / regime_reliability JSONB
-├── rolling_30d_accuracy DECIMAL(5,4)?
-├── improvement_trend DECIMAL(6,4)?
-    UNIQUE: (source, detection_type)
-
-parameter_history
-├── id UUID PK
-├── component VARCHAR(30)       — structure | liquidity | ob | fvg | ...
-├── parameter_name VARCHAR(50)  — atrPeriod | pivotLookback | fvgMinBodyRatio | ...
-├── current_value DECIMAL(12,6)
-├── suggested_value DECIMAL(12,6)
-├── sample_size INTEGER
-├── win_rate_improvement DECIMAL(6,4)?
-├── confidence DECIMAL(5,4)?
-├── status VARCHAR(20)          — suggested | approved | applied | rejected | superseded
-├── approved_at TIMESTAMP?
-├── approved_by VARCHAR(100)?
-
-learning_events
-├── id UUID PK
-├── event_type VARCHAR(30)      — AGREEMENT_BREAKTHROUGH | PARAMETER_SUGGESTION | ...
-├── title VARCHAR(200)
-├── description TEXT
-├── evidence / metadata JSONB
-├── significance DECIMAL(3,2)
-
-pattern_statistics
-├── id UUID PK
-├── pattern_name VARCHAR(100)
-├── pattern_type VARCHAR(30)    — FAILURE_PATTERN | SUCCESS_PATTERN | DISAGREEMENT_PATTERN
-├── description TEXT
-├── conditions JSONB
-├── occurrence_count INTEGER
-├── win_rate_when_present DECIMAL(5,4)?
-├── confidence DECIMAL(5,4)?
-├── first_observed / last_observed TIMESTAMP
-```
-
----
-
-## 12. API Documentation
-
-All API routes listed in section 9 (Backend Architecture). Key patterns:
-
-- **Analysis**: `GET /api/analysis/{market}?symbol=X&timeframe=Y` returns full `SmcReport` JSON. Cache TTL 60s.
-- **AI (Q&A)**: `POST /api/agents/ask` with `{question, report, history}` → SSE stream of tokens. 1024 max tokens.
-- **AI (Pipeline)**: `POST /api/agents/pipeline` with `{report}` → SSE stream of 4 agents. 512 tokens each.
-- **Agent Loop**: `POST /api/agent-loop/run` with `{symbol, timeframe}` → SSE stream of 7 steps.
-- **SSE Streaming**: `GET /api/stream/:symbol?timeframes=1m,5m` → real-time candle updates.
-- **Signal Generation**: `POST /api/signals/generate` with `{symbol, market, timeframe}` → generated signal.
-- **Learning**: `POST /api/learning/comparisons/analyze` → compare TV vs Engine, store result.
-
----
-
-## 13. Sequence Diagrams
-
-### Candle Close → SSE Broadcast Flow
-
-```
-Binance WS                         candleStore                analysis-bridge                  SSE Manager              Browser
-  │                                    │                         │                                │                      │
-  │  kline event (isClosed=true)       │                         │                                │                      │
-  │──────────────────────────────────►│                         │                                │                      │
-  │                                    │  applyUpdate()          │                                │                      │
-  │                                    │  emit("candleClosed")   │                                │                      │
-  │                                    │────────────────────────►│                                │                      │
-  │                                    │                         │  getCandles(sym, tf)            │                      │
-  │                                    │◄────────────────────────│                                │                      │
-  │                                    │  Candle[]               │                                │                      │
-  │                                    │────────────────────────►│                                │                      │
-  │                                    │                         │  buildReport() → SmcReport     │                      │
-  │                                    │                         │  updateCachedReport()          │                      │
-  │                                    │                         │  broadcastReport(report)        │                      │
-  │                                    │                         │───────────────────────────────►│                      │
-  │                                    │                         │                                │  SSE: "report_update" │
-  │                                    │                         │                                │──────────────────────►│
-```
-
-### TV Comparison Cycle
-
-```
-Browser/CLI                    API Server                  TV Desktop CDP              PostgreSQL
-  │                               │                            │                        │
-  │ POST /learning/comparisons    │                            │                        │
-  │ /analyze                      │                            │                        │
-  │──────────────────────────────►│                            │                        │
-  │                               │  fetch candles             │                        │
-  │                               │  buildReport()             │                        │
-  │                               │                            │                        │
-  │                               │  readPineLevels()          │                        │
-  │                               │───────────────────────────►│                        │
-  │                               │  TV DetectionPoint[]       │                        │
-  │                               │◄───────────────────────────│                        │
-  │                               │                            │                        │
-  │                               │  compareDetections()       │                        │
-  │                               │  extractEngineDetections() │                        │
-  │                               │  evidenceFusionLayer.fuse()│                        │
-  │                               │                            │                        │
-  │                               │  storeComparisons()        │                        │
-  │                               │───────────────────────────────────────────────────►│
-  │                               │                            │                        │
-  │  {comparisons, decisions,     │                            │                        │
-  │   metrics, report}            │                            │                        │
-  │◄──────────────────────────────│                            │                        │
-```
-
----
-
-## 14. User Journey
-
-### First-Time User Flow
-
-1. User opens `http://localhost:3000`
-2. Dashboard loads with 7 timeframe cards for BTCUSDT (default)
-3. Each card shows: bias icon, confidence bar, draw target, key metrics
-4. User can switch style (Scalp/Intraday/Swing/All) or market (Crypto/Forex)
-5. User taps a timeframe card → IntelligenceSheet opens with full analysis
-   - Structure narrative, BOS/CHoCH markers, liquidity pools, OBs, FVGs, PD array
-6. User can ask questions in AgentChat ("Where is the draw?")
-7. User can run the 4-agent pipeline for structured analysis
-8. User opens ConfluenceCard → ConfluenceSheet for multi-TF cascade view
-9. Charts display OB/FVG rectangles, KZO lines, BOS/CHoCH markers
-
-### Power User Flow
-
-1. Enables TV Desktop integration → levels drawn on their TV chart
-2. Configures Agent Loop monitoring for a symbol/timeframe
-3. Reviews analytical performance on the Agent Loop history tab
-4. Generates signals via SignalGenerator → views in Broker page
-5. REVIEW mode execution → monitors outcome via TradeSettlementService
-6. Reviews performance via Analytics page (performance matrix)
-7. Runs backtests on past data → populates performance matrix
-8. Reviews comparison data on Learning Dashboard
-
----
-
-## 15. Technical Debt Report
-
-### Critical Issues
-
-| # | Issue | Location | Impact | Suggested Fix |
-|---|---|---|---|---|
-| 1 | **esbuild variable renaming breaks Drizzle ORM** | `build.mjs` + `LearningService.ts` | Batch inserts fail; forced to use raw `pg.Pool` queries in learning routes. `@workspace/db` Proxy-based lazy pool is bundled by esbuild and the Proxy/Proxy-chain breaks for some methods | Either: (a) mark `@workspace/db`, `drizzle-orm`, and `pg` as external in `build.mjs` and ensure they're available at runtime, or (b) replace the Proxy-based lazy pool with a standard singleton pattern |
-| 2 | **Import path breaks in new TV Desktop module** | `tradingview-desktop/core/connection.ts` and related files | Import paths reference `../../tradingview/config.js` — fragile relative path coupling | Create a shared re-export barrel at `integrations/config.ts` that both integration modules import from |
-| 3 | **No unit test execution infrastructure** | All `.test.ts` files | Tests exist (`ComparisonEngine.test.ts`, `structure.test.ts`) but no test runner configured in CI | Add vitest configuration, test scripts to package.json |
-
-### Medium Issues
-
-| # | Issue | Location | Impact | Suggested Fix |
-|---|---|---|---|---|
-| 4 | **Learning Dashboard not wired into frontend router** | `LearningDashboard.tsx` exists but `App.tsx` has no route for it | Framework data only accessible via API, not UI | Add `<Route path="/learning" component={LearningDashboard} />` to `App.tsx` |
-| 5 | **No migration runner** | `docs/migrations/` has raw SQL | Manual SQL execution required to set up DB | Integrate with Drizzle Kit or add a migration script |
-| 6 | **Mixed authentication patterns in DB connection** | `@workspace/db` uses Proxy-based lazy pool; learning routes use raw `pg.Pool` | Two different connection strategies, one is known-broken | Standardize on one pattern (recommend: raw `pg.Pool` singleton) |
-| 7 | **Frontend TanStack Query hooks are "manually maintained"** | Comment in `api-client-react` says generated types but hooks are hand-written | Risk of drift between API schema and frontend types | Adopt `openapi-typescript` codegen or tRPC |
-| 8 | **No rate limiting on API** | Express app has no rate limiter | A chatty client could exhaust Fireworks AI token budget | Add `express-rate-limit` middleware |
-
-### Minor Issues
-
-| # | Issue | Location | Impact | Suggested Fix |
-|---|---|---|---|---|
-| 9 | **Hardcoded fallback `extra_hosts` IP** | `deploy/local/docker-compose.yml:63` | `192.168.100.8` is specific to one network | Use `host.docker.internal` or auto-detect |
-| 10 | **Cache eviction is simple count-based FIFO** | `routes/analysis.ts` | Rarely accessed but worst-case O(n) eviction | Use `Map` with insertion-order iteration limit or `lru-cache` package |
-| 11 | **`dotenv.config()` path hardcoded** | `src/index.ts` | `../../../.env` works from dist but breaks if project structure changes | Runtime resolution or config option |
-| 12 | **`workspace` version strings all `0.0.0`** | All `package.json` files | No release versioning | Add `semantic-release` or manual versioning |
-| 13 | **Docker compose `version: "3.9"` is obsolete** | `deploy/local/docker-compose.yml:19` | Warning on every Docker command | Remove `version` field |
-
----
-
-## 16. Risk Assessment
-
-| Risk | Probability | Severity | Mitigation |
-|---|---|---|---|
-| **Fireworks AI API outage** | Low | High | Provider abstraction supports 5 providers; can switch to OpenAI, vLLM, or Ollama via env var |
-| **Binance WebSocket DNS failure** | Medium | Medium | 2-endpoint fallback chain (binance.us → binance.com) + auto-reconnect with exponential backoff |
-| **Yahoo Finance API rate limiting** | High | Medium | 60s cache mitigates; forex falls back to 15s polling with no key needed |
-| **TV Desktop CDP API changes** | Medium | Medium | Version-based app detection (TV Desktop 3.1.0+) with Electron version compatibility checking |
-| **Docker PostgreSQL data loss** | Low | High | Named volumes (`pgdata`) persist across restarts; migration at `docs/migrations/003` |
-| **LLM token cost runaway** | Medium | Low | `max_tokens` capped at 512–1024; cost tracking via Langfuse; model pricing table |
-| **Learning framework data accumulation** | Low | Low | Insert-only tables with no current archiving — ~1KB per comparison, 100k/year ≈ 100MB |
-| **TypeScript/esbuild version mismatch** | Low | Medium | esbuild 0.27.3 with TypeScript 5.9 — both modern, esbuild's TS support is up-to-date |
-
----
-
-## 17. Improvement Roadmap
-
-### Immediate (0–2 weeks)
-
-1. **Fix esbuild + Drizzle ORM Proxy compatibility** — Mark `@workspace/db`, `drizzle-orm`, `pg` as external in `build.mjs`. Resolve the root cause of batch-insert failures
-2. **Wire Learning Dashboard into frontend** — Add route and navigation link
-3. **Configure test runner** — Vitest setup, make existing tests executable
-4. **Add migration runner** — Script that applies `docs/migrations/003_learning_framework.sql` automatically
-
-### Short-term (2–6 weeks)
-
-5. **Database connection standardization** — Replace Proxy-based lazy pool with direct `pg.Pool` singleton pattern across the entire codebase
-6. **Auto-compare on monitoring** — When Agent Loop monitors a symbol, automatically run comparison cycles after each candle close
-7. **Outcome evaluation automation** — After comparison is stored, schedule evaluation after N lookback candles
-8. **Parameter recommendation UI** — UI for viewing/approving/rejecting parameter suggestions
-
-### Medium-term (6–12 weeks)
-
-9. **Learning Dashboard visualizations** — Add charts for reliability trends, comparison heatmaps, agreement time-series
-10. **Cross-symbol pattern learning** — Detect patterns that generalize across symbols and asset classes
-11. **Git-based parameter versioning** — Track approved parameter changes as structured commits
-12. **Alert system** — Notify when per-type reliability crosses configurable thresholds
-
-### Long-term (3–6 months)
-
-13. **Performance Matrix integration with learning** — Feed outcome evaluation results into Performance Matrix for enriched analytics
-14. **Multi-timeframe outcome correlation** — Determine which TFs have the most predictive reliability
-15. **Autonomous parameter evolution** — Auto-approve parameter changes with confidence > 95% and > 1000 examples
-16. **Engine overtakes TV milestone tracking** — Detect and celebrate when internal engine surpasses TV reliability for any detection type
-
----
-
-## 18. Complete Glossary
-
-### Core Types & Interfaces
-
-| Name | Module | Description |
+| State | Owner | Mechanism |
 |---|---|---|
-| `Candle` | `smc/types` | `{ time, open, high, low, close, volume }` |
-| `SmcReport` | `smc/report` | Complete market analysis — structure, liquidity, OBs, FVGs, PD array, bias, SMT, draw targets, narrative, session state |
-| `StructureResult` | `smc/structure` | `{ trend, bias, confidence, pivots[], breaks[], phase, narrative, evidence[] }` |
-| `LiquidityResult` | `smc/liquidity` | `{ pools[], nearestBSL, nearestSSL }` |
-| `OrderBlock` | `smc/order-blocks` | `{ type, proximal, distal, isMitigated, isBreaker, confidence, confidenceFactors[] }` |
-| `FairValueGap` | `smc/fvg` | `{ type, top, bottom, fillFraction, isInversion }` |
-| `PdArrayResult` | `smc/pd-array` | `{ currentBias, zones[], dealingRange, equilibrium }` |
-| `DailyBiasResult` | `smc/daily-bias` | `{ bias, strength, consecutiveDays, evidence[] }` |
-| `SmtDivergence` | `smc/smt` | `{ detected, type, confidence, time }` |
-| `DrawTarget` | `smc/report` | `{ price, type, score, direction, label, evidence[] }` |
-| `UnifiedTradeSignal` | `services/SignalGenerator` | Complete trade signal with entry/SL/TP, R:R, confidence, context, rationale |
-| `LoopConfig` | `loop/types` | Configuration for Agent Loop: symbol, timeframe, guardrails, limits |
-| `LoopResult` | `loop/types` | Outcome of a loop cycle: action, confidence, narrative |
-| `Decision` | `loop/types` | LLM-generated decision: action type, reason, confidence |
-| `ComparisonRecord` | `comparison/ComparisonEngine` | TV vs Engine comparison for one detection point |
-| `FusedDecision` | `fusion/EvidenceFusionLayer` | Fused evidence: composite confidence, explanation, supporting/contradicting evidence |
-| `TruthVerdict` | `truth/TruthEngine` | Single authoritative verdict: chosen source, adopted price, final confidence, selection rationale |
-| `ArbitratedMarketView` | `truth/TruthEngine` | Complete arbitrated market picture handed to the AI: all verdicts, overall confidence, market summary string |
-| `ArbitrationStrategy` | `truth/TruthEngine` | Enum: BOTH_AGREE, TRUST_HIGHER_RELIABILITY, TV_FALLBACK, ENGINE_FALLBACK, FALLBACK_COMPOSITE, INSUFFICIENT_DATA |
-| `DetectionPoint` | `comparison/ComparisonEngine` | `{ detectionType, price, confidence, metadata }` |
-| `OutcomeEval` | `evaluation/OutcomeEvaluator` | Market outcome for a detection: respected/swept/ignored, correct source |
-| `TradeReflection` | `reflection/ReflectionEngine` | Post-trade analysis: disagreements, who was correct, rules proposed |
-| `ParameterRecommendation` | `optimization/ParameterRecommendationService` | Suggested parameter change with evidence |
+| Market, symbol, TF style, SMT | `dashboard.tsx` | `useState` |
+| Analysis reports (7 TFs) | `dashboard.tsx` | TanStack Query (server state) |
+| Strategy detection results | `useCascadeStrategy` hook | TanStack Query → `{ primary, alternatives, narrative, reasoning }` |
+| Sheet visibility | `dashboard.tsx` | `useState<sheet \| null>` |
+| OS Output Panel | `OSOutputPanel` | `useState<open>` (collapsible) |
+| Live price data | `useRealtimeStream` hook | SSE events |
+| Agent conversation | `AgentChat.tsx` | `useState<Message[]>` |
+| Pipeline streaming | `AgentPipeline.tsx` | `useState<AgentResult[]>` |
+| Loop state | `AgentLoopDashboard.tsx` | `useState<LoopStepEvent[]>` |
+| Calendar refresh | `dashboard.tsx` | `useState<result>` (CAL button toast) |
 
-### Key Services & Their Responsibilities
+### Cascade Computation
 
-| Service | Responsibility |
-|---|---|
-| **SignalGenerator** | Converts SmcReport → UnifiedTradeSignal. Entry = nearest aligned OB/FVG, SL = opposite liquidity, TP = top draw target, confidence = 30% structure + 40% confluence + 30% OB. Cascade mode reads 3 timeframes (bias setter → confirmation → entry trigger). |
-| **TradeLedgerService** | CRUD for trades table. `logSignal()`, `getPendingSignals()`, `querySignals()`. Handles DB-unavailable gracefully (no crash). |
-| **PerformanceMatrixService** | 7-dimension pivot table. Dimensions: asset_class, symbol, setup_type, setup_subtype, timeframe_cascade, market_regime, session_context. Metrics: win_rate, sharpe_ratio, profit_factor, avg_win, avg_loss, max_drawdown. |
-| **TradeSettlementService** | Background 30s interval poller. Checks pending trades against current market price, determines if SL/TP were hit, records outcomes. Can work with candle store or fetched data. |
-| **BacktestRunner** | Sliding-window SMC simulation. Configurable window size (candles), future bars for outcome, step size. Runs `buildReport()` on each window, generates signals via `SignalGenerator`, evaluates outcomes. |
-| **ExecutionManager** | Wraps BrokerAdapter with REVIEW/LIVE mode toggle. REVIEW = dry-run, LIVE = actual order placement. Mode switching requires `{ confirm: "LIVE" }` for safety. |
+```
+TRADING_STYLES: Array<{ label, desc, timeframes }>
+  ├── "Scalp":   [1m, 5m, 15m]
+  ├── "Intraday": [15m, 1h, 4h]
+  ├── "Swing":    [4h, 1d, 1w]
+  └── "All":      [1m, 5m, 15m, 1h, 4h, 1d, 1w]
 
-### TradingView Integration Modules
+getRoles(timeframes):
+  sort by TF_WEIGHT descending
+  → richest TF = "BIAS SETTER"
+  → lowest TF = "ENTRY TRIGGER"
+  → middle TFs = "CONFIRMATION"
 
-| Module | Technology | Tools | Status |
-|---|---|---|---|
-| **Legacy TV CDP** | `puppeteer` | 11 TV tools, `window.tvWidget` API, keyboard/mouse drawing | Backward compatible, desktop drawing unreliable |
-| **TV Desktop CDP** | `chrome-remote-interface` | 86 tools across 13 categories, `window.TradingViewApi` for reliable chart control | Active, preferred. All drawing via `createShape()` |
+cascade.anchorTf = highest TF with loaded data
+cascade.anchorBias = getBias(anchorReport)
+```
 
 ---
 
-## 19. Onboarding Guide
+## 10. AI & LLM Pipeline
 
-### Day 1 — Setup
+### Multi-Provider Architecture
+
+```
+LLM_PROVIDER=fireworks | openai | custom | amd | ollama | groq
+              │
+              ▼
+resolveLlmConfig() → LlmConfig { baseUrl, apiKey, model, provider }
+              │
+              ├── chatCompletion()      → non-streaming (Langfuse-traced)
+              └── streamChatCompletion() → SSE streaming (async generator)
+                       │
+                       ▼
+              extractStructured(schema, prompt)
+                  ├── Zod schema → LLM prompt injection
+                  ├── JSON extraction + Zod.parse()
+                  └── 2 retries on parse failure
+```
+
+### Provider Comparison
+
+| Provider | Default Model | Base URL | Auth | Use Case |
+|---|---|---|---|---|
+| Fireworks | `deepseek-v4-pro` | `api.fireworks.ai/inference/v1` | `FIREWORKS_API_KEY` | Default — fast, cheap |
+| OpenAI | `gpt-4o` | `api.openai.com/v1` | `OPENAI_API_KEY` | GPT-4 fallback |
+| Custom | (configurable) | `LLM_BASE_URL` | `LLM_API_KEY` | Any OpenAI-compatible |
+| AMD | `gemma-4-26B-A4B-it` | `localhost:8000/v1` | `not-needed` | Self-hosted vLLM on MI300X |
+| Ollama | `llama-3.1-8b` | `host.docker.internal:11434/v1` | `not-needed` | Local inference |
+| **Groq** | `llama3-70b-8192` | `api.groq.com/openai/v1` | `GROQ_API_KEY` | **NEW — fast inference** |
+
+### Agent Endpoints
+
+| Endpoint | Type | Tools Available |
+|---|---|---|
+| `POST /api/agents/ask` | SSE streaming | 0 (pure LLM Q&A) |
+| `POST /api/agents/pipeline` | SSE streaming | 4 sequential agents |
+| `POST /api/agents/ask-mcp` | SSE streaming | 37+ MCP tools (SMC + TV) |
+
+### LLM Cost Tracking (`provider.ts`)
+
+```ts
+const MODEL_COST_MAP = {
+  "accounts/fireworks/models/deepseek-v4-pro": { input: 1.20, output: 4.80 },
+  "gpt-4o": { input: 2.50, output: 10.00 },
+  "llama3-70b-8192": { input: 0.59, output: 0.79 },
+  "llama3-8b-8192": { input: 0.05, output: 0.08 },
+  // 6 Groq models + 13 others
+};
+```
+
+---
+
+## 11. Agent Loop Engine
+
+**Location:** `artifacts/api-server/src/lib/loop/`
+
+A fully autonomous Observe→Interpret→Reason→Decide→Act→Evaluate→Update cycle.
+
+### Loop Cycle
+
+```
+1. OBSERVE     — Store SmcReport in LoopContext, check guardrails
+2. INTERPRET   — Call 8 SMC tools via toolRegistry (structure, liquidity, OB, FVG, PD, bias, SMT, draw)
+3. REASON      — Build prompt from interpreted data + memory, call LLM
+                └── TV reconciliation injected if TV_ENABLED=true
+4. DECIDE      — Validate Decision through AgentGuardrails (confidence, risk, confluence)
+5. ACT         — Generate signal via SignalGenerator, log to ledger
+6. EVALUATE    — Score run via LoopEvaluator (LLM-as-Judge)
+7. UPDATE      — Persist trace to DB via LoopTracer, store memory entries
+```
+
+### Component Architecture
+
+```
+AgentLoop.ts
+├── LoopContext.ts       — Working memory, iteration/step tracking
+├── AgentGuardrails.ts   — Confidence floor (≥60), risk limits, confluence checks
+└── MonitoringManager.ts — Background candle-close monitor registry
+
+MemoryService.ts
+├── EpisodicMemory.ts    — Past signals/outcomes via TradeLedgerService
+└── SemanticMemory.ts    — Patterns via agent_memory table
+
+Harness/
+├── LoopTracer.ts        — Step-level tracing + DB persistence (agent_loop_steps)
+└── LoopEvaluator.ts     — Post-run scoring + memory ingestion
+```
+
+### Endpoints
+
+| Method | Path | Description |
+|---|---|---|
+| POST | `/api/agent-loop/run` | One-shot loop cycle (SSE) |
+| POST | `/api/agent-loop/start-monitoring` | Background candle-close monitor |
+| POST | `/api/agent-loop/stop-monitoring` | Stop monitor |
+| GET | `/api/agent-loop/status` | Active monitors |
+| GET | `/api/agent-loop/runs` | Historical runs |
+| GET | `/api/agent-loop/runs/:id` | Detailed trace |
+| POST | `/api/agent-loop/runs/:id/evaluate` | Trigger evaluation |
+| GET | `/api/agent-loop/memory` | Semantic memory query |
+| POST | `/api/agent-loop/memory` | Store memory entry |
+| DELETE | `/api/agent-loop/memory/:id` | Delete memory |
+| GET | `/api/agent-loop/tv-*` | TV status/connect/sync |
+
+---
+
+## 12. Real-Time Data Pipeline
+
+### Data Sources
+
+| Source | Assets | Adapter | Method |
+|---|---|---|---|
+| Binance | Crypto (BTC, ETH, SOL, BNB, ...) | `binance-ws.ts` | WebSocket (kline streams) |
+| Finnhub | Forex (EURUSD, GBPUSD, ...) | `forex-ws.ts` | WebSocket |
+| Yahoo Finance | Forex (fallback) | `yahoo.ts` | REST polling (15s) |
+| Candle Store | All (cached) | `candle-store.ts` | In-memory ring buffer |
+
+### Real-Time Flow (per candle close)
+
+```
+Binance WS / Forex Poller
+  → candleStore.applyUpdate({isClosed: true})
+    → emits "candleClosed"
+      → sseManager broadcasts SSE "candle_closed" → browsers
+      → analysis-bridge:
+          1. candleStore.getCandles() → fresh Candle[]
+          2. buildReport() → fresh SmcReport
+          3. updateCachedReport() → REST cache pre-warmed
+          4. sseManager.broadcastReport() → SSE "report_update"
+            → browser: onReportUpdate → setQueryData → instant UI update
+```
+
+### SSE Channels
+
+| Event | Payload | Frequency |
+|---|---|---|
+| `connected` | — | On connection |
+| `candle_update` | `{ symbol, timeframe, candle }` | Every tick |
+| `candle_closed` | `{ symbol, timeframe }` | Every candle close |
+| `report_update` | `{ timeframe, report: SmcReport }` | Every candle close |
+
+---
+
+## 13. TradingView Desktop Integration
+
+### Two Integration Paths
+
+| Aspect | `tradingview/` (Legacy) | `tradingview-desktop/` (Current) |
+|---|---|---|
+| Tools | ~11 | **104+** |
+| Connection | Puppeteer → CDP | `chrome-remote-interface` → CDP |
+| API | `window.tvWidget` | `_exposed_chartWidgetCollection` |
+| Health Check | `page.evaluate(() ⇒ document.title)` | `_browser.connected` |
+| Drawing | Canvas click (unreliable) | `ChartApiInstance.createStudy()` |
+| Launch | `puppeteer.launch()` (own browser) | CDP to existing TV desktop |
+
+### Desktop Tools by Category (104+)
+
+| Category | Count | Tools |
+|---|---|---|
+| Chart | ~8 | get state, set symbol, set timeframe, set type, visible range, scroll to date, symbol info, search |
+| Drawing | ~5 | create shape, list, get properties, remove, clear all |
+| Data | ~8 | OHLCV bars, quote, depth, indicator values, Pine lines/labels/boxes, strategy results, trades, equity |
+| Alerts | ~3 | create, list, delete |
+| Indicators | ~3 | add, remove, get |
+| Pane | ~4 | get/set layout, focus, set symbol |
+| Replay | ~8 | start, stop, autoplay, step forward, trade (buy/sell/close), get status |
+| Tabs | ~3 | get, switch, close |
+| UI | ~15 | click, open panel, fullscreen, keyboard, type text, hover, scroll, mouse click, find element, evaluate JS, layout |
+| Pine | ~8 | get/set source, compile, publish, library, info, templates |
+| Capture | ~1 | screenshot |
+| Watchlist | ~3 | get, add, remove |
+| Health | ~3 | ping, connect |
+| **MCP Tools** | **+10** | `tv_chart_set_symbol`, `tv_ui_click`, `tv_data_get_quote`, etc. |
+| **Legacy Web** | **+11** | `tv_get_chart_state`, `tv_draw_horizontal_line`, etc. |
+
+### MSIX Launch Fix (Windows Only)
 
 ```powershell
-# Prerequisites
-1. Install Node.js 22+, pnpm 9
-2. Install Docker Desktop (for PostgreSQL)
-3. Get a Fireworks AI API key (free tier)
+# Discover installed packages
+$folder = New-Object -ComObject Shell.Application
+$folder.Namespace("shell:AppsFolder").Items()
+# → 31178TradingViewInc.TradingView_q4jpyh43s5mv6!TradingView.Desktop
 
-# Clone
-cd part-2-SMC
-cp .env.example .env
-# Edit .env: set FIREWORKS_API_KEY, DATABASE_URL
-
-# Install
-pnpm install
-
-# Build
-pnpm --filter @workspace/api-server run build
-
-# Start PostgreSQL
-cd deploy/local
-docker compose up -d db
-# Apply trust auth (one-time):
-docker compose exec db sh -c "echo 'host all all all trust' >> /var/lib/postgresql/data/pg_hba.conf && psql -U smc -d smc_liquidity -c 'SELECT pg_reload_conf();'"
-cd ../..
-
-# Run migration
-docker compose -f deploy/local/docker-compose.yml exec db psql -U smc -d smc_liquidity < docs/migrations/003_learning_framework.sql
-
-# Start API server
-node artifacts/api-server/dist/index.mjs
-
-# Verify
-curl http://localhost:3001/api/healthz
-curl http://localhost:3001/api/learning/dashboard
+# Launch with CDP debugging
+Start-Process "shell:AppsFolder\31178TradingViewInc.TradingView_q4jpyh43s5mv6!TradingView.Desktop" `
+  -ArgumentList "--remote-debugging-port=9222"
 ```
 
-### Day 2 — Understanding the Architecture
+### TV Drawing Architecture
 
-Read these files in order:
-1. `README.md` — Feature overview
-2. `ARCHITECTURE.md` — Folder tree and module responsibilities
-3. `BACKEND.md` — Route table, SMC engine API, data flow
-4. `AI_SYSTEM.md` — LLM pipeline, prompt construction, agent modes
-5. `ICT_IMPLEMENTATION.md` — Each SMC detection algorithm in detail
-6. `ARTIFACTS/api-server/src/lib/smc/types.ts` — All type definitions
-7. `docs/LEARNING_FRAMEWORK.md` — Comparison + validation framework
-
-### Day 3 — Making Changes
-
-Key development patterns:
-- **New SMC detection**: Add to `src/lib/smc/` as pure function, register in `report.ts`
-- **New route**: Create file in `src/routes/`, add to `routes/index.ts`
-- **New MCP tool**: Add to `src/lib/mcp/tools/`, register in `server.ts` and `tool-registry.ts`
-- **Build**: Always run `pnpm --filter @workspace/api-server run build` before testing
-- **Debug**: Check `api-server.log` for structured logs
+```
+SMC Engine → DrawTarget[]
+  │ POST /api/agent-loop/tv-draw
+  ▼
+tv-draw route handler:
+  1. Connect via CDP (chrome-remote-interface)
+  2. Switch chart: setSymbol + setResolution
+  3. Wait for bars (~3-6s)
+  4. Compute BSL/SSL/Current levels
+  5. For each level:
+     └── ChartApiInstance.createStudy(id, "hl_0", "Horizontal Line", ...)
+  6. Return { levels, logs }
+```
 
 ---
 
-## 20. "How the Entire System Works" Narrative
+## 14. Memory & Learning Systems
 
-### End-to-End in Plain English
+### Three-Tier Memory
 
-**SMC Pulse Predict** is a system that watches financial markets through the lens of ICT (Inner Circle Trader) methodology and helps traders understand what smart money is doing.
+| Tier | Storage | Scope | Key Operation |
+|---|---|---|---|
+| **Episodic** | `TradeLedgerService` (DB) | Past signals and outcomes | `findSimilarSetups()` |
+| **Semantic** | `agent_memory` table (DB) | Patterns and procedural rules | `store()`, `query()` |
+| **Vector** | Qdrant (external) | Similar setup search | `storeSignal()`, `findSimilar()` |
 
-**Step 1: Market data arrives.** Binance's WebSocket sends real-time price updates for crypto like BTC/USDT every time a new candle forms (every minute, every 5 minutes, etc.). For forex like EUR/USD, the system polls Yahoo Finance every 15 seconds. All this data flows into an in-memory candle store — a live accumulator of price bars.
+### Learning Framework (Comparison Engine)
 
-**Step 2: The SMC engine analyzes every candle.** Seven detection modules run in sequence every time a candle closes — in under 20 milliseconds:
-- **Structure** finds swing highs and lows, classifies them as Higher Highs, Lower Highs, Higher Lows, or Lower Lows, then identifies Break of Structure (trend continues) and Change of Character (trend may be reversing). It even infers the market phase: is price accumulating, manipulating, expanding, or distributing?
-- **Liquidity** identifies where stop-loss orders cluster — above swing highs (buy-side liquidity), below swing lows (sell-side liquidity). It scores these pools by how many times price touched them, which trading session they formed in, and how recent they are.
-- **Order Blocks** finds the last candle before a big price move — that candle represents where institutions placed their orders. It computes whether price has already returned to "mitigate" that level.
-- **Fair Value Gaps** spots 3-candle imbalances — areas where price moved too fast and left a gap. It tracks whether price has returned to fill it.
-- **PD Array** divides the price range into premium (expensive — look to sell) and discount (cheap — look to buy).
-- **Daily Bias** checks the daily chart to determine the higher-timeframe direction, used as a filter for lower-timeframe trades.
-- **SMT Divergence** compares two correlated instruments (like BTC and ETH) — if one makes a new high while the other doesn't, it signals a potential reversal.
+```
+TV Desktop → readPineDetections() → comparison with SMC engine
+  │
+  ├── extractEngineDetections(report) → Detection[]
+  ├── extractTvDetections(tvData)     → Detection[]
+  ├── compareDetections(engine, tv)    → AgreementAnalysis[]
+  └── calculateComparisonMetrics()     → Win rates, reliability scores
+```
 
-All seven outputs merge into a single `SmcReport` — a complete market brief.
+### Learning Endpoints
 
-**Step 3: The report goes everywhere.** It's cached for 60 seconds for dashboard refreshes, pushed instantly via SSE to open browser tabs, and fed to the AI analyst.
+| Method | Path | Description |
+|---|---|---|
+| GET | `/api/learning/comparisons` | Past comparison records |
+| GET | `/api/learning/read-tv-indicator-levels` | Read Pine indicator values from TV |
+| GET | `/api/learning/comparisons/analyze` | Run comparison on current data |
+| GET | `/api/learning/evaluate-outcomes` | Evaluate forward outcomes |
+| GET | `/api/learning/arbitrate` | Truth Engine arbitration |
+| GET | `/api/learning/reliability` | Reliability reports |
+| GET | `/api/learning/parameter-suggestions` | Parameter optimization |
+| GET | `/api/learning/events` | Learning events |
+| GET | `/api/learning/patterns` | Pattern statistics |
 
-**Step 4: AI analyzes and answers.** A DeepSeek V4 Pro model running on Fireworks AI receives the SmcReport as context. Users can ask questions ("Where is the liquidity?"), run a 4-agent pipeline that examines structure → liquidity → gaps → confluence in sequence, or activate the Agent Loop — a fully autonomous cycle that observes, interprets, reasons with the LLM, decides what to do, acts (generating signals or trades), evaluates its performance, and updates its memory for next time.
+---
 
-**Step 5: Everything is tracked.** Every generated signal goes to the trade ledger. Every trade outcome feeds into a 7-dimension performance matrix that answers "what works best" — by setup type, market regime, session, timeframe, and more.
+## 15. Database Schema (Drizzle ORM)
 
-**Step 6: TradingView Desktop controls.** The system can connect to your local TradingView Desktop app via Chrome DevTools Protocol. It reads live chart data directly, draws order blocks and FVG zones on your charts, and exposes 86 tools for external AI agents (Claude Desktop, etc.) to control TV — change symbols, draw Fibonacci levels, run Pine Scripts, even control replay mode.
+### Table Map (13 tables, PostgreSQL 16)
 
-**Step 7: The learning feedback loop.** A recently-built Learning & Validation Framework compares the internal SMC engine's detections against what TradingView Pine indicators (like LuxAlgo's ICT tools) show. Every agreement and disagreement is stored in PostgreSQL. Over time, as price plays out and the system can see "who was right," it builds per-type reliability scores: "Our engine is 96% reliable for Order Blocks but only 64% for SMT." It then generates parameter recommendations — "Our displacement threshold should change from 1.5× ATR to 1.8× ATR based on 842 examples with 97% confidence" — requiring human approval before applying.
+| Table | Schema File | Purpose | Key Columns |
+|---|---|---|---|
+| `trades` | `learning.ts` | Trade ledger | symbol, setup_type, entry/exit, outcome |
+| `performance_matrix` | `learning.ts` | Pre-computed metrics per dimension | win_rate, sharpe, profit_factor |
+| `detection_comparisons` | `learning.ts` | TV vs Engine detection records | detection_type, agreement |
+| `detection_outcomes` | `learning.ts` | Forward-outcome evaluation | outcome, correct_source |
+| `model_performance` | `learning.ts` | Per-source accumulated reliability | reliability_score |
+| `parameter_history` | `learning.ts` | Parameter optimization history | current/suggested value |
+| `learning_events` | `learning.ts` | Significant learning observations | event_type, significance |
+| `pattern_statistics` | `learning.ts` | Recurring pattern analysis | occurrence_count, win_rate |
+| `agent_loop_runs` | `learning.ts` | Agent loop run history | total_iterations, evaluation_score |
+| `agent_loop_steps` | `learning.ts` | Step-level trace data | step_type, input/output snapshot |
+| `agent_memory` | `learning.ts` | Semantic/procedural knowledge | memory_key, content, tags |
+| `model_definitions` | **`model-definitions.ts` (NEW)** | 41 ICT/SMC model catalog | name, version, requires, parameters |
+| `economic_events` | **`economic-events.ts` (NEW)** | Economic calendar events | time, currency, event, impact, forecast |
 
-**Step 8: Backtesting validates everything.** A sliding-window backtester runs the SMC engine over historical data, generates hypothetical signals, tracks what would have happened, and feeds results back into the performance matrix.
+### Unique Constraints
 
-**The long-term vision:** TradingView indicators are the initial teacher. The internal SMC engine is the student. Historical market outcomes are the examiner. Over time, the student should learn enough from reality that it no longer depends on the teacher. The platform is designed to become an autonomous, self-improving market intelligence system.
+| Table | Constraint | Purpose |
+|---|---|---|
+| `performance_matrix` | `(asset_class, symbol, setup_type, setup_subtype, timeframe_cascade, market_regime, session_context)` | Dimension combo uniqueness |
+| `agent_memory` | `memory_key` | Key-value uniqueness |
+| `model_performance` | `(source, detection_type)` | Per-source reliability |
+| `economic_events` | **`(time, currency, event)`** | **Idempotent upsert** |
+
+### Seed Data
+
+`lib/db/seeds/model-definitions.ts` — 41 ICT/SMC model definitions:
+- Classical Horizon (2019): 12 models (intraday scalping → core scalping)
+- Charter Blueprint: 12 models (pedagogical series)
+- Modern Confluence: 5 models (HTF+BOS+FVG → Five Box)
+- Market Maker Cycles: 2 models (MMSM, MMBM)
+- Temporal & Reversal: 10 models (Silver Bullet ×3 → 2 FVG)
+
+Run: `DATABASE_URL="..." pnpm --filter @workspace/db run seed:models`
+
+---
+
+## 16. Narrative Generator & Reasoning Agent
+
+### Narrative Generator (`generate-narrative.ts`)
+
+**Pure deterministic function** — no LLM call. Takes strategy detection results and a TF report map, produces 5-paragraph institutional commentary.
+
+**Sections:**
+1. **Direction** — HTF bias, confidence, phase, daily bias alignment
+2. **Session** — ICT session state, PD Array position
+3. **Liquidity** — Nearest BSL/SSL with scores and directional inference
+4. **Levels** — Draw targets, dealing range, equilibrium, current price
+5. **Strategy** — Primary strategy name/score + alternatives
+
+**33 tests** — fixtures cover bullish, bearish, neutral, and empty map scenarios.
+
+### Reasoning Agent (`reasoning-agent.ts`)
+
+**LLM-powered evaluation** — uses `extractStructured()` for Zod-validated output.
+
+**Prompt structure:**
+1. Summarise setup in one sentence
+2. Identify 2–3 specific reasons it **could fail** (adversarial challenge)
+3. Weigh bull case vs bear case
+4. Calibrated confidence score 0–100:
+   - 0–30: Weak — do not trade
+   - 31–50: Marginal — needs confirmation
+   - 51–70: Moderate — viable
+   - 71–85: Strong — multiple confluence
+   - 86–100: Exceptional
+
+**14 tests** — uses mock LLM function (no real API calls in tests).
+
+---
+
+## 17. External Intelligence & Economic Calendar
+
+### Refresh Pipeline (`refresh-job.ts`)
+
+```
+refreshEconomicCalendar() → RefreshResult
+  │
+  ├── 1. scrapeForexFactory()
+  │     FirecrawlAppV1.scrapeUrl("https://www.forexfactory.com/calendar")
+  │     → raw markdown
+  │
+  ├── 2. structureWithScrapeGraphAI(markdown)
+  │     POST https://api.scrapegraphai.com/v1/llm/extract
+  │     → EconomicEventRow[] (time, currency, event, impact, forecast, previous, actual)
+  │
+  └── 3. upsertEvents(rows)
+        onConflictDoUpdate({ target: [time, currency, event] })
+        → No duplicates on re-scrape
+```
+
+**Requires:** `FIRECRAWL_API_KEY`, `SCRAPEGRAPH_API_KEY`, `DATABASE_URL`
+**Route:** `GET /api/external-intel/refresh`
+
+### Economic Calendar Predicates (NEW — Jul 18)
+
+- **`hasHighImpactNewsWithin`** — checks upcoming high-impact events within configurable window
+- **`isNewsBlackoutWindow`** — checks if current time is within X minutes before/after any high-impact event
+
+Both accept `EconomicEvent[]` via the evaluator's `args` mechanism. Commented out in Silver Bullet templates with a TODO until the evaluator context can inject events at runtime.
+
+---
+
+## 18. Deployment & Infrastructure
+
+### Docker Multi-Stage Build (`Dockerfile`)
+
+```
+Builder (node:22-alpine)
+  ├── Install pnpm, copy manifests
+  ├── pnpm install
+  ├── Build api-server (esbuild → dist/)
+  └── Build frontend (Vite → dist/public/)
+
+Runner (node:22-alpine)          ← Used by Railway/Render
+  ├── Copy dist + install prod deps
+  ├── Install Chromium (for Puppeteer)
+  └── CMD: node dist/index.mjs
+
+Frontend (nginx:alpine)
+  ├── Copy built assets
+  └── CMD: nginx serve
+```
+
+### Deployment Targets
+
+| Platform | Blueprint | Database | Notes |
+|---|---|---|---|
+| **Railway** | `railway.json` | Railway Postgres or Supabase | Auto-detected, health-checked |
+| **Render** | `render.yaml` | Managed PostgreSQL 16 | Blueprint with secrets sync: false |
+| **Supabase** | `MIGRATION.md` | Supabase PostgreSQL | Compatible with existing Drizzle setup |
+| **Docker (local)** | `deploy/local/docker-compose.yml` | PostgreSQL + Qdrant + Ollama | CPU-friendly, Fireworks AI for LLM |
+| **AMD Cloud** | `deploy/amd-developer-cloud/docker-compose.yml` | PostgreSQL | vLLM on MI300X, local LLM inference |
+
+### Environment Variables
+
+| Variable | Required | Default | Purpose |
+|---|---|---|---|
+| `PORT` | Yes | 3001 | REST/SSE port |
+| `MCP_PORT` | No | 3002 | FastMCP server |
+| `DATABASE_URL` | No | — | PostgreSQL (graceful noop if unset) |
+| `LLM_PROVIDER` | No | `fireworks` | Provider selection |
+| `FIREWORKS_API_KEY` | Conditional | — | Required for Fireworks AI |
+| `GROQ_API_KEY` | Conditional | — | Required for Groq |
+| `TV_ENABLED` | No | false | TradingView integration |
+| `TV_CONNECTION_TYPE` | No | `web` | `web` (Puppeteer) or `desktop` (CDP) |
+| `FIRECRAWL_API_KEY` | Conditional | — | Economic calendar scraping |
+| `SCRAPEGRAPH_API_KEY` | Conditional | — | Economic calendar structuring |
+| `ALPACA_API_KEY_ID` | No | — | Paper trading (falls back to MockBroker) |
+
+---
+
+## 19. API Endpoint Reference
+
+### Analysis
+
+| Method | Path | Description | Cache |
+|---|---|---|---|
+| GET | `/api/healthz` | Health check | No |
+| GET | `/api/symbols` | Supported symbols | No |
+| GET | `/api/analysis/crypto` | Full SMC report (crypto) | 60s |
+| GET | `/api/analysis/forex` | Full SMC report (forex) | 60s |
+| POST | `/api/analysis/from-bars` | SMC from external bars | 60s |
+| GET | `/api/analysis/from-tv` | SMC from TV Desktop bars | 60s |
+
+### AI Agents
+
+| Method | Path | Description |
+|---|---|---|
+| POST | `/api/agents/ask` | AI Q&A via Fireworks (SSE) |
+| POST | `/api/agents/pipeline` | 4-agent pipeline (SSE) |
+| POST | `/api/agents/ask-mcp` | MCP tool-calling agent (SSE, 37+ tools) |
+
+### Strategy Evaluation (NEW)
+
+| Method | Path | Description |
+|---|---|---|
+| GET | `/api/strategies` | List registered strategies |
+| POST | `/api/strategies/detect` | Multi-TF detection |
+| POST | `/api/strategies/detect?reason=true` | Detection + narrative + reasoning |
+
+### Agent Loop
+
+| Method | Path | Description |
+|---|---|---|
+| POST | `/api/agent-loop/run` | One-shot loop cycle (SSE) |
+| POST | `/api/agent-loop/start-monitoring` | Background monitor |
+| POST | `/api/agent-loop/stop-monitoring` | Stop monitor |
+| GET | `/api/agent-loop/status` | Active monitors |
+| GET | `/api/agent-loop/runs` | Historical runs |
+| GET | `/api/agent-loop/runs/:id` | Detailed run trace |
+| POST | `/api/agent-loop/runs/:id/evaluate` | Trigger evaluation |
+| GET | `/api/agent-loop/memory` | Semantic memory |
+| POST | `/api/agent-loop/memory` | Store memory |
+| DELETE | `/api/agent-loop/memory/:id` | Delete memory |
+
+### TradingView
+
+| Method | Path | Description |
+|---|---|---|
+| GET | `/api/agent-loop/tv-status` | TV connection status |
+| POST | `/api/agent-loop/tv-config` | Update TV config |
+| POST | `/api/agent-loop/tv-connect` | Force reconnect |
+| POST | `/api/agent-loop/tv-sync` | Sync SMC levels |
+
+### Learning
+
+| Method | Path | Description |
+|---|---|---|
+| GET | `/api/learning/comparisons` | Detection comparisons |
+| GET | `/api/learning/read-tv-indicator-levels` | Read Pine levels from TV |
+| GET | `/api/learning/comparisons/analyze` | Run comparison analysis |
+| GET | `/api/learning/evaluate-outcomes` | Evaluate outcomes |
+| GET | `/api/learning/arbitrate` | Truth Engine arbitration |
+| GET | `/api/learning/reliability` | Reliability reports |
+| GET | `/api/learning/parameter-suggestions` | Parameter recommendations |
+
+### Real-Time
+
+| Method | Path | Description |
+|---|---|---|
+| GET | `/api/stream/:symbol` | SSE real-time stream |
+| GET | `/api/stream/status` | Stream health |
+
+### Ledger & Broker
+
+| Method | Path | Description |
+|---|---|---|
+| GET | `/api/ledger` | Trade history |
+| POST | `/api/signals/generate` | Generate signals |
+| POST | `/api/signals/execute` | Execute signal |
+| GET | `/api/broker/status` | Broker connection status |
+| POST | `/api/broker/mode` | Switch REVIEW/LIVE mode |
+| GET | `/api/account` | Account balance |
+| POST | `/api/backtest/run` | Run backtest |
+
+### External Intelligence (NEW)
+
+| Method | Path | Description |
+|---|---|---|
+| GET | `/api/external-intel/refresh` | Trigger economic calendar refresh |
+
+---
+
+## 20. Technical Debt & Risk Assessment
+
+### Known Issues
+
+| Issue | Impact | Status |
+|---|---|---|
+| **analysis.ts volume type** | TypeScript error: `volume?: number` not assignable to `Candle.volume: number` 3 times | **Pre-existing** — cast needs fixing |
+| **hasEqualHighsLows not implemented** | Five Box Setup template uses partial rule tree | **Known** — referenced by seed, predicate not written |
+| **6 unimplemented predicates** | `hasDisplacement`, `hasLiquiditySweep`, `hasBreakerBlock`, `hasSessionAlignment`, `hasRangeExpansion`, `hasWeeklyExpansionContext` | **Known** — templates use proxy predicates |
+| **TV MSIX sandbox** | CDP doesn't bind by default | **Workaround** — documented `shell:AppsFolder` fix in `.env` |
+| **No test for `strategies.ts` route** | HTTP integration test missing | **Todo** — route tested manually only |
+| **No vitest config in api-server** | New tests use `tsx` runner (hand-rolled assertions) | **Pattern** — no migration needed |
+| **`pnpm-lock.yaml` stale** | Dependencies from this session not yet committed to lockfile | **Pending** — `pnpm install --no-frozen-lockfile` will regenerate |
+| **Frontend state management** | No global store — props drilled through dashboard | **Architectural decision** — works at current scale |
+| **Browser API key exposed** | `FIREWORKS_API_KEY` in `.env` committed to repo | **Security risk** — should be environment-only |
+
+### Risk Assessment
+
+| Risk | Severity | Mitigation |
+|---|---|---|
+| LLM API key exposure in `.env` | **High** | Validate `.env` is in `.gitignore` (currently tracked) |
+| No test coverage for routes | Medium | Manual testing pre-commit |
+| No dependency locking | Medium | Commit `pnpm-lock.yaml` |
+| MSIX sandbox blocks CDP | Low | Documented workaround |
+| Database connection hard-fails | Low | Deep-noop proxy for offline mode |
+| TV data fetch hangs | Low | 10s timeouts on all CDP evaluate calls |
+
+### Improvement Roadmap
+
+| Priority | Item | Effort |
+|---|---|---|
+| P0 | Rotate committed API keys, add `.env` to `.gitignore` | 5min |
+| P0 | Commit `pnpm-lock.yaml` | 2min |
+| P1 | Implement missing 7 predicates | 1 session |
+| P1 | Add HTTP integration tests for `strategies.ts` route | 1 session |
+| P2 | Wire economic events into evaluator args | 1 session |
+| P2 | Add `isNewsBlackoutWindow` to Silver Bullet templates | 30min |
+| P3 | CI test runner for api-server tests | 1 session |
+| P3 | Global state (Zustand) if dashboard component grows further | 2 sessions |
+
+---
+
+## 21. Glossary
+
+| Term | Definition |
+|---|---|
+| **BSL** | Buy-Side Liquidity — resting stop orders above swing highs |
+| **SSL** | Sell-Side Liquidity — resting stop orders below swing lows |
+| **BOS** | Break of Structure — price breaks through a swing point |
+| **CHoCH** | Change of Character — structural reversal signal |
+| **FVG** | Fair Value Gap — price imbalance between consecutive candles |
+| **OB** | Order Block — institutional footprint zone |
+| **IDM** | Inducement — internal consolidation that traps retail stops |
+| **OTE** | Optimal Trade Entry — 62–79% Fibonacci retracement zone |
+| **MSS** | Market Structure Shift — pivot sequence break signaling reversal |
+| **SMT** | Smart Money Technique — divergence between correlated assets |
+| **PD Array** | Premium/Discount Array — buy in discount, sell in premium |
+| **ICT** | Inner Circle Trader — Michael Huddleston's methodology |
+| **SMC** | Smart Money Concepts — retail-friendly ICT derivatives |
+| **IPDA** | Interbank Price Delivery Algorithm — price delivery cycles |
+| **PO3** | Power of Three — Accumulation, Manipulation, Distribution |
+| **CDP** | Chrome DevTools Protocol — browser automation interface |
+| **MCP** | Model Context Protocol — AI tool standard |
+| **SSE** | Server-Sent Events — real-time push to browser |
+| **StrategyDefinition** | Named rule tree with metadata (Zod-validated) |
+| **Rule** | Recursive discriminated union (predicate / and / or / not) |
+| **Predicate** | Pure function returning `{ matched, evidence, score? }` |
+| **DetectionResult** | Evaluation output with `strategyId`, `status`, `matched`, `score` |
+| **Narrative** | Deterministic 5-paragraph market commentary |
+| **Reasoning** | LLM-generated adversarial evaluation |
+
+---
+
+*Generated 2026-07-18. For the latest version, see the Obsidian vault at `.obsidian/` or the live docs at `docs/`.*
