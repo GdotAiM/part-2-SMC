@@ -49,12 +49,13 @@ Other notable types at `lib/api-zod/src/generated/types/tradeSignal.ts`: `Unifie
 
 ## Test Conventions
 
-- **No test framework** installed — no vitest, jest, or mocha. Tests are standalone scripts run via `npx tsx <path>`.
-- **Two styles**: 7 files use a hand-rolled `assert(condition, label)` harness with `passed`/`failed` counters; 1 file (`ComparisonEngine.test.ts`) uses Node built-in `node:test`.
-- **8 test files**, all in `artifacts/api-server/src/lib/`: comparison (1), execution (1), smc (6 — structure, fvg, liquidity, order-blocks, pd-array, daily-bias, smt).
-- **~150 individual assertions** across these files. No tests in lib/ packages or frontend.
+- **Two styles**: Hand-rolled `assert` harnesses (api-server, ~150 assertions across 8 files) + **vitest** (api-zod, 96 tests across 3 test files).
+- **api-zod** (`lib/api-zod/`) — vitest configured; run with `pnpm --filter @workspace/api-zod test`. Tests are colocated `*.test.ts`.
+- **8 legacy test files** in `artifacts/api-server/src/lib/`: run via `npx tsx <path>`.
 - Tests are **not run in CI** (CI only typechecks + builds).
-- Convention: test files are colocated `*.test.ts` next to their source.
+- **Groq provider test** (`artifacts/api-server/src/lib/llm/groq-provider.test.ts`) — 21 assertions, standalone script.
+- **Narrative generator test** (`artifacts/api-server/src/lib/narrative/generate-narrative.test.ts`) — 33 assertions, standalone script.
+- **Reasoning agent test** (`artifacts/api-server/src/lib/agents/reasoning-agent.test.ts`) — 14 assertions with mocked LLM, standalone script.
 
 ## Multi-TF Cascade Pattern (Frontend)
 
@@ -79,3 +80,66 @@ Defined in `artifacts/api-server/src/lib/execution/`:
 - **`AlpacaAdapter.ts`** — Full Alpaca paper-trading implementation (`paper-api.alpaca.markets`). Translates Binance-style symbols (BTCUSDT → BTC/USD), maps Alpaca order statuses, rejects forex. Activated when `ALPACA_API_KEY_ID` + `ALPACA_API_SECRET_KEY` are set; otherwise falls back to `MockBrokerAdapter`.
 
 Selection happens in `routes/ledger.ts:22-27`: env vars present → `AlpacaAdapter` → `ExecutionManager("REVIEW")`; else → `MockBrokerAdapter` → `ExecutionManager("REVIEW")`.
+
+## Strategy Evaluation System (`lib/api-zod/src/strategies/`)
+
+A complete ICT/SMC model-matching engine. Key files:
+
+| File | Role |
+|---|---|
+| `predicates.ts` | 14 pure functions (`hasBias`, `hasOrderBlock`, `hasFVG`, `hasMarketStructureShift`, `hasInducementZone`, `priceWithinOTEzone`, `hasConsolidationZone`, `isWithinSession`, `hasSMTConfirmation`, `hasHighImpactNewsWithin`, `isNewsBlackoutWindow`, etc.) returning `{ matched, evidence, score? }` — 96 vitest tests |
+| `rules.ts` | Recursive `Rule` discriminated union (`predicate`/`and`/`or`/`not`) + `StrategyDefinition` Zod schema |
+| `evaluator.ts` | `StrategyEvaluator` — walks a Rule tree against `Map<string, SmcReport>` via predicate function registry |
+| `registry.ts` | `StrategyRegistry` — auto-loads 41 templates, `detectAll(reports)` → ranked `DetectionResult[]` |
+| `templates/*.ts` | 41 StrategyDefinitions matching seed data: classical-horizon (12), charter-blueprint (12), modern-confluence (5), mmxm-and-temporal (12) |
+
+**API route:** `POST /api/strategies/detect` — fetches multi-TF OHLCV, builds SMC reports, runs `detectAll`, returns ranked results. Optional `?reason=true` appends deterministic narrative + LLM reasoning assessment.
+
+**Frontend:** `useCascadeStrategy` hook → `ConfluenceCard` shows primary strategy name/score + Execute Now → opens `IntelligenceSheet` with `OSOutputPanel` (narrative + reasoning). `CAL` button in header triggers economic calendar refresh.
+
+**Missing predicates** (referenced by seed data, not yet implemented): `hasDisplacement`, `hasLiquiditySweep`, `hasBreakerBlock`, `hasSessionAlignment`, `hasRangeExpansion`, `hasWeeklyExpansionContext`, `hasEqualHighsLows`.
+
+## Model Definitions DB (`lib/db/src/schema/`)
+
+- `model-definitions.ts` — `model_definitions` table (text PK, name, category, version, description, requires/optional as jsonb arrays, parameters with key/label/type/default/min/max/options, performanceStats jsonb, isPublished, timestamps). Migration `0000`.
+- `economic-events.ts` — `economic_events` table (time, currency, event, impact, forecast, previous, actual, refreshedAt, source). Unique upsert key on `(time, currency, event)`. Migration `0001`.
+- **Seed:** `lib/db/seeds/model-definitions.ts` — 41 ICT/SMC models. Run with `DATABASE_URL="..." pnpm --filter @workspace/db run seed:models`.
+
+## Narrative Generator (`artifacts/api-server/src/lib/narrative/`)
+
+`generate-narrative.ts` — deterministic template-based market commentary. No LLM. Takes `(detectedStrategies, reportMap)` → 5-paragraph string (direction, session, liquidity, levels, strategy overlay). 33 tests.
+
+## Reasoning Agent (`artifacts/api-server/src/lib/agents/`)
+
+`reasoning-agent.ts` — uses multi-provider LLM via `extractStructured()` with adversarial prompt: summarise, identify 2–3 failure modes, weigh bull/bear, output calibrated 0–100 score. Zod-validated `{ reasoning, confidenceScore }`. Accepts optional `llmFn` mock for testing. 14 tests.
+
+## Economic Calendar Refresh (`artifacts/api-server/src/lib/external-intel/`)
+
+`refresh-job.ts` — 3-step pipeline: Firecrawl scrape ForexFactory → ScrapeGraphAI LLM extraction → upsert into `economic_events`. Idempotent. Requires `FIRECRAWL_API_KEY` and `SCRAPEGRAPH_API_KEY`.
+**Route:** `GET /api/external-intel/refresh` (manual trigger).
+
+## LLM Providers (`artifacts/api-server/src/lib/llm/provider.ts`)
+
+Selectable via `LLM_PROVIDER` env var: `fireworks` (default), `openai`, `custom`, `amd`, `ollama`, `groq`.
+- **Groq**: Default model `llama3-70b-8192`, key from `GROQ_API_KEY` → `LLM_API_KEY`. 6 model pricings in cost map.
+- **Ollama**: Default `http://host.docker.internal:11434/v1`, model `llama-3.1-8b`.
+
+## Deployment
+
+- `railway.json` — Dockerfile-based, ports 3001/3002, health-checked at `/api/healthz`.
+- `render.yaml` — Blueprint with web service + PostgreSQL 16, secrets marked `sync: false`.
+- `MIGRATION.md` — 4-phase Supabase migration checklist (DB setup, platform env vars, hardening, frontend deploy).
+
+## TV Desktop CDP Integration
+
+Two integrations coexist in `artifacts/api-server/src/lib/integrations/`:
+- **`tradingview/`** (~11 tools) — legacy web-mode via Puppeteer. Uses `window.tvWidget` API.
+- **`tradingview-desktop/`** (**104+ tools**) — full desktop integration via `chrome-remote-interface` → CDP port 9222. Includes chart control, drawing, Pine Script, replay, alerts, indicators, tabs, UI clicking/keyboard, screenshots, watchlist, health.
+
+TV Desktop is installed as an **MSIX package** (Microsoft Store). The CDP port only works when launched via `shell:AppsFolder`:
+```powershell
+Start-Process "shell:AppsFolder\<AUMID>!TradingView.Desktop" -ArgumentList "--remote-debugging-port=9222"
+```
+The AUMID can be discovered via `New-Object -ComObject Shell.Application` → `shell:AppsFolder` items.
+
+Set `TV_CONNECTION_TYPE=desktop` in `.env` for CDP mode, `web` for Puppeteer mode (default). The `tradingview-desktop` connection layer handles page target matching, CSP-restricted health checks, and the `_exposed_chartWidgetCollection` API (TV Desktop lacks `window.tvWidget`).
