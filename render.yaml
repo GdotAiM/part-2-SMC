@@ -1,0 +1,55 @@
+# SMC Liquidity Hunter — Render Blueprint
+# Deploy the api-server as a Web Service and attach a managed PostgreSQL.
+#
+# Steps:
+#   1. Push this repo to GitHub.
+#   2. In Render Dashboard → Blueprint → connect repo.
+#   3. Set the required env vars as secrets (FIREWORKS_API_KEY, etc.).
+#   4. Render provisions Postgres + deploys the api-server automatically.
+#
+# The frontend (artifacts/liquidity-hunter) is separate — deploy it as a
+# Static Site pointed at that directory, or use the nginx Docker stage.
+
+services:
+  - type: web
+    name: smc-api-server
+    runtime: image
+    image:
+      dockerfilePath: Dockerfile
+      target: runner
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: "3001"
+      - key: MCP_PORT
+        value: "3002"
+      - key: CORS_ORIGINS
+        value: "*"
+      - key: LLM_PROVIDER
+        value: fireworks
+      - key: DATABASE_URL
+        fromDatabase:
+          name: smc-db
+          property: connectionString
+      - key: FIREWORKS_API_KEY
+        sync: false            # set manually as a secret
+      - key: ALPACA_API_KEY_ID
+        sync: false
+      - key: ALPACA_API_SECRET_KEY
+        sync: false
+      - key: LANGFUSE_PUBLIC_KEY
+        sync: false
+      - key: LANGFUSE_SECRET_KEY
+        sync: false
+    healthCheckPath: /api/healthz
+    healthCheckTimeout: 5
+    numInstances: 1
+
+databases:
+  - name: smc-db
+    databaseName: smc_liquidity
+    user: smc
+    plan: starter          # upgrade as needed
+    postgresMajorVersion: 16
+    ipAllowList: []        # restrict in production
