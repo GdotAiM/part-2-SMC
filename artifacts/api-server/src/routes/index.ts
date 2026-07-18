@@ -8,6 +8,8 @@ import agentsMcpRouter from "./agents-mcp.js";
 import ledgerRouter from "./ledger.js";
 import agentLoopRouter from "./agent-loop.js";
 import learningRouter from "./learning.js";
+import strategiesRouter from "./strategies.js";
+import externalIntelRouter from "./external-intel.js";
 
 const router: IRouter = Router();
 
@@ -20,5 +22,7 @@ router.use(agentsMcpRouter);
 router.use(ledgerRouter);
 router.use(agentLoopRouter);
 router.use("/learning", learningRouter);
+router.use(strategiesRouter);
+router.use(externalIntelRouter);
 
 export default router;
