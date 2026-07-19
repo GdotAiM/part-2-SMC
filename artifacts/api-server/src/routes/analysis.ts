@@ -2,6 +2,7 @@ import { Router, type IRouter } from "express";
 import { fetchBinanceCandles, fetchBinanceDailyCandles } from "../lib/fetchers/binance.js";
 import { fetchYahooCandles, fetchYahooDailyCandles } from "../lib/fetchers/yahoo.js";
 import { buildReport } from "../lib/smc/report.js";
+import type { Candle } from "@workspace/api-zod";
 import { candleStore } from "../lib/realtime/candle-store.js";
 import { logger } from "../lib/logger.js";
 
@@ -223,11 +224,14 @@ router.post("/analysis/from-bars", async (req, res): Promise<void> => {
   }
 
   try {
-    const report = buildReport(candles, symbol, market, timeframe, {
-      correlatedCandles: correlatedCandles ?? undefined,
+    // Normalize volume (can be undefined from external sources)
+    const normalized: Candle[] = candles.map(c => ({ ...c, volume: c.volume ?? 0 }));
+    const normalizedCorrelated: Candle[] | undefined = correlatedCandles?.map(c => ({ ...c, volume: c.volume ?? 0 }));
+    const report = buildReport(normalized, symbol, market, timeframe, {
+      correlatedCandles: normalizedCorrelated,
       primarySymbol: symbol,
     });
-    try { candleStore.seedCandles(symbol, timeframe, candles); } catch { /* ok */ }
+    try { candleStore.seedCandles(symbol, timeframe, normalized); } catch { /* ok */ }
     setCached(cacheKey(market, symbol, timeframe), report);
     res.json(report);
   } catch (err) {
@@ -296,7 +300,7 @@ router.get("/analysis/from-tv", async (req, res): Promise<void> => {
     try { candleStore.seedCandles(symbol, tf, candles); } catch { /* ok */ }
     setCached(cacheKey(market, symbol, tf), report);
 
-    res.json({ _source: "tradingview_desktop", symbol, market, timeframe: tf, candleCount: candles.length, ...report });
+    res.json({ _source: "tradingview_desktop", candleCount: candles.length, ...report });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unknown error";
     req.log.error({ err, symbol, tf }, "from-tv analysis failed");

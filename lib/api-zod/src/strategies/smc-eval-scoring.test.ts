@@ -74,7 +74,7 @@ describe("scoreStructuralAccuracy", () => {
 
 describe("scoreModelAlignment", () => {
   it("full marks for correct primary + no false positives", () => {
-    const ai = [{ id: "smc-confluence-1", name: "HTF POI + BOS + FVG", ontology: "EXECUTION_MODEL", confidence: 0.85 }];
+    const ai = [{ id: "smc-confluence-1", name: "HTF POI + BOS + FVG", ontology: "EXECUTION_MODEL" as const, confidence: 0.85 }];
     const r = scoreModelAlignment(mockGroundTruth, ai);
     expect(r.primaryModel).toBe(12);
     expect(r.modelDiscrimination).toBe(3);
@@ -82,8 +82,8 @@ describe("scoreModelAlignment", () => {
 
   it("penalizes false positive models", () => {
     const ai = [
-      { id: "smc-confluence-1", name: "HTF POI + BOS + FVG", ontology: "EXECUTION_MODEL", confidence: 0.85 },
-      { id: "fake-model", name: "Fake Model", ontology: "EXECUTION_MODEL", confidence: 0.5 },
+      { id: "smc-confluence-1", name: "HTF POI + BOS + FVG", ontology: "EXECUTION_MODEL" as const, confidence: 0.85 },
+      { id: "fake-model", name: "Fake Model", ontology: "EXECUTION_MODEL" as const, confidence: 0.5 },
     ];
     const r = scoreModelAlignment(mockGroundTruth, ai);
     expect(r.modelDiscrimination).toBeLessThan(3);
