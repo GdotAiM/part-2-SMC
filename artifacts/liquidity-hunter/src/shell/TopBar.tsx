@@ -9,6 +9,7 @@ import { useSessionClock } from "@/hooks/useSessionClock";
 import { useSystemEvidence } from "@/hooks/useEvidence";
 import { SESSION_LABELS } from "@/state/narrative";
 import { TvStatus } from "@/components/TvStatus";
+import { TimeframeChips } from "@/components/TimeframeChips";
 
 type TfPreset = "scalp" | "intraday" | "swing";
 
@@ -103,6 +104,9 @@ export function TopBar() {
             </button>
           ))}
         </div>
+
+        {/* Per-TF selector chips */}
+        <TimeframeChips />
 
         {/* Session badge */}
         <div className="hidden sm:flex items-center gap-2 px-2.5 py-1 rounded-sm bg-muted/30 border border-border/40">
