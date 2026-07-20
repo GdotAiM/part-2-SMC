@@ -12,6 +12,9 @@ import { useMarketStore } from "@/state/market-store";
 import { TF_LABEL_MAP } from "@/lib/smc-display";
 import { useNarrativeStage } from "@/hooks/useNarrativeStage";
 import { SessionFlowIndicator } from "./SessionFlowIndicator";
+import { QuickTools } from "./QuickTools";
+
+const FUNNEL_TABS = ["Funnel", "Tools"] as const;
 
 function FunnelStage({
   number,
@@ -83,6 +86,7 @@ function FunnelStage({
 }
 
 export function DecisionFunnel() {
+  const [activeTab, setActiveTab] = useState<"Funnel" | "Tools">("Funnel");
   const reports = useMarketStore((s) => s.reports);
   const symbol = useMarketStore((s) => s.symbol);
   const primary = useMarketStore((s) => s.strategyPrimary);
@@ -119,6 +123,27 @@ export function DecisionFunnel() {
 
   return (
     <div className="w-[320px] hidden lg:flex flex-col border-l border-border/30 bg-card/20 shrink-0">
+      {/* Tab header */}
+      <div className="flex border-b border-border/20">
+        {FUNNEL_TABS.map((tab) => (
+          <button
+            key={tab}
+            onClick={() => setActiveTab(tab)}
+            className={`flex-1 py-2 text-[9px] font-semibold uppercase tracking-wider transition-colors ${
+              activeTab === tab
+                ? "text-foreground border-b border-primary bg-primary/5"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            {tab}
+          </button>
+        ))}
+      </div>
+
+      {activeTab === "Tools" ? (
+        <QuickTools />
+      ) : (
+        <>
       {/* Header */}
       <div className="px-4 pt-3 pb-2 border-b border-border/20">
         <div className="flex items-center justify-between">
@@ -305,6 +330,8 @@ export function DecisionFunnel() {
           )}
         </FunnelStage>
       </div>
+      </>
+      )}
     </div>
   );
 }

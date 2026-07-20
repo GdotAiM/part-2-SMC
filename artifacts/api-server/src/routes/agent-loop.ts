@@ -692,7 +692,114 @@ router.post("/agent-loop/tv-draw", async (req, res) => {
       }
     }
 
+    if (action === "bos") {
+      // Draw BOS/CHoCH lines from structure breaks
+      const { breaks } = (req.body as any) || {};
+      const bosLines = breaks as Array<{ type: string; price: number; time?: number; direction?: string }> | undefined;
+
+      if (bosLines && bosLines.length > 0) {
+        const { getChartState } = await import("../lib/integrations/tradingview/cdp/chart.js");
+        const chartState = await getChartState();
+        const visibleRange = chartState?.visibleRange;
+        const now = Math.floor(Date.now() / 1000);
+        const defaultTime = visibleRange?.from ?? now - 86400;
+
+        for (let i = 0; i < Math.min(bosLines.length, 10); i++) {
+          const b = bosLines[i];
+          const t = b.time ?? defaultTime + i * 3600;
+          const color = b.type === "CHoCH" || b.type === "MSS" ? "#f59e0b" : "#3b82f6"; // amber for CHoCH, blue for BOS
+          const label = `${b.type}${b.direction ? " " + b.direction : ""}`;
+          try {
+            await evaluateWithArgs((price: number, t2: number, col: string, lbl: string) => {
+              try {
+                const cw = (window as any)._exposed_chartWidgetCollection?._chartWidgetsDefs?.[0]?.chartWidget;
+                if (!cw) return "no chart";
+                const shape = cw.chart().createShape(
+                  { time: t2, price },
+                  { shape: "trend_line", lock: false, disableSelection: false, disableSave: false,
+                    overrides: { linecolor: col, linestyle: 2, linewidth: 2, showLabel: true, text: lbl } }
+                );
+                return "ok";
+              } catch (e: any) { return e?.message ?? "err"; }
+            }, [b.price, t, color, label]);
+            result.levels = result.levels || [];
+            (result as any).bos = (result as any).bos || [];
+            (result as any).bos.push({ type: b.type, price: b.price, time: t, color });
+          } catch {
+            // skip failed draws
+          }
+        }
+        result.logs.push(`Drawn ${Math.min(bosLines.length, 10)} BOS/CHoCH line(s)`);
+      } else {
+        result.logs.push("No BOS/CHoCH data provided. Send { breaks: [...] } in request body.");
+      }
+    }
+
     await keyboardPress("Escape");
+    res.json(result);
+  } catch (err: any) {
+    res.status(500).json({ error: (err as Error).message });
+  }
+});
+
+// ─── POST /api/agent-loop/tv-alert-create — Set price alert on TV Desktop ──
+
+router.post("/agent-loop/tv-alert-create", async (req, res) => {
+  try {
+    const { getTvConfig } = await import("../lib/integrations/tradingview/config.js");
+    const { connect, isConnected, evaluate } = await import("../lib/integrations/tradingview/cdp/connection.js");
+
+    if (!getTvConfig().enabled) {
+      res.status(400).json({ error: "TV Desktop not enabled" });
+      return;
+    }
+
+    if (!(await isConnected())) {
+      await connect();
+    }
+
+    const { price, condition, message } = req.body as { price: number; condition?: string; message?: string };
+    if (price == null) {
+      res.status(400).json({ error: "price is required" });
+      return;
+    }
+
+    const condType = condition === "greater_than" ? "greater_than" :
+                     condition === "less_than" ? "less_than" : "crossing";
+
+    const result = await evaluate((p: number, cond: string, msg: string) => {
+      try {
+        const tvAlert = (window as any).TradingView?.alert?.createAlert || (window as any).pricealerts?.create_alert;
+        if (typeof tvAlert !== "function") return { error: "alert function not available" };
+
+        const payload = {
+          conditions: [{ type: cond, frequency: "on_first_fire",
+            series: [{ type: "barset" }, { type: "value", value: p }], resolution: "1" }],
+          symbol: (window as any).symbolExt?.symbol || "",
+          resolution: "1",
+          message: msg || `Price ${cond} ${p}`,
+          sound_file: "alert/fired", sound_duration: 0,
+          popup: true, auto_deactivate: true,
+          email: false, sms_over_email: false, mobile_push: true,
+          web_hook: null, name: null,
+          expiration: Math.floor(Date.now() / 1000) + 30 * 86400,
+          active: true, ignore_warnings: true,
+        };
+
+        // Use fetch via XHR inside TV context to hit the pricealerts API
+        const xhr = new (window as any).XMLHttpRequest();
+        xhr.open("POST", "https://pricealerts.tradingview.com/create_alert", false);
+        xhr.setRequestHeader("Content-Type", "application/json");
+        xhr.send(JSON.stringify(payload));
+        if (xhr.status >= 200 && xhr.status < 300) {
+          try { return JSON.parse(xhr.responseText); } catch { return { success: true, raw: xhr.responseText }; }
+        }
+        return { error: `HTTP ${xhr.status}`, detail: xhr.responseText?.slice(0, 200) };
+      } catch (e: any) {
+        return { error: e?.message || "alert creation failed" };
+      }
+    }, [price, condType, message || `Alert at ${price}`]);
+
     res.json(result);
   } catch (err: any) {
     res.status(500).json({ error: (err as Error).message });

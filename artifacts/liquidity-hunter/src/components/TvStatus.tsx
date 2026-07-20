@@ -29,7 +29,7 @@ interface DrawResult {
   logs: string[];
 }
 
-type DrawAction = "levels" | "fvgs" | "killzones" | "clear" | "all";
+type DrawAction = "levels" | "fvgs" | "killzones" | "bos" | "clear" | "all";
 
 export function TvStatus() {
   const [open, setOpen] = useState(false);
@@ -39,6 +39,9 @@ export function TvStatus() {
   const [drawing, setDrawing] = useState<DrawAction | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [logs, setLogs] = useState<string[]>([]);
+  const [alertPrice, setAlertPrice] = useState("");
+  const [alertCondition, setAlertCondition] = useState("crossing");
+  const [alertSetting, setAlertSetting] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -90,6 +93,27 @@ export function TvStatus() {
     }
     setDrawing(null);
   }, [load]);
+
+  const setAlert = useCallback(async () => {
+    if (!alertPrice) return;
+    setAlertSetting(true);
+    setError(null);
+    try {
+      const res = await fetch(apiUrl("/agent-loop/tv-alert-create"), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ price: Number(alertPrice), condition: alertCondition, message: `SMC Pulse: ${alertCondition} ${alertPrice}` }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setLogs([`Alert set at ${alertPrice} (${alertCondition})`]);
+        setAlertPrice("");
+      } else {
+        setError(data.error || "Alert failed");
+      }
+    } catch (err: any) { setError(err.message); }
+    setAlertSetting(false);
+  }, [alertPrice, alertCondition]);
 
   const isConnected = tv?.connected ?? false;
   const isReadWrite = tv?.config?.interactionMode === "readwrite";
@@ -181,6 +205,11 @@ export function TvStatus() {
                     <Layers className="w-3.5 h-3.5 text-blue-400" />
                     <span>Killzone Sessions</span>
                   </button>
+                  <button onClick={() => draw("bos")} disabled={!!drawing || !isConnected}
+                    className="flex items-center gap-2 px-3 py-2 rounded-sm border border-border bg-muted hover:bg-muted/80 text-xs font-semibold transition-colors disabled:opacity-40">
+                    <Eye className="w-3.5 h-3.5 text-amber-400" />
+                    <span>Mark BOS/CHoCH</span>
+                  </button>
                   <button onClick={() => draw("all")} disabled={!!drawing || !isConnected}
                     className="flex items-center gap-2 px-3 py-2 rounded-sm border border-primary/30 bg-primary/10 hover:bg-primary/20 text-xs font-semibold transition-colors disabled:opacity-40">
                     <Zap className="w-3.5 h-3.5 text-primary" />
@@ -190,6 +219,39 @@ export function TvStatus() {
                     className="flex items-center gap-2 px-3 py-2 rounded-sm border border-destructive/30 bg-destructive/10 hover:bg-destructive/20 text-xs font-semibold transition-colors disabled:opacity-40 col-span-2">
                     <Trash2 className="w-3.5 h-3.5 text-destructive" />
                     <span>Clear All Drawings</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Section: Set Alert */}
+              <div>
+                <div className="flex items-center gap-1.5 mb-2 text-muted-foreground font-semibold uppercase tracking-wider text-[10px]">
+                  🔔 Set Price Alert
+                </div>
+                <div className="flex gap-2">
+                  <input
+                    type="number"
+                    step="any"
+                    value={alertPrice}
+                    onChange={(e) => setAlertPrice(e.target.value)}
+                    placeholder="Price level"
+                    className="flex-1 rounded-sm bg-muted/20 border border-border/20 px-2 py-1.5 text-xs font-mono text-foreground"
+                  />
+                  <select
+                    value={alertCondition}
+                    onChange={(e) => setAlertCondition(e.target.value)}
+                    className="rounded-sm bg-muted/20 border border-border/20 px-1.5 py-1.5 text-[10px] font-mono text-foreground"
+                  >
+                    <option value="crossing">Crossing</option>
+                    <option value="greater_than">Above</option>
+                    <option value="less_than">Below</option>
+                  </select>
+                  <button
+                    onClick={setAlert}
+                    disabled={alertSetting || !isConnected || !alertPrice}
+                    className="px-3 py-1.5 rounded-sm bg-primary/10 border border-primary/20 text-xs font-semibold text-primary hover:bg-primary/15 transition-colors disabled:opacity-40"
+                  >
+                    {alertSetting ? "..." : "Set"}
                   </button>
                 </div>
               </div>

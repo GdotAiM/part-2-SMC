@@ -63,37 +63,37 @@ export const CAPABILITIES: CapabilityDef[] = [
   { id: "pool-sweep", name: "Pool Sweep Detection", description: "Detect when a liquidity pool was swept and at what price.", category: "LIQUIDITY", action: "ANALYSE", stages: SETUP_STAGES, icon: "⚡", uiCoverage: true },
   { id: "sweep-probability", name: "Sweep Probability", description: "Calculate the probability of each pool being swept.", category: "LIQUIDITY", action: "ANALYSE", stages: SCAN_STAGES, icon: "📈", uiCoverage: true },
   { id: "draw-levels-tv", name: "Draw Levels on TV", description: "Draw BSL, SSL, and key levels on TradingView chart.", category: "LIQUIDITY", action: "ACT", stages: SETUP_STAGES, endpoint: "/api/agent-loop/tv-draw", requiresTv: true, icon: "✏️", uiCoverage: true },
-  { id: "compare-luxalgo", name: "Compare with LuxAlgo", description: "Read LuxAlgo indicator levels and compare with SMC engine.", category: "LIQUIDITY", action: "ACT", stages: SETUP_STAGES, endpoint: "/api/read-tv-indicator-levels", requiresTv: true, icon: "⚖️", uiCoverage: false },
+  { id: "compare-luxalgo", name: "Compare with LuxAlgo", description: "Read LuxAlgo indicator levels and compare with SMC engine.", category: "LIQUIDITY", action: "ACT", stages: SETUP_STAGES, endpoint: "/api/learning/comparisons/analyze", requiresTv: true, icon: "⚖️", uiCoverage: true },
   { id: "similar-setups", name: "Find Similar Setups", description: "Vector search for similar past setups via Qdrant.", category: "LIQUIDITY", action: "ACT", stages: SETUP_STAGES, endpoint: "/api/agent-loop/similar-setups", requiresDb: true, icon: "🔍", uiCoverage: false },
 
   // ── TIME ───────────────────────────────────────────────────────────────────
   { id: "session-clock", name: "Session Clock", description: "Countdown timer for the current trading session.", category: "TIME", action: "SCAN", stages: ALL_STAGES, icon: "⏱", uiCoverage: true },
-  { id: "killzone-alert", name: "Killzone Alert", description: "Alert when price enters a session killzone window.", category: "TIME", action: "ANALYSE", stages: SCAN_STAGES, icon: "🔔", uiCoverage: false },
-  { id: "silver-bullet", name: "Silver Bullet Timer", description: "Track the next Silver Bullet window (NY AM, London, NY PM).", category: "TIME", action: "ANALYSE", stages: SCAN_STAGES, icon: "🔫", uiCoverage: false },
+  { id: "killzone-alert", name: "Killzone Alert", description: "Alert when price enters a session killzone window.", category: "TIME", action: "ANALYSE", stages: SCAN_STAGES, icon: "🔔", uiCoverage: true },
+  { id: "silver-bullet", name: "Silver Bullet Timer", description: "Track the next Silver Bullet window (NY AM, London, NY PM).", category: "TIME", action: "ANALYSE", stages: SCAN_STAGES, icon: "🔫", uiCoverage: true },
   { id: "economic-calendar", name: "Economic Calendar", description: "Refresh and view high-impact economic events.", category: "TIME", action: "SCAN", stages: ALL_STAGES, endpoint: "/api/external-intel/refresh", icon: "📅", uiCoverage: true },
-  { id: "set-alert-tv", name: "Set Alert on TV", description: "Create a price alert on TradingView chart.", category: "TIME", action: "ACT", stages: SETUP_STAGES, requiresTv: true, icon: "🔔", uiCoverage: false },
+  { id: "set-alert-tv", name: "Set Alert on TV", description: "Create a price alert on TradingView chart.", category: "TIME", action: "ACT", stages: SETUP_STAGES, requiresTv: true, icon: "🔔", uiCoverage: true },
 
   // ── STRUCTURE ──────────────────────────────────────────────────────────────
   { id: "scan-structure", name: "Market Structure Scan", description: "Map swing highs/lows, trends, and bias.", category: "STRUCTURE", action: "SCAN", stages: SCAN_STAGES, icon: "📉", uiCoverage: true },
   { id: "bos-detection", name: "Break of Structure", description: "Detect BOS and CHoCH break events.", category: "STRUCTURE", action: "ANALYSE", stages: SETUP_STAGES, icon: "💥", uiCoverage: true },
   { id: "pivot-analysis", name: "Pivot Analysis", description: "View confirmed swing points (HH, HL, LH, LL).", category: "STRUCTURE", action: "ANALYSE", stages: ALL_STAGES, icon: "📌", uiCoverage: true },
   { id: "order-blocks", name: "Order Block Detection", description: "Identify bullish/bearish order blocks with confidence scores.", category: "STRUCTURE", action: "ANALYSE", stages: SETUP_STAGES, icon: "🧱", uiCoverage: true },
-  { id: "breaker-blocks", name: "Breaker Block Detection", description: "Identify Breaker formations (failed OBs).", category: "STRUCTURE", action: "ANALYSE", stages: SETUP_STAGES, icon: "🔨", uiCoverage: false },
-  { id: "mark-bos-tv", name: "Mark BOS on Chart", description: "Draw BOS/CHoCH lines on TradingView.", category: "STRUCTURE", action: "ACT", stages: SETUP_STAGES, endpoint: "/api/agent-loop/tv-draw", requiresTv: true, icon: "📏", uiCoverage: false },
+  { id: "breaker-blocks", name: "Breaker Block Detection", description: "Identify Breaker formations (failed OBs).", category: "STRUCTURE", action: "ANALYSE", stages: SETUP_STAGES, icon: "🔨", uiCoverage: true },
+  { id: "mark-bos-tv", name: "Mark BOS on Chart", description: "Draw BOS/CHoCH lines on TradingView.", category: "STRUCTURE", action: "ACT", stages: SETUP_STAGES, endpoint: "/api/agent-loop/tv-draw", requiresTv: true, icon: "📏", uiCoverage: true },
 
   // ── DISPLACEMENT ───────────────────────────────────────────────────────────
   { id: "fvg-scan", name: "FVG Scan", description: "Scan all Fair Value Gaps across timeframes.", category: "DISPLACEMENT", action: "SCAN", stages: SETUP_STAGES, icon: "🕳", uiCoverage: true },
   { id: "fvg-detail", name: "FVG Detail", description: "View fill fraction, inversion status, and gap size.", category: "DISPLACEMENT", action: "ANALYSE", stages: SETUP_STAGES, icon: "📐", uiCoverage: true },
-  { id: "displacement-measure", name: "Displacement Measurement", description: "Measure displacement strength vs average range.", category: "DISPLACEMENT", action: "ANALYSE", stages: SETUP_STAGES, icon: "📏", uiCoverage: false },
+  { id: "displacement-measure", name: "Displacement Measurement", description: "Measure displacement strength vs average range.", category: "DISPLACEMENT", action: "ANALYSE", stages: SETUP_STAGES, icon: "📏", uiCoverage: true },
   { id: "smt-divergence", name: "SMT Divergence", description: "Detect divergence between correlated symbols.", category: "DISPLACEMENT", action: "ANALYSE", stages: SETUP_STAGES, endpoint: "/api/analysis/crypto", icon: "🔄", uiCoverage: true },
   { id: "pd-array", name: "PD Array", description: "View premium/discount zones and equilibrium.", category: "DISPLACEMENT", action: "ANALYSE", stages: SETUP_STAGES, icon: "📊", uiCoverage: true },
-  { id: "range-expansion", name: "Range Expansion", description: "Measure candle expansion vs average range.", category: "DISPLACEMENT", action: "ANALYSE", stages: SETUP_STAGES, icon: "📈", uiCoverage: false },
+  { id: "range-expansion", name: "Range Expansion", description: "Measure candle expansion vs average range.", category: "DISPLACEMENT", action: "ANALYSE", stages: SETUP_STAGES, icon: "📈", uiCoverage: true },
 
   // ── ENTRY ──────────────────────────────────────────────────────────────────
   { id: "detect-models", name: "Detect Strategy Models", description: "Run all 59 strategy models against current data.", category: "ENTRY", action: "SCAN", stages: SETUP_STAGES, endpoint: "/api/strategies/detect", icon: "🧠", uiCoverage: true },
   { id: "model-spec", name: "Model Specification", description: "View full prerequisites, invalidation, and temporal rules.", category: "ENTRY", action: "ANALYSE", stages: SETUP_STAGES, endpoint: "/api/strategies", icon: "📋", uiCoverage: true },
   { id: "alternative-models", name: "Alternative Models", description: "View runner-up strategy candidates.", category: "ENTRY", action: "ANALYSE", stages: SETUP_STAGES, icon: "🔄", uiCoverage: true },
-  { id: "ote-zone", name: "OTE Zone Calculator", description: "Calculate Optimal Trade Entry zone (62-79% retracement).", category: "ENTRY", action: "ANALYSE", stages: SETUP_STAGES, icon: "🎯", uiCoverage: false },
+  { id: "ote-zone", name: "OTE Zone Calculator", description: "Calculate Optimal Trade Entry zone (62-79% retracement).", category: "ENTRY", action: "ANALYSE", stages: SETUP_STAGES, icon: "🎯", uiCoverage: true },
   { id: "setup-checklist", name: "Setup Quality Checklist", description: "Check all prerequisites against your active model.", category: "ENTRY", action: "ANALYSE", stages: SETUP_STAGES, icon: "✅", uiCoverage: true },
   { id: "generate-signal", name: "Generate Signal", description: "Generate a structured trade signal from current analysis.", category: "ENTRY", action: "ACT", stages: ["ENTRY_READY"], endpoint: "/api/signals/generate", icon: "📡", uiCoverage: true },
   { id: "execute-trade", name: "Execute Trade", description: "Send signal to broker for execution (REVIEW or LIVE).", category: "ENTRY", action: "ACT", stages: ["ENTRY_READY"], endpoint: "/api/signals/execute", icon: "⚡", uiCoverage: true },
@@ -102,10 +102,10 @@ export const CAPABILITIES: CapabilityDef[] = [
   { id: "ask-agent", name: "Ask Pulse Agent", description: "Ask the AI agent questions about the current setup.", category: "ENTRY", action: "ACT", stages: ALL_STAGES, endpoint: "/api/agents/ask-mcp", icon: "💬", uiCoverage: true },
 
   // ── RISK ───────────────────────────────────────────────────────────────────
-  { id: "risk-calculator", name: "Risk Calculator", description: "Calculate position size based on account risk % and SL distance.", category: "RISK", action: "ANALYSE", stages: ACTIVE_STAGES, icon: "🛡", uiCoverage: false },
+  { id: "risk-calculator", name: "Risk Calculator", description: "Calculate position size based on account risk % and SL distance.", category: "RISK", action: "ANALYSE", stages: ACTIVE_STAGES, icon: "🛡", uiCoverage: true },
   { id: "broker-status", name: "Broker Status", description: "View broker connection, mode, and account equity.", category: "RISK", action: "SCAN", stages: ALL_STAGES, endpoint: "/api/broker/status", icon: "🏦", uiCoverage: true },
   { id: "account-detail", name: "Account Detail", description: "View account balance, buying power, and open positions.", category: "RISK", action: "ANALYSE", stages: ACTIVE_STAGES, endpoint: "/api/account", icon: "💰", uiCoverage: false },
-  { id: "daily-llmit", name: "Daily Trade Limit", description: "Track trades taken vs daily max limit.", category: "RISK", action: "SCAN", stages: ALL_STAGES, icon: "📊", uiCoverage: false },
+  { id: "daily-llmit", name: "Daily Trade Limit", description: "Track trades taken vs daily max limit.", category: "RISK", action: "SCAN", stages: ALL_STAGES, icon: "📊", uiCoverage: true },
   { id: "backtest", name: "Backtest Strategy", description: "Run sliding-window backtest on current symbol.", category: "RISK", action: "ACT", stages: POST_STAGES, endpoint: "/api/backtest/run", requiresDb: true, icon: "📈", uiCoverage: true },
 
   // ── REVIEW ─────────────────────────────────────────────────────────────────
