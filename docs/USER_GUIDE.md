@@ -274,21 +274,35 @@ The DecisionFunnel is a **5-stage collapsible analysis funnel** that mirrors the
 | **4. Entry Model** | Primary matched strategy name + score, entry FVG status, alternative model count. Actions: Model Spec, Alternatives. | Green if model matched |
 | **5. Signal** | Setup quality score. Actions: Generate Signal, Execute. | Green if quality ≥70 |
 
+### DecisionFunnel — Per-Stage Status Criteria
+
+Each of the 5 funnel stages has a color-coded status that tells you whether that gate is clear:
+
+| Stage | Pass (Green) | Pending (Amber) | Info (Gray) |
+|-------|-------------|-----------------|-------------|
+| **HTF Narrative** | HTF bias is clear (bullish or bearish) | — | No data loaded |
+| **Liquidity Delivery** | At least 1 pool swept | No sweeps detected | — |
+| **Structure Confirmation** | Displacement + MSS both detected | One or both missing | No breaks at all |
+| **Entry Model** | Strategy model matched with score ≥50% | — | No model matched yet |
+| **Signal** | Quality score ≥70 + entry FVG exists | Model matched but no FVG | No model matched |
+
+Each stage has inline action buttons. Example: Stage 3 (Structure Confirmation) has "Detect SMT" and "Check Session" buttons. Stage 4 (Entry Model) has "Model Spec" and "Alternatives (N)" when alternatives exist.
+
 ### QuickTools Tab
 
 Nine collapsible utility widgets for deeper analysis. Each expands independently with a `▸`/`▾` chevron.
 
 | Widget | What It Shows | Trading Purpose |
 |--------|---------------|-----------------|
-| **⏱ Killzone Timers** | London/NY AM/NY PM killzone windows with active states and countdowns | Know exactly when to be at the screen |
-| **🔫 Silver Bullet Timers** | SB window countdowns (London 08-09, NY AM 13-14, NY PM 15-16 UTC) | ICT's highest-probability entry windows |
-| **🔨 Breaker Blocks** | List of `ob.isBreaker` blocks by TF with price and type | Failed OBs that flipped polarity — strong S/R |
-| **📏 Displacement Gauge** | Per-TF displacement magnitude vs ATR with ratio bars | How strong is the institutional move? |
-| **📈 Range Expansion** | Recent candle range vs 14-period ATR ratio | Is price expanding (institutional) or contracting (retail)? |
-| **🎯 OTE Zone Calculator** | Select swing low + swing high from dropdowns → shows 62-79% Fib retracement zone | Optimal Trade Entry zone for limit orders |
-| **🛡 Risk Calculator** | Account balance input, auto-populated entry/SL → position size, max loss, position % | Know your risk before you click execute |
-| **📊 Daily Trade Counter** | Trades taken today vs max daily limit with progress bar | Don't overtrade. ICT: 1-3 trades per day max |
-| **⚖️ LuxAlgo Comparison** | "Compare SMC Engine vs TV LuxAlgo" button with agreement rate result | Cross-reference engine detections against TradingView indicators |
+| **⏱ Killzone Timers** | London/NY AM/NY PM killzone windows with active states, progress bars, and countdowns ("Nm left" or "in Nm") | Know exactly when to be at the screen |
+| **🔫 Silver Bullet Timers** | SB window countdowns (London 08-09, NY AM 13-14, NY PM 15-16 UTC). Active windows highlighted green. Disabled if SB models not in profile | ICT's highest-probability entry windows |
+| **🔨 Breaker Blocks** | List of `ob.isBreaker` blocks by TF with price and amber color coding. Up to 10 entries | Failed OBs that flipped polarity — strong S/R |
+| **📏 Displacement Gauge** | Per-TF displacement magnitude vs ATR with color-coded ratio bars (green ≥2×, blue ≥1×, amber <1×) | How strong is the institutional move? |
+| **📈 Range Expansion** | Recent candle range vs 14-period ATR ratio. Only shows candles ≥1.2× ATR. Green ≥2.5× | Is price expanding (institutional) or contracting (retail)? |
+| **🎯 OTE Zone Calculator** | Two dropdowns (swing low picker + swing high picker) → shows 62-79% Fib retracement zone with price bounds | Optimal Trade Entry zone for limit orders |
+| **🛡 Risk Calculator** | Account balance input (default: $10,000), auto-populated entry/SL from current data → position size in units, max loss in $, position % of account | Know your risk before you click execute |
+| **📊 Daily Trade Counter** | "N / M" counter, "N remaining" or "LIMIT REACHED" status, progress bar (green <66%, amber 66-99%, red 100%) | Don't overtrade. ICT: 1-3 trades per day max |
+| **⚖️ LuxAlgo Comparison** | "Compare SMC Engine vs TV LuxAlgo" button → POST /api/learning/comparisons/analyze → shows agreement rate % with compared-points count | Cross-reference engine detections against TradingView indicators |
 
 ---
 
@@ -399,6 +413,42 @@ A trader's decision process is sequential: observe → detect sweep → confirm 
 | `Esc` | Close any overlay/modal |
 
 ---
+
+## The SessionFlowIndicator — Market Phase Dots
+
+Present in every stage view header. Four connected dots showing where price sits in the ICT market phase cycle:
+
+```
+ACC ●━━━ MAN ●━━━ DIST ●━━━ CONT ●
+```
+
+| Phase | Color | Meaning |
+|-------|-------|---------|
+| **ACC** (Accumulation) | Blue | Smart money building positions at discount. Quiet ranges. |
+| **MAN** (Manipulation) | Amber | False breakout to run stops. The Judas swing. |
+| **DIST** (Distribution) | Red | The real move. Expansion. Institutions offloading. |
+| **CONT** (Continuation) | Emerald | Trend extending. Compounding phase. |
+
+The current phase dot scales up with a colored glow. Past phases are 50% opacity. Future phases are 20% opacity. This tells you not just what phase you're in, but how far through the cycle you've progressed.
+
+## Stage Derivation Order — How the Machine Thinks
+
+The narrative stage is derived by a pure function (`deriveNarrativeStage()` in `src/state/narrative.ts`). Understanding the evaluation order helps you predict what the cockpit will show:
+
+1. **No data?** → `WATCHING`
+2. **Position open?** → `IN_TRADE` (always takes priority)
+3. **No reports loaded?** → `SCANNING`
+4. **Outside London/NY?** → `NO_TRADE` (killzone gating — checked BEFORE all progressive stages)
+5. **FVG filled?** (regression) → `FVG_FORMED`
+6. **Opposite CHoCH?** (regression) → `LIQUIDITY_SWEPT`
+7. **Structure broken?** (regression) → `SCANNING`
+8. **Sweep + Displacement + MSS + FVG?** → `ENTRY_READY`
+9. **Sweep + Displacement + MSS?** → `FVG_FORMED`
+10. **Sweep + Displacement?** → `MSS_FORMING`
+11. **Sweep only?** → `DISPLACEMENT`
+12. **Anything else?** → `SCANNING`
+
+Regression (steps 5-7) is evaluated BEFORE progression (steps 8-11). This means a filled FVG or new opposite-direction CHoCH will immediately pull you back from ENTRY_READY.
 
 ## Glossary
 
