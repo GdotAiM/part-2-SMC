@@ -552,6 +552,21 @@ Defined in `src/state/capabilities.ts`. Every `CapabilityDef` carries a `uiCover
 
 **Coverage dashboard** accessible via the CapabilityExplorer modal (Ctrl+K): searchable grid of all 54 capabilities with coverage status, component paths, and gap analysis.
 
+### Trader Workflow Features
+
+- **Editable position levels** (Entry/SL/TP) in EntryView with derived defaults and manual overrides stored in market-store
+- **Stage regression**: setup invalidation auto-resets the narrative stage -- filled FVG → regress to SCANNING, opposite CHoCH → LIQUIDITY_SWEPT, structure breakdown → SCANNING
+- **Killzone gating**: entries gated to London/NY sessions, enforced before progressive stages
+- **Sweep Scanner**: LiveTimeline sidebar polls watchlist every 2 min for liquidity sweeps
+- **Trade management buttons** in InTradeView: "TP1 Hit (SL→BE)" and "Close Half"
+- **Zone alerts**: "Alert on Zone" button in EntryView creates TV Desktop price alerts
+- **TV chart visualization**: "Show in TV" button sends levels to TV Desktop chart
+
+### ICT Accuracy (brief note)
+
+- Backend SMC engine audited July 20, 2026 -- 9 critical ICT errors found and fixed (BOS, CHoCH, sweep detection, OB, PD Array, session weights, MMSM/MMBM, Silver Bullet)
+- 457 tests passing (326 SMC engine + 131 api-zod)
+
 ---
 
 ## Data Flow

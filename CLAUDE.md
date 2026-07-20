@@ -232,6 +232,28 @@ The original capability-exposure shell built Jul 18 still exists but is no longe
 | `pages/LearnView.tsx` | Legacy learning dashboard |
 | `serve-frontend.mjs` | Standalone Node.js static server for Docker fallback |
 
+### Trader Workflow
+
+- Entry SL/TP are now editable in EntryView with manual overrides stored in market-store
+- Stage regression: filled FVG → regress to SCANNING, opposite CHoCH → LIQUIDITY_SWEPT, structure breakdown → SCANNING
+- Killzone gating now enforced BEFORE progressive stages (was after — bypassed when sweeps existed)
+- Sweep Scanner in LiveTimeline sidebar polls watchlist every 2 min for liquidity sweeps
+- InTradeView has "TP1 Hit (SL→BE)" and "Close Half" buttons
+- "Alert on Zone" button in EntryView creates TV Desktop price alerts
+- "Show in TV" button sends levels to TV Desktop chart
+
+### ICT Accuracy Audit (July 20, 2026)
+
+A focused audit found 9 critical ICT errors in the SMC engine, all now fixed:
+
+- **BOS** now breaks prior HH/LL (not cross-type), **CHoCH** requires price break-through
+- **Sweep detection** uses wick pierce+reject (not close), EQH/EQL grouping added
+- **OB** uses adjacent candle only, mitigation requires close beyond distal
+- **PD Array** uses 50% premium/discount bands (ICT standard)
+- **Session weights**: London/NY=1.3, Asia=0.8
+- **MMSM/MMBM** differentiated, Silver Bullet time-gated
+- **457 tests passing** (326 SMC engine + 131 api-zod)
+
 ### To reverse to the old OS dashboard
 
 Change `App.tsx` line 23 from `SessionCockpitShell` back to `OsDashboard`.

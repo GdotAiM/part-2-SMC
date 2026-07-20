@@ -52,6 +52,12 @@ Most retail traders lose because they see charts the wrong way. Institutions don
 | **Live Price Badge** | Green pulsing indicator when real-time stream is connected, price updates in real-time |
 | **60s Cache** | In-memory TTL cache prevents repeated data-provider hits on dashboard refresh |
 | **Auto Candle-Close Refresh** | Server rebuilds SMC reports on candle close and pushes to browser -- no polling needed |
+| **Editable Position Levels** | Manual SL/TP override in EntryView -- drag or type custom levels, persisted to active position |
+| **Stage Regression** | Setup invalidation auto-resets the narrative stage (filled FVG -> Scanning, opposite CHoCH -> LiquiditySwept, structure breakdown -> Scanning) |
+| **Killzone-Gated Entries** | Session check enforced before progressive stages -- only advances past Scanning during London/NY killzones |
+| **Sweep Scanner** | Multi-symbol watchlist screening in LiveTimeline sidebar -- polls configurable watchlist for sweeps, BOS, FVGs across all tracked instruments |
+| **Zone Alerts** | "Alert on Zone" button on OB/FVG/liquidity pool cards -- sets price alert at zone boundary with configurable approach distance |
+| **Partial TP / Scale-In** | InTradeView supports "TP1 Hit -- Close Half" with SL-to-breakeven, remaining position runs toward TP2 |
 
 ---
 
@@ -630,7 +636,12 @@ TradingView Desktop (Electron, --remote-debugging-port=9222)
 - [x] Docker + CI -- multi-stage Dockerfile, local CPU + AMD MI300X docker-compose, GitHub Actions
 - [x] TypeScript -- zero errors across both packages
 - [x] End-to-end MI300X deployment -- run on real AMD Developer Cloud hardware
-- [ ] Price alert notifications when price enters OB zone or sweeps liquidity
+- [x] Stage regression (setup invalidation)
+- [x] Multi-symbol sweep scanner
+- [x] Editable SL/TP levels
+- [x] Killzone session gating
+- [x] Partial take-profit workflow
+- [x] Price zone approach alerts
 - [ ] Multi-panel chart view (two TFs side-by-side)
 - [ ] Candle tap to inspect -- SMC context tooltip for selected bar
 - [ ] Mobile-native app (Expo React Native)

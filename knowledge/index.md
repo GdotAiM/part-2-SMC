@@ -43,9 +43,13 @@ flowchart TD
 | [[Session Cockpit]] | `artifacts/liquidity-hunter/src/` | React SPA — 10 narrative stage views, 3-column shell, QuickTools, AgentChat |
 | [[TV Desktop Integration]] | `lib/integrations/tradingview-desktop/` | 86 MCP tools via chrome-remote-interface |
 | [[MCP Server]] | `lib/mcp/` | FastMCP v4.3.2 — 11 SMC + 86 TV tools |
+| [[ICT Accuracy Audit 2026-07-20]] | `knowledge/Architecture/` | 9 critical fixes, 457 tests passing |
+| [[Trader Workflow Features]] | `knowledge/Architecture/` | Editable levels, stage regression, sweep scanner, killzone gating |
 
 ## Quick Links
 - [[Complete Architecture Report]]
 - [[Database Schema]]
 - [[API Endpoints]]
 - [[Setup Guide]]
+- [[ICT Accuracy Audit 2026-07-20]]
+- [[Trader Workflow Features]]
