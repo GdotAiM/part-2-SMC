@@ -30,7 +30,9 @@ import { EntryView } from "@/stages/EntryView";
 import { InTradeView } from "@/stages/InTradeView";
 import { ReviewView } from "@/stages/ReviewView";
 import { ChartView } from "@/components/ChartView";
+import { AgentChat } from "@/components/AgentChat";
 import { TvStatus } from "@/components/TvStatus";
+import type { SmcReport } from "@workspace/api-client-react";
 import { getUiCoveragePercent } from "@/state/capabilities";
 
 function StateRouter() {
@@ -70,6 +72,8 @@ function StateRouter() {
 export function SessionCockpitShell() {
   const capabilityExplorerOpen = useMarketStore((s) => s.capabilityExplorerOpen);
   const toggleCapabilityExplorer = useMarketStore((s) => s.toggleCapabilityExplorer);
+  const agentChatOpen = useMarketStore((s) => s.agentChatOpen);
+  const toggleAgentChat = useMarketStore((s) => s.toggleAgentChat);
   const chartOpen = useMarketStore((s) => s.chartOpen);
   const toggleChart = useMarketStore((s) => s.toggleChart);
   const symbol = useMarketStore((s) => s.symbol);
@@ -115,6 +119,33 @@ export function SessionCockpitShell() {
 
       {/* Overlays */}
       <EvidencePanel />
+
+      {/* Agent Chat Panel */}
+      {agentChatOpen && (
+        <div className="fixed right-0 top-0 bottom-0 w-[420px] z-40 border-l border-border/30 bg-card shadow-2xl flex flex-col">
+          <div className="flex items-center justify-between px-4 py-2 border-b border-border/20 bg-muted/20">
+            <span className="text-[10px] font-semibold uppercase tracking-wider text-primary">AI Agent Chat</span>
+            <button onClick={toggleAgentChat} className="text-muted-foreground hover:text-foreground text-xs">✕</button>
+          </div>
+          <AgentChat report={(() => {
+            const sorted = Object.entries(reports).filter(([,r]) => r !== null).sort(([a],[b]) =>
+              ({ "1w":7,"1d":6,"4h":5,"1h":4,"15m":3,"5m":2,"1m":1 }[b]??0) - ({ "1w":7,"1d":6,"4h":5,"1h":4,"15m":3,"5m":2,"1m":1 }[a]??0)
+            ) as [string, SmcReport][];
+            const tf = useMarketStore.getState().selectedTf;
+            const report = tf ? reports[tf] : sorted[0]?.[1];
+            if (!report) {
+              // Return a minimal placeholder report to satisfy the type
+              return {
+                symbol, market: "crypto" as const, timeframe: "1h", currentPrice: 0, generatedAt: Date.now(),
+                candles: [], structure: { bias: "neutral" as const, trend: "neutral" as const, confidence: 0, pivots: [], breaks: [], phase: undefined, narrative: "", evidence: [] },
+                liquidity: { pools: [] }, orderBlocks: [], fvg: [], pdArray: { currentBias: "equilibrium" as const, zones: [], dealingRange: { high: 0, low: 0, timeframe: "" }, equilibrium: 0 },
+                dailyBias: { bias: "neutral" as const, strength: 0, consecutiveDays: 0 }, draw: [],
+              } as unknown as SmcReport;
+            }
+            return report;
+          })()} />
+        </div>
+      )}
 
       {/* Capability Explorer Modal */}
       {capabilityExplorerOpen && (

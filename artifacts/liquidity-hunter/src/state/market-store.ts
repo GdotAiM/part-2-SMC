@@ -98,6 +98,7 @@ export interface MarketState {
   evidencePanelOpen: boolean;
   evidenceTargetId: string | null;
   capabilityExplorerOpen: boolean;
+  agentChatOpen: boolean;
   chartOpen: boolean;
   timelineFilter: string | null;
   selectedTf: string | null;    // null = show all, otherwise filter to this TF
@@ -128,6 +129,7 @@ export interface MarketActions {
   openEvidence: (targetId: string) => void;
   closeEvidence: () => void;
   toggleCapabilityExplorer: () => void;
+  toggleAgentChat: () => void;
   toggleChart: () => void;
   setTimelineFilter: (filter: string | null) => void;
   setSelectedTf: (tf: string | null) => void;
@@ -224,6 +226,7 @@ const initialState: MarketState = {
   evidencePanelOpen: false,
   evidenceTargetId: null,
   capabilityExplorerOpen: false,
+  agentChatOpen: false,
   chartOpen: false,
   timelineFilter: null,
   selectedTf: null,
@@ -315,6 +318,9 @@ export const useMarketStore = create<MarketState & MarketActions>()((set, get) =
 
   toggleCapabilityExplorer: () =>
     set((s) => ({ capabilityExplorerOpen: !s.capabilityExplorerOpen })),
+
+  toggleAgentChat: () =>
+    set((s) => ({ agentChatOpen: !s.agentChatOpen })),
 
   toggleChart: () =>
     set((s) => ({ chartOpen: !s.chartOpen })),

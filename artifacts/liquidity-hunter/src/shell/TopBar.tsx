@@ -34,6 +34,7 @@ export function TopBar() {
   const streamConnected = useMarketStore((s) => s.streamConnected);
   const setSymbol = useMarketStore((s) => s.setSymbol);
   const toggleCapabilityExplorer = useMarketStore((s) => s.toggleCapabilityExplorer);
+  const toggleAgentChat = useMarketStore((s) => s.toggleAgentChat);
   const toggleChart = useMarketStore((s) => s.toggleChart);
   const session = useSessionClock();
   const health = useSystemEvidence();
@@ -144,6 +145,15 @@ export function TopBar() {
 
         {/* TV Status */}
         <TvStatus />
+
+        {/* Agent Chat */}
+        <button
+          onClick={toggleAgentChat}
+          className="px-2 py-1 rounded-sm bg-primary/10 border border-primary/20 text-[10px] text-primary font-semibold hover:bg-primary/15 transition-colors"
+          title="Open AI Agent Chat"
+        >
+          💬 Agent
+        </button>
 
         {/* Chart toggle */}
         <button
