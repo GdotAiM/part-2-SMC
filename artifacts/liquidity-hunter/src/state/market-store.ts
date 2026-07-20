@@ -100,6 +100,7 @@ export interface MarketState {
   capabilityExplorerOpen: boolean;
   chartOpen: boolean;
   timelineFilter: string | null;
+  selectedTf: string | null;    // null = show all, otherwise filter to this TF
 
   // ── Derived (computed when store updates) ──
   stageInfo: StageInfo;
@@ -129,6 +130,7 @@ export interface MarketActions {
   toggleCapabilityExplorer: () => void;
   toggleChart: () => void;
   setTimelineFilter: (filter: string | null) => void;
+  setSelectedTf: (tf: string | null) => void;
   recomputeStage: (profile: TraderProfile) => void;
 }
 
@@ -224,6 +226,7 @@ const initialState: MarketState = {
   capabilityExplorerOpen: false,
   chartOpen: false,
   timelineFilter: null,
+  selectedTf: null,
   stageInfo: initialStageInfo(),
 };
 
@@ -318,6 +321,8 @@ export const useMarketStore = create<MarketState & MarketActions>()((set, get) =
 
   setTimelineFilter: (filter) =>
     set({ timelineFilter: filter }),
+
+  setSelectedTf: (tf) => set({ selectedTf: tf }),
 
   recomputeStage: (profile) => {
     const state = get();

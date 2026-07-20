@@ -8,6 +8,7 @@
 import { useMarketStore } from "@/state/market-store";
 import { useNarrativeStage } from "@/hooks/useNarrativeStage";
 import { SessionFlowIndicator } from "@/panels/SessionFlowIndicator";
+import { TimeframeChips } from "@/components/TimeframeChips";
 import { fmtPrice, getBias, getConfidence, TF_LABEL_MAP } from "@/lib/smc-display";
 import { getCapabilitiesForStage } from "@/state/capabilities";
 import type { SmcReport } from "@workspace/api-client-react";
@@ -36,6 +37,7 @@ export function ScanningView() {
   const reports = useMarketStore((s) => s.reports);
   const symbol = useMarketStore((s) => s.symbol);
   const marketType = useMarketStore((s) => s.marketType);
+  const selectedTf = useMarketStore((s) => s.selectedTf);
   const toggleDecisionFunnel = useMarketStore((s) => s.toggleDecisionFunnel);
   const toggleChart = useMarketStore((s) => s.toggleChart);
   const openEvidence = useMarketStore((s) => s.openEvidence);
@@ -48,6 +50,7 @@ export function ScanningView() {
                         ({ "1w": 7, "1d": 6, "4h": 5, "1h": 4, "15m": 3, "5m": 2, "1m": 1 }[a] ?? 0));
 
   const anchorReport = sortedTfs[0]?.[1];
+  const selectedReport = selectedTf ? reports[selectedTf] : null;
 
   return (
     <div className="flex-1 overflow-y-auto p-5 lg:p-7 max-w-[1200px]">
@@ -61,8 +64,109 @@ export function ScanningView() {
           <SessionFlowIndicator />
         </div>
         <h1 className="text-xl lg:text-2xl font-black tracking-tight">{symbol}</h1>
+        <div className="mt-2 flex items-center gap-3">
+          <TimeframeChips />
+        </div>
         <p className="mt-1 text-xs text-muted-foreground">{reasoning}</p>
       </div>
+
+      {/* Single-TF detail view (when a TF is selected) */}
+      {selectedReport && selectedTf && (
+        <div className="mb-6 rounded-sm border border-primary/30 bg-card/40 overflow-hidden">
+          <div className="p-4 border-b border-border/20 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] font-bold text-primary uppercase tracking-wider">
+                {TF_LABEL_MAP[selectedTf] ?? selectedTf} — Full Breakdown
+              </span>
+              <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-sm border ${
+                selectedReport.structure.bias === "bullish"
+                  ? "text-emerald-500 border-emerald-500/20 bg-emerald-500/5"
+                  : selectedReport.structure.bias === "bearish"
+                    ? "text-destructive border-destructive/20 bg-destructive/5"
+                    : "text-muted-foreground border-border/20 bg-muted/10"
+              }`}>
+                {selectedReport.structure.bias.toUpperCase()}
+              </span>
+              <span className="text-[9px] text-muted-foreground">
+                {Math.round(getConfidence(selectedReport))}% confidence
+              </span>
+            </div>
+          </div>
+          <div className="p-4 grid grid-cols-2 lg:grid-cols-4 gap-3">
+            {/* Structure */}
+            <div className="space-y-1">
+              <div className="text-[8px] uppercase tracking-wider text-muted-foreground">Structure</div>
+              <div className="text-[10px] text-foreground">
+                Phase: {selectedReport.structure.phase ?? "—"}<br />
+                Pivots: {selectedReport.structure.pivots.length}<br />
+                Breaks: {selectedReport.structure.breaks.length}
+              </div>
+            </div>
+            {/* Liquidity */}
+            <div className="space-y-1">
+              <div className="text-[8px] uppercase tracking-wider text-muted-foreground">Liquidity</div>
+              <div className="text-[10px] text-foreground">
+                Pools: {selectedReport.liquidity.pools.length}<br />
+                Swept: {selectedReport.liquidity.pools.filter((p) => p.wasSwept).length}<br />
+                {selectedReport.liquidity.nearestBSL && <span>BSL: {fmtPrice(selectedReport.liquidity.nearestBSL.price, marketType as "crypto" | "forex")}<br /></span>}
+                {selectedReport.liquidity.nearestSSL && <span>SSL: {fmtPrice(selectedReport.liquidity.nearestSSL.price, marketType as "crypto" | "forex")}</span>}
+              </div>
+            </div>
+            {/* OBs & FVGs */}
+            <div className="space-y-1">
+              <div className="text-[8px] uppercase tracking-wider text-muted-foreground">OBs & FVGs</div>
+              <div className="text-[10px] text-foreground">
+                OBs: {selectedReport.orderBlocks.filter((ob) => ob.valid).length} valid ({selectedReport.orderBlocks.filter((ob) => ob.isBreaker).length} breaker)<br />
+                FVGs: {selectedReport.fvg.length} ({selectedReport.fvg.filter((f) => f.fillFraction < 0.3 && !f.isInversion).length} unfilled)
+              </div>
+            </div>
+            {/* PD Array & Daily Bias */}
+            <div className="space-y-1">
+              <div className="text-[8px] uppercase tracking-wider text-muted-foreground">PD Array & Daily</div>
+              <div className="text-[10px] text-foreground">
+                Zone: {selectedReport.pdArray.currentBias.toUpperCase()}<br />
+                Daily: {selectedReport.dailyBias.bias.toUpperCase()} ({Math.round(selectedReport.dailyBias.strength * 100)}%)<br />
+                EQ: {fmtPrice(selectedReport.pdArray.equilibrium ?? 0, marketType as "crypto" | "forex")}
+              </div>
+            </div>
+          </div>
+          {/* Breaks & FVGs detail */}
+          <div className="px-4 pb-4 grid grid-cols-2 gap-3">
+            <div>
+              <div className="text-[8px] uppercase tracking-wider text-muted-foreground mb-1">Recent Breaks</div>
+              <div className="space-y-0.5">
+                {selectedReport.structure.breaks.slice(-6).reverse().map((b, i) => (
+                  <div key={i} className="text-[9px] text-muted-foreground font-mono flex gap-1.5">
+                    <span className={b.type === "MSS" || b.type === "CHoCH" ? "text-amber-400 font-bold" : "text-muted-foreground"}>{b.type}</span>
+                    <span>{b.price?.toFixed(2) ?? "—"}</span>
+                  </div>
+                ))}
+                {selectedReport.structure.breaks.length === 0 && <span className="text-[8px] italic text-muted-foreground">None</span>}
+              </div>
+            </div>
+            <div>
+              <div className="text-[8px] uppercase tracking-wider text-muted-foreground mb-1">Active FVGs</div>
+              <div className="space-y-0.5">
+                {selectedReport.fvg.filter((f) => f.fillFraction < 0.3 && !f.isInversion).slice(0, 4).map((f, i) => (
+                  <div key={i} className={`text-[9px] font-mono ${f.type === "bullish" ? "text-emerald-500" : "text-destructive"}`}>
+                    {f.type === "bullish" ? "▲" : "▼"} {fmtPrice(Math.min(f.top, f.bottom), marketType as "crypto" | "forex")}–{fmtPrice(Math.max(f.top, f.bottom), marketType as "crypto" | "forex")} ({(f.fillFraction * 100).toFixed(0)}%)
+                  </div>
+                ))}
+                {selectedReport.fvg.filter((f) => f.fillFraction < 0.3 && !f.isInversion).length === 0 && <span className="text-[8px] italic text-muted-foreground">None unfilled</span>}
+              </div>
+            </div>
+          </div>
+          {/* Action buttons */}
+          <div className="px-4 pb-3 flex gap-2">
+            <button onClick={() => openEvidence(`tf-${selectedTf}`)} className="px-2 py-1 rounded-sm bg-primary/10 border border-primary/20 text-[9px] text-primary font-semibold hover:bg-primary/15 transition-colors">
+              📋 Full Evidence
+            </button>
+            <button onClick={toggleChart} className="px-2 py-1 rounded-sm bg-muted/20 border border-border/30 text-[9px] text-muted-foreground hover:text-foreground transition-colors">
+              📊 Open Chart
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Bias cards (per TF) */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 mb-6">
