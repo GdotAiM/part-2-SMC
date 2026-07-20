@@ -99,48 +99,142 @@ A complete ICT/SMC model-matching engine. Key files:
 
 **Frontend:** `useCascadeStrategy` hook → `ConfluenceCard` shows primary strategy name/score + Execute Now → opens `IntelligenceSheet` with `OSOutputPanel`. `CAL` button for economic calendar refresh.
 
-## SMC Pulse OS — Capability Exposure Phase (Jul 18, 2026)
+## SMC Pulse OS — Session Cockpit (Jul 19-20, 2026)
 
-A new **SMC Pulse OS** application shell was built to expose the system's ~150 capabilities through a navigable interface.
+The Session Cockpit replaces the old `OsDashboard` as the default route (`/`), delivering a trading-day workflow organized around narrative stages.
 
-**Status: ⚠️ PARTIALLY IMPLEMENTED — See known issues below.**
+**Build note:** Must build from **PowerShell** with `$env:BASE_PATH="/"; pnpm run build` — Git Bash resolves `BASE_PATH` to the Git install path instead of `/`.
 
-### New files created
+### Session Cockpit Shell (`src/shell/SessionCockpitShell.tsx`)
 
-| File | Purpose |
+Replaces `OsDashboard` as the default route in `App.tsx`. Orchestrates live market data, stage routing, overlays, and the 3-column layout.
+
+### 10 Narrative Stage Views (`src/stages/`)
+
+Each stage has a dedicated component rendered by `StateRouter` in the cockpit shell:
+
+| Stage | Component | Purpose |
+|---|---|---|
+| Watching | `NoTradeView.tsx` | Idle — no symbol selected or no session active |
+| Scanning | `ScanningView.tsx` | Session active, waiting for a liquidity event |
+| Liquidity Swept | `LiquiditySweptView.tsx` | A pool was swept — evaluate structural response |
+| Displacement | `DisplacementView.tsx` | Displacement detected — structure confirming |
+| MSS Forming | `MssFormingView.tsx` | Market structure shift in progress |
+| FVG Formed | `FvgFormedView.tsx` | Entry-level imbalance formed |
+| Entry Ready | `EntryView.tsx` | Model prerequisites met — actionable |
+| In Trade | `InTradeView.tsx` | Position open — monitoring risk |
+| Review | `ReviewView.tsx` | Post-trade analysis and evidence reconstruction |
+| No Trade | `NoTradeView.tsx` | System rule: conditions not met for active models |
+
+The stage is derived by `deriveNarrativeStage()` in `src/state/narrative.ts` from a `NarrativeInput` (structure breaks, FVGs, liquidity sweeps, OBs, model detections, active positions).
+
+### 3-Column Layout
+
+| Column | Width | Content |
+|---|---|---|
+| **Left** | 260px | `LiveTimeline` — chronological log of structure breaks, sweeps, FVG fills, signal events |
+| **Center** | flex | Stage View — the current `StateRouter` component |
+| **Right** | 320px | `DecisionFunnel` + `QuickTools` — actionable decisions and 9 collapsible tool widgets |
+
+### Overlays
+
+- **EvidencePanel** (right slide-over) — evidence chain for the current stage
+- **AgentChat** (right, 420px fixed panel) — AI agent conversation, toggled from TopBar
+- **CapabilityExplorer** (modal, `⌘K` / `Ctrl+K`) — searchable capability grid
+- **ChartView** (fullscreen overlay) — TradingView/lightweight-charts deep-dive, toggled from TopBar
+
+### TopBar (`src/shell/TopBar.tsx`)
+
+Always-visible top bar with:
+- **Symbol selector** — search and select any symbol
+- **Crypto/Forex toggle** — switches asset class
+- **Timeframe presets** — Scalp (1m/5m/15m), Intraday (1h/4h), Swing (1D/1W)
+- **Per-TF chips** — clickable timeframe pills for the active preset
+- **Session clock** — countdown timer for the current trading session
+- **TV status indicator** — green/red dot for CDP connection state; click opens `TvStatus` modal
+- **Agent chat button** — toggles the `AgentChat` overlay
+
+### QuickTools (`src/panels/QuickTools.tsx`)
+
+9 collapsible tool widgets in the right column, each in a `ToolSection` wrapper:
+
+1. **Killzone Timer** — London, NY AM, NY PM window countdowns with active/inactive badges
+2. **Silver Bullet Timer** — Next Silver Bullet window (NY AM, London, NY PM) with countdown
+3. **Breaker Blocks** — Lists breaker blocks from the current report with price, direction, and strength
+4. **Displacement Gauge** — Visual gauge of displacement strength vs average range (0-100%)
+5. **Range Expansion** — Current candle expansion vs average true range, with percentile
+6. **OTE Zone Calculator** — Optimal Trade Entry zone (62-79% retracement) from swing to current price
+7. **Risk Calculator** — Position size calculator: account size, risk %, SL distance -> units/lots
+8. **Daily Trade Counter** — Trades taken today vs configured daily max limit
+9. **LuxAlgo Comparison** — `POST /api/learning/comparisons/analyze` — compare SMC engine output vs LuxAlgo ICT levels from TV
+
+### TV Desktop Integration
+
+The `TvStatus` component (`src/components/TvStatus.tsx`) provides a modal for chart interaction:
+
+- **Drawing tools** — 5 draw actions via `POST /api/agent-loop/tv-draw`:
+  - `"levels"` — Draw BSL/SSL liquidity levels
+  - `"fvgs"` — Draw fair value gaps
+  - `"killzones"` — Draw session killzone rectangles
+  - `"bos"` — Draw BOS/CHoCH lines from structure breaks (passes `breaks[]` in body)
+  - `"clear"` — Remove all SMC drawings
+  - `"all"` — Draw everything (levels + FVGs + killzones + BOS)
+- **Set Alert** form — price input + condition (crossing/above/below) → `POST /api/agent-loop/tv-alert-create`
+- **Connection status** — live `GET /api/agent-loop/tv-status` polling with connected/disconnected badge
+
+### ICT Insights
+
+Thirteen markdown reference files in `ICT Insights/` documenting the theory behind each SMC concept the engine detects:
+
+| # | File | Topic |
+|---|---|---|
+| 01 | `01-pivot-detection.md` | Swing pivot identification (HH, HL, LH, LL) |
+| 02 | `02-bos-choch.md` | Break of Structure and Change of Character |
+| 03 | `03-market-phase.md` | Accumulation, manipulation, distribution phases |
+| 04 | `04-liquidity-pools.md` | BSL, SSL, equal highs/lows, pool sweep logic |
+| 05 | `05-order-blocks.md` | Bullish/bearish OBs, proximal/distal, mitigation |
+| 06 | `06-fair-value-gaps.md` | FVG formation, fill mechanics, tradeable gaps |
+| 07 | `07-inversion-fvg.md` | FVG inversion patterns and their significance |
+| 08 | `08-pd-array.md` | Premium/discount zones, equilibrium, dealing range |
+| 09 | `09-daily-bias.md` | Daily bias calculation, consecutive-day weighting |
+| 10 | `10-smt-divergence.md` | Smart Money Technique divergence detection |
+| 11 | `11-draw-on-liquidity.md` | Draw-on-liquidity patterns and magnet levels |
+| 12 | `12-session-analysis.md` | Session killzones, Silver Bullet windows, timing |
+| 13 | `13-configuration-reference.md` | Configuration reference for engine parameters |
+
+### Capability Coverage
+
+The system tracks UI coverage of all 54 capabilities defined in `src/state/capabilities.ts`:
+
+- **96% coverage** — 52 of 54 capabilities are exposed in the Session Cockpit UI
+- Each `CapabilityDef` has a `uiCoverage: boolean` field
+- `getUiCoveragePercent()` helper returns the rounded percentage
+- `countCapabilities()` returns per-stage breakdowns
+- **Only 2 uncovered capabilities:**
+  - `similar-setups` — vector search for similar past setups (requires Qdrant)
+  - `account-detail` — account balance and open positions (requires Alpaca API keys)
+
+### Legacy shell files (from Jul 18)
+
+The original capability-exposure shell built Jul 18 still exists but is no longer the default route:
+
+| File | Status |
 |---|---|
-| `components/layout/AppShell.tsx` | OS sidebar navigation (7 views: Overview, Market, Analyze, Trade, Learn, Evaluate, Agent) + ⌘K integration |
-| `components/layout/CommandPalette.tsx` | Global ⌘K/Ctrl+K command palette with 12+ commands |
-| `pages/OsDashboard.tsx` | Main OS orchestrator — all TF hooks, cascade, strategy detection, real-time, wraps all views |
-| `pages/Overview.tsx` | Command center — market intelligence, strategy snapshot, cascade, system health, SMC-EVAL |
-| `pages/MarketView.tsx` | Dedicated market exploration — symbol, structure, liquidity, key metrics |
-| `pages/StrategyAtlas.tsx` | Browse 59 strategy models — wired to `GET /api/strategies` |
-| `pages/SmcEvalLab.tsx` | SMC-EVAL benchmark — scenario selection, 5-dimension scoring — wired to `POST /api/smc-eval/evaluate` |
-| `pages/AgentWorkspace.tsx` | Agent chat + loop toggle with capability cards |
-| `pages/TradeView.tsx` | Signal ledger, execution abstraction, review mode |
-| `pages/LearnView.tsx` | Truth Engine, learning timeline, reliability matrix |
-| `serve-frontend.mjs` | Standalone Node.js HTTP static server for when Docker nginx fails (runs via `node serve-frontend.mjs`) |
+| `components/layout/AppShell.tsx` | Legacy sidebar navigation (7 views) |
+| `components/layout/CommandPalette.tsx` | Legacy ⌘K palette — superseded by `CapabilityExplorer` |
+| `pages/OsDashboard.tsx` | Legacy orchestrator — replaced by `SessionCockpitShell` |
+| `pages/Overview.tsx` | Legacy command center |
+| `pages/MarketView.tsx` | Legacy market exploration |
+| `pages/StrategyAtlas.tsx` | Legacy strategy browser |
+| `pages/SmcEvalLab.tsx` | Legacy SMC-EVAL benchmark |
+| `pages/AgentWorkspace.tsx` | Legacy agent workspace |
+| `pages/TradeView.tsx` | Legacy trade/signal view |
+| `pages/LearnView.tsx` | Legacy learning dashboard |
+| `serve-frontend.mjs` | Standalone Node.js static server for Docker fallback |
 
-### What changed in App.tsx
-- Default route `/` now renders `OsDashboard` instead of the old `Dashboard`
-- All existing pages (`/analytics`, `/broker`, `/agent-loop`) remain unchanged
+### To reverse to the old OS dashboard
 
-### Known issues (fix before using in production)
-
-1. **Vite `BASE_PATH` resolves to `/Program Files/Git/` on Windows/Git Bash** — When building from Git Bash, the `BASE_PATH` env var picks up the Git install path instead of `/`. Always build from **PowerShell** with `$env:BASE_PATH="/"; pnpm run build`, or from the root with `PORT=3000 BASE_PATH=/ pnpm exec tsx ...`. The build in `dist/public/` was last built correctly from PowerShell.
-
-2. **Docker nginx container may serve default "Welcome to nginx" page** — The Docker-built `smc-frontend` image (from `Dockerfile` target `frontend`) using `deploy/local/nginx/default.conf` requires the correct build artifacts to be baked in. If the container starts without the built SPA, it shows the default nginx page. The fix is to either: (a) rebuild the Docker image, or (b) use the standalone `serve-frontend.mjs` script as a fallback: `node serve-frontend.mjs`
-
-3. **No API proxy on the static server** — The Node.js `serve-frontend.mjs` static server doesn't proxy `/api` requests to the backend. The frontend SPA handles this correctly via the `apiUrl()` function in `api.ts` which calls port 3001 directly. This works fine when both servers are running.
-
-### To reverse the OS implementation
-To go back to the old dashboard, change `App.tsx` line 23 from `OsDashboard` back to `Dashboard`.
-
-### To pick up where you left off
-1. `node serve-frontend.mjs` (from repo root, serves the SPA on port 3000)
-2. The old nginx Docker container was named `smc-frontend` — if it's still running with the wrong content, stop it: `docker rm -f smc-frontend`
-3. The frontend source lives in `artifacts/liquidity-hunter/` — new pages are in `pages/`, the shell is in `components/layout/`
-4. The reference design is at `reference/smc-pulse-os-capability-exposure-demo.html`
+Change `App.tsx` line 23 from `SessionCockpitShell` back to `OsDashboard`.
 
 ## SMC-EVAL Benchmark Integration (`lib/api-zod/src/strategies/`)
 

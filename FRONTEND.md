@@ -27,11 +27,11 @@ The frontend is a React 18 SPA built with Vite and TypeScript. It connects to th
 
 ## Pages
 
-The app has five pages: **Dashboard** (`/`), **Analytics** (`/analytics`), **Broker** (`/broker`), **Agent Loop** (`/agent-loop`), and **Not Found** (`*`).
+The app's primary interface is the **Session Cockpit** (`/`) -- a narrative-driven shell with 10 dedicated stage views, 3-column layout, and Zustand state management. Legacy pages remain accessible: **Analytics** (`/analytics`), **Broker** (`/broker`), **Agent Loop** (`/agent-loop`), and **Not Found** (`*`).
 
-### `pages/dashboard.tsx`
+### `pages/dashboard.tsx` (Legacy)
 
-The only real page. Contains all application state and orchestrates all components.
+The original single-page dashboard. Retained for reference; the Session Cockpit (documented below) is now the primary interface. Contains all application state and orchestrates all components.
 
 **State**:
 | State variable | Type | Purpose |
@@ -389,7 +389,174 @@ Reads the raw SSE stream using `ReadableStream` + `TextDecoder`. Parses each `da
 
 ---
 
+## Session Cockpit Architecture (New -- Jul 19-20, 2026)
+
+The Session Cockpit replaces the old single-page Dashboard with a narrative-driven, multi-stage shell. It is the primary interface for the application.
+
+### Design Philosophy
+
+- **Narrative stages** -- The interface follows a trader's natural workflow: scan the market, analyze structure, evaluate strategies, execute trades, review performance
+- **Information hierarchy** -- 3-column layout separates navigation, main content, and contextual detail
+- **Real-time data pipeline** -- API → React Query → Zustand → UI, typed and traceable at every layer
+- **Capability-aware** -- Every feature tracks its UI coverage so the system knows what is built vs claimed
+
+### `components/layout/SessionCockpitShell.tsx`
+
+The root shell component that wraps all stage views. Mounted at `/`.
+
+**Layout**:
+```
+┌──────────────┬──────────────────────────────┬──────────────────────┐
+│  LiveTimeline│      Main Stage Area         │  DecisionFunnel     │
+│  (260px)     │                              │  + QuickTools       │
+│              │                              │  (320px)            │
+│  Chronological│  Active stage component     │                     │
+│  log of:     │  rendered by StateRouter     │  Actionable         │
+│  - structure │                              │  decisions based    │
+│    breaks    │                              │  on current stage   │
+│  - sweeps    │                              │                     │
+│  - FVG fills │                              │  9 collapsible      │
+│  - signals   │                              │  tool widgets       │
+│  - events    │                              │                     │
+└──────────────┴──────────────────────────────┴──────────────────────┘
+```
+
+**Overlays** (triggered from TopBar or stage context):
+- **EvidencePanel** (right slide-over) -- evidence chain for the current stage
+- **AgentChat** (right, 420px fixed panel) -- AI agent conversation, toggled from TopBar
+- **CapabilityExplorer** (modal, Ctrl+K) -- searchable capability grid
+- **ChartView** (fullscreen overlay) -- candlestick chart deep-dive
+
+**State management**: Uses 4 Zustand stores instead of the old ad-hoc `useState` approach:
+
+| Store | File | Purpose |
+|---|---|---|
+| `market-store` | `stores/market-store.ts` | Symbol, market, timeframe preset, correlated symbol, SMT toggle, derived bias/cascade |
+| `profile-store` | `stores/profile-store.ts` | User preferences, layout density, theme, default symbol |
+| `narrative` | `stores/narrative.ts` | Current stage, session state, market context string, stage history |
+| `capabilities` | `stores/capabilities.ts` | Capability registry, `uiCoverage` tracking per capability, gap analysis |
+
+**Data pipeline**:
+```
+API Server (port 3001)
+    ↓  GET /api/analysis/crypto?symbol=BTCUSDT&timeframe=4h
+TanStack Query v5 (cache layer, staleTime: 60s)
+    ↓  onSuccess → store update
+Zustand Stores (market, narrative, capabilities)
+    ↓  selector subscriptions
+UI Components (TopBar, stage views, detail panels)
+```
+
+### 10 Narrative Stage Views (`src/stages/`)
+
+Each stage is a dedicated component rendered by `StateRouter`. The active stage is derived by `deriveNarrativeStage()` in `src/state/narrative.ts` from market state inputs (structure breaks, FVGs, liquidity sweeps, OBs, model detections, active positions).
+
+| # | Stage | Component | Purpose |
+|---|---|---|---|
+| 1 | **Watching** | `NoTradeView.tsx` | Idle -- no symbol selected or no session active |
+| 2 | **Scanning** | `ScanningView.tsx` | Session active, waiting for a liquidity event |
+| 3 | **Liquidity Swept** | `LiquiditySweptView.tsx` | A pool was swept -- evaluate structural response |
+| 4 | **Displacement** | `DisplacementView.tsx` | Displacement detected -- structure confirming |
+| 5 | **MSS Forming** | `MssFormingView.tsx` | Market structure shift in progress |
+| 6 | **FVG Formed** | `FvgFormedView.tsx` | Entry-level imbalance formed |
+| 7 | **Entry Ready** | `EntryView.tsx` | Model prerequisites met -- actionable |
+| 8 | **In Trade** | `InTradeView.tsx` | Position open -- monitoring risk |
+| 9 | **Review** | `ReviewView.tsx` | Post-trade analysis and evidence reconstruction |
+| 10 | **No Trade** | `NoTradeView.tsx` | System rule: conditions not met for active models |
+
+Supporting functional views accessible from sidebar: Strategy Atlas (browse 59 models), Agent Workspace (chat + loop), Evaluate (SMC-EVAL), Learn (Truth Engine), Settings.
+
+### `components/layout/TopBar.tsx` (at `src/shell/TopBar.tsx`)
+
+Always-visible top bar across all stage views. Reads from `market-store` and `narrative` Zustand stores.
+
+**Controls** (left to right):
+- **Symbol selector** -- Searchable dropdown, updates `market-store.symbol`
+- **Crypto/Forex toggle** -- Switches asset class
+- **Timeframe presets** -- Scalp (1m/5m/15m), Intraday (1h/4h), Swing (1D/1W)
+- **Per-TF chips** -- Clickable timeframe pills for the active preset with bias dots
+- **Session clock** -- Countdown timer for the current trading session
+- **TV status indicator** -- Green/red dot for CDP connection state; click opens `TvStatus` modal
+- **Agent chat button** -- Toggles the AgentChat overlay
+- **Chart view button** -- Toggles the fullscreen ChartView overlay
+
+### `components/tf/TimeframeChips.tsx`
+
+Per-timeframe interaction component used primarily in ScanningView. Replaces the old TfAgentCard grid with a more compact, interactive chip design.
+
+**Each chip displays**:
+- TF label (e.g., "H4", "M15", "1m")
+- Colored bias dot: green = bullish, red = bearish, gray = neutral
+- Confidence percentage from SMC report
+- Role badge (Bias Setter / Confirmation / Entry Trigger)
+- Loading skeleton or error indicator
+
+**Timeframe presets** (selected via TopBar):
+
+| Preset | Timeframes | Use Case |
+|---|---|---|
+| Scalp | 1m, 5m, 15m | Day traders, scalping entries |
+| Intraday | 15m, 1h, 4h | Swing entries, intraday bias |
+| Swing | 4h, 1d, 1w | Position traders, HTF context |
+| All | 1m, 5m, 15m, 1h, 4h, 1d, 1w | Full cascade view |
+
+**Interaction**:
+- Click a chip → opens single-TF detail in the right detail panel
+- The detail panel shows the full IntelligenceSheet content for that TF: structure, OBs, FVGs, liquidity, draw targets
+- If TV Desktop is connected, a "Mark on TV" button draws the levels directly on the TV chart
+
+### `components/panels/QuickTools.tsx` (at `src/panels/QuickTools.tsx`)
+
+9 collapsible tool widgets in the right column, each in a `ToolSection` wrapper.
+
+| # | Widget | Purpose |
+|---|---|---|
+| 1 | **Killzone Timer** | London, NY AM, NY PM window countdowns with active/inactive badges |
+| 2 | **Silver Bullet Timer** | Next Silver Bullet window (NY AM, London, NY PM) with countdown |
+| 3 | **Breaker Blocks** | Lists breaker blocks from the current report with price, direction, and strength |
+| 4 | **Displacement Gauge** | Visual gauge of displacement strength vs average range (0-100%) |
+| 5 | **Range Expansion** | Current candle expansion vs average true range, with percentile |
+| 6 | **OTE Zone Calculator** | Optimal Trade Entry zone (62-79% retracement) from swing to current price |
+| 7 | **Risk Calculator** | Position size calculator: account size, risk %, SL distance -> units/lots |
+| 8 | **Daily Trade Counter** | Trades taken today vs configured daily max limit |
+| 9 | **LuxAlgo Comparison** | Compare SMC engine output vs LuxAlgo ICT levels from TV (`POST /api/learning/comparisons/analyze`) |
+
+Each widget is a standalone component in `src/panels/`. They share no internal state -- all coordination goes through the Zustand stores.
+
+### `components/panels/AgentChatPanel.tsx`
+
+420px fixed panel overlay, AI Agent Chat accessible from the TopBar chat icon on any stage. Two modes:
+
+| Mode | Behavior |
+|---|---|
+| **MCP Tool-Calling** | Agent receives full tool list (TV draw, data fetch, backtest, etc.). Can invoke tools autonomously. Results rendered inline as tool-call cards. |
+| **Classic** | Text-only Q&A. Agent analyzes current SMC state (report, cascade, market context) and answers questions about structure, liquidity, strategy. |
+
+**Implementation**:
+- Streaming SSE responses with auto-scroll and pulsing cursor
+- Context injection: current symbol, timeframe, SMC report, cascade state, market context string
+- Conversation history: last 8 messages retained
+- Auto-scroll on new tokens, pulsing cursor while streaming
+- Quick-access toggle: opens as slide-over panel from right side
+
+### Capability Coverage Tracking
+
+Defined in `src/state/capabilities.ts`. Every `CapabilityDef` carries a `uiCoverage: boolean` field.
+
+- **96% coverage** -- 52 of 54 capabilities exposed in the Session Cockpit UI
+- `getUiCoveragePercent()` -- returns rounded percentage
+- `countCapabilities()` -- returns per-stage breakdowns
+- **2 uncovered capabilities:**
+  - `similar-setups` -- vector search for similar past setups (requires Qdrant)
+  - `account-detail` -- account balance and open positions (requires Alpaca API keys)
+
+**Coverage dashboard** accessible via the CapabilityExplorer modal (Ctrl+K): searchable grid of all 54 capabilities with coverage status, component paths, and gap analysis.
+
+---
+
 ## Data Flow
+
+### Legacy Dashboard Flow
 
 ```
 Dashboard mounts
@@ -413,6 +580,32 @@ User taps CHART → setChartOpen(true) → ChartView mounts
 ChartView creates Lightweight Charts instance + canvas overlay
     ↓
 User switches TF pill → setActiveTf → chart recreated with new report
+```
+
+### Session Cockpit Flow
+
+```
+SessionCockpitShell mounts
+    ↓
+Zustand stores initialize (market, profile, narrative, capabilities)
+    ↓
+useTfData() × N (based on active timeframe preset) → React Query
+    ↓
+onSuccess → market-store.setReport(tf, report)
+    ↓
+market-store derives: cascade, anchor TF, bias alignment
+    ↓
+narrative store updates: session state, market context string
+    ↓
+Active stage view renders with selector subscriptions
+    ↓
+User switches stage → narrative.setStage(stageId) → new view renders
+    ↓
+User clicks TF chip → detail panel opens with single-TF data
+    ↓
+User opens Agent Chat → AgentChatPanel mounts with context injection
+    ↓
+User opens QuickTools → QuickToolsPanel mounts with 9 widgets
 ```
 
 ---
