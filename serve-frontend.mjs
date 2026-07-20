@@ -55,17 +55,19 @@ http.createServer((req, res) => {
   let filePath = path.join(root, req.url === "/" ? "index.html" : req.url);
   const ext = path.extname(filePath);
 
+  const headers = { "Cache-Control": "no-cache, no-store, must-revalidate" };
+
   fs.readFile(filePath, (err, data) => {
     if (err) {
       // SPA fallback — serve index.html for unknown routes (client-side routing)
       fs.readFile(path.join(root, "index.html"), (err2, data2) => {
         if (err2) { res.writeHead(500); res.end("500"); return; }
-        res.writeHead(200, { "Content-Type": "text/html" });
+        res.writeHead(200, { ...headers, "Content-Type": "text/html" });
         res.end(data2);
       });
       return;
     }
-    res.writeHead(200, { "Content-Type": MIME[ext] || "application/octet-stream" });
+    res.writeHead(200, { ...headers, "Content-Type": MIME[ext] || "application/octet-stream" });
     res.end(data);
   });
 }).listen(port, "0.0.0.0", () => {
