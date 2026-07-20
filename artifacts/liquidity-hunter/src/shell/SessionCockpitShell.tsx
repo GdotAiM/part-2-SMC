@@ -22,13 +22,19 @@ import { DecisionFunnel } from "@/panels/DecisionFunnel";
 import { EvidencePanel } from "@/panels/EvidencePanel";
 import { NoTradeView } from "@/stages/NoTradeView";
 import { ScanningView } from "@/stages/ScanningView";
+import { LiquiditySweptView } from "@/stages/LiquiditySweptView";
+import { DisplacementView } from "@/stages/DisplacementView";
+import { MssFormingView } from "@/stages/MssFormingView";
+import { FvgFormedView } from "@/stages/FvgFormedView";
 import { EntryView } from "@/stages/EntryView";
+import { InTradeView } from "@/stages/InTradeView";
+import { ReviewView } from "@/stages/ReviewView";
 import { ChartView } from "@/components/ChartView";
 import { TvStatus } from "@/components/TvStatus";
+import { getUiCoveragePercent } from "@/state/capabilities";
 
 function StateRouter() {
   const stage = useMarketStore((s) => s.stageInfo.stage);
-  const reports = useMarketStore((s) => s.reports);
 
   switch (stage) {
     case "WATCHING":
@@ -38,17 +44,26 @@ function StateRouter() {
     case "SCANNING":
       return <ScanningView />;
 
+    case "LIQUIDITY_SWEPT":
+      return <LiquiditySweptView />;
+
+    case "DISPLACEMENT":
+      return <DisplacementView />;
+
+    case "MSS_FORMING":
+      return <MssFormingView />;
+
+    case "FVG_FORMED":
+      return <FvgFormedView />;
+
     case "ENTRY_READY":
       return <EntryView />;
 
-    // These stages will use progressively richer views
-    case "LIQUIDITY_SWEPT":
-    case "DISPLACEMENT":
-    case "MSS_FORMING":
-    case "FVG_FORMED":
     case "IN_TRADE":
+      return <InTradeView />;
+
     case "REVIEW":
-      return <ScanningView />;
+      return <ReviewView />;
   }
 }
 
@@ -172,9 +187,9 @@ function CapabilityExplorerModal({ onClose }: { onClose: () => void }) {
             ))}
           </div>
 
-          <div className="mt-4 text-[8px] text-muted-foreground text-center">
-            {symbol} · {new Date().toLocaleDateString()}
-          </div>
+              <div className="mt-4 text-[8px] text-muted-foreground text-center">
+                UI Coverage: {getUiCoveragePercent()}% · {symbol} · {new Date().toLocaleDateString()}
+              </div>
         </div>
       </div>
     </div>
