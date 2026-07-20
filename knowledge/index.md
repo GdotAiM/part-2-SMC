@@ -40,6 +40,7 @@ flowchart TD
 | [[Outcome Evaluator]] | `lib/evaluation/` | Market outcome evaluation |
 | [[Reflection Engine]] | `lib/reflection/` | Post-trade structured reflections |
 | [[Parameter Recommender]] | `lib/optimization/` | Statistical parameter suggestions |
+| [[Session Cockpit]] | `artifacts/liquidity-hunter/src/` | React SPA — 10 narrative stage views, 3-column shell, QuickTools, AgentChat |
 | [[TV Desktop Integration]] | `lib/integrations/tradingview-desktop/` | 86 MCP tools via chrome-remote-interface |
 | [[MCP Server]] | `lib/mcp/` | FastMCP v4.3.2 — 11 SMC + 86 TV tools |
 

@@ -62,14 +62,35 @@ LLM_PROVIDER=fireworks
 FIREWORKS_API_KEY=fw_xxxxxxxxxxxxxxxxxxx
 ```
 
+## Frontend (Session Cockpit)
+
+```powershell
+# IMPORTANT: Build from PowerShell on Windows, not Git Bash
+# Git Bash leaks BASE_PATH=/Program Files/Git/ which breaks asset loading
+$env:BASE_PATH="/"; $env:PORT="3000"
+pnpm --filter @workspace/liquidity-hunter run build
+
+# Serve the built SPA (proxies /api/* → localhost:3001)
+node serve-frontend.mjs
+
+# Or use Vite dev server (hot reload)
+pnpm --filter @workspace/liquidity-hunter run dev
+```
+
 ## Quick Reference Commands
 
 ```bash
-# Build
+# Build API server
 pnpm --filter @workspace/api-server run build
 
-# Start server
-node artifacts/api-server/dist/index.mjs
+# Build frontend (from PowerShell with BASE_PATH set)
+# $env:BASE_PATH="/"; $env:PORT="3000"; pnpm --filter @workspace/liquidity-hunter run build
+
+# Start API server
+pnpm --filter @workspace/api-server run start
+
+# Serve frontend
+node serve-frontend.mjs
 
 # Run comparison cycle
 curl -X POST http://localhost:3001/api/learning/comparisons/analyze \
@@ -81,6 +102,16 @@ curl http://localhost:3001/api/learning/dashboard
 
 # Health check
 curl http://localhost:3001/api/healthz
+
+# Set price alert on TV Desktop
+curl -X POST http://localhost:3001/api/agent-loop/tv-alert-create \
+  -H "Content-Type: application/json" \
+  -d '{"price": 1.1050, "condition": "crossing", "message": "EURUSD alert"}'
+
+# Draw BOS/CHoCH lines on TV Desktop
+curl -X POST http://localhost:3001/api/agent-loop/tv-draw \
+  -H "Content-Type: application/json" \
+  -d '{"action": "bos", "breaks": [{"type":"CHoCH","price":1.1050,"direction":"bearish"}]}'
 
 # MCP tools
 curl -s -X POST http://localhost:3002/mcp \
