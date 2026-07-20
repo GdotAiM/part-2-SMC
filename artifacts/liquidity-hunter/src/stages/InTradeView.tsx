@@ -450,6 +450,49 @@ export function InTradeView() {
             </div>
           </div>
 
+          {/* TP management */}
+          {targets.length > 0 && currentPrice && stopLoss && entryPrice && (
+            <div className="rounded-sm border border-emerald-500/20 bg-emerald-500/5 p-4 space-y-2">
+              <h3 className="text-[9px] font-semibold uppercase tracking-widest text-emerald-500">Trade Management</h3>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  onClick={() => {
+                    pushTimelineEvent({
+                      type: "alert",
+                      title: `TP1 Hit — moved SL to breakeven`,
+                      description: `${fmtPrice(targets[0], marketType)} reached`,
+                      symbol, price: targets[0], actionable: false,
+                    });
+                    // Move SL to breakeven
+                    if (entryPrice) setTradeLevels(entryPrice, entryPrice, targets.slice(1));
+                  }}
+                  className="px-3 py-2 rounded-sm bg-emerald-500/10 border border-emerald-500/20 text-[10px] text-emerald-500 font-semibold hover:bg-emerald-500/15 transition-colors"
+                  title={`Move SL to entry (${entryPrice ? fmtPrice(entryPrice, marketType) : "—"}) — exiting TP1`}
+                >
+                  🎯 TP1 Hit (SL→BE)
+                </button>
+                <button
+                  onClick={() => {
+                    pushTimelineEvent({
+                      type: "alert",
+                      title: `Half position closed`,
+                      description: `Closed 50% at ${fmtPrice(currentPrice, marketType)}`,
+                      symbol, price: currentPrice, actionable: false,
+                    });
+                  }}
+                  className="px-3 py-2 rounded-sm bg-amber-400/10 border border-amber-400/20 text-[10px] text-amber-400 font-semibold hover:bg-amber-400/15 transition-colors"
+                >
+                  📉 Close Half
+                </button>
+              </div>
+              {targets.length > 1 && (
+                <div className="text-[8px] text-muted-foreground text-center">
+                  TP2: {fmtPrice(targets[1], marketType)} · SL now at {stopLoss ? fmtPrice(stopLoss, marketType) : "—"}
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Close position */}
           <div className="space-y-2">
             <button

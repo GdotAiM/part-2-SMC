@@ -5,9 +5,11 @@
  * Left sidebar. Persists across stage changes.
  */
 
-import { useCallback, useRef, useEffect } from "react";
+import { useCallback, useRef, useEffect, useState } from "react";
 import { useMarketStore, type TimelineEntry } from "@/state/market-store";
+import { useProfileStore } from "@/state/profile-store";
 import { detectSession, SESSION_LABELS } from "@/state/narrative";
+import { fmtPrice } from "@/lib/smc-display";
 
 const EVENT_ICONS: Record<string, string> = {
   session_open: "🕐",
@@ -129,6 +131,9 @@ export function LiveTimeline() {
       </div>
 
       {/* Events */}
+      {/* Sweep Scanner — watchlist sweep detection */}
+      <SweepScanner />
+
       <div ref={scrollRef} className="flex-1 overflow-y-auto py-1 space-y-0">
         {filtered.length === 0 ? (
           <div className="flex items-center justify-center h-32 text-[10px] text-muted-foreground italic font-mono px-3 text-center">
@@ -149,5 +154,83 @@ export function LiveTimeline() {
         </div>
       </div>
     </aside>
+  );
+}
+
+// ── Sweep Scanner — polls watchlist for recent liquidity sweeps ────────────
+
+function SweepScanner() {
+  const watchlist = useProfileStore((s) => s.profile.watchlist);
+  const setSymbol = useMarketStore((s) => s.setSymbol);
+  const symbol = useMarketStore((s) => s.symbol);
+  const marketType = useMarketStore((s) => s.marketType);
+  const [results, setResults] = useState<Array<{ sym: string; swept: boolean; type?: string; bias?: string; price?: number }>>([]);
+  const [open, setOpen] = useState(true);
+
+  useEffect(() => {
+    let active = true;
+    async function scan() {
+      const r: typeof results = [];
+      for (const sym of watchlist.slice(0, 6)) {
+        try {
+          const resp = await fetch(`/api/analysis/crypto?symbol=${sym}&timeframe=15m`);
+          if (!resp.ok) continue;
+          const data = await resp.json();
+          const swept = data.liquidity?.pools?.some((p: any) => p.wasSwept);
+          const sweptPool = swept ? data.liquidity.pools.find((p: any) => p.wasSwept) : null;
+          r.push({
+            sym,
+            swept: !!swept,
+            type: sweptPool?.type,
+            bias: data.structure?.bias,
+            price: data.currentPrice,
+          });
+        } catch {}
+      }
+      if (active) setResults(r);
+    }
+    scan();
+    const interval = setInterval(scan, 120_000); // every 2 min
+    return () => { active = false; clearInterval(interval); };
+  }, [watchlist.join(",")]);
+
+  const sweptCount = results.filter((r) => r.swept).length;
+
+  return (
+    <div className="border-b border-border/20">
+      <button onClick={() => setOpen(!open)} className="w-full flex items-center justify-between px-3 py-2 text-left hover:bg-white/3 transition-colors">
+        <div className="flex items-center gap-1.5">
+          <span className="text-[9px] font-semibold uppercase tracking-wider text-muted-foreground">Sweep Scanner</span>
+          {sweptCount > 0 && (
+            <span className="text-[8px] px-1 py-0.5 rounded-sm bg-emerald-500/10 text-emerald-500 font-bold">{sweptCount}</span>
+          )}
+        </div>
+        <span className="text-[9px] text-muted-foreground">{open ? "▾" : "▸"}</span>
+      </button>
+      {open && (
+        <div className="px-3 pb-2 space-y-0.5">
+          {results.map((r) => (
+            <button
+              key={r.sym}
+              onClick={() => setSymbol(r.sym, marketType)}
+              className={`w-full flex items-center justify-between py-1 px-2 rounded-sm text-left transition-colors ${
+                r.sym === symbol ? "bg-primary/10 border border-primary/20" : "hover:bg-muted/20"
+              }`}
+            >
+              <div className="flex items-center gap-1.5">
+                <span className={`w-1.5 h-1.5 rounded-full ${r.swept ? "bg-emerald-500 animate-pulse" : "bg-muted-foreground/30"}`} />
+                <span className="text-[9px] font-semibold text-foreground">{r.sym}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                {r.swept && r.type && <span className="text-[7px] text-emerald-500 font-bold">{r.type}</span>}
+                {r.bias && <span className={`text-[7px] ${r.bias === "bullish" ? "text-emerald-500" : r.bias === "bearish" ? "text-destructive" : "text-muted-foreground"}`}>{r.bias.slice(0,4).toUpperCase()}</span>}
+                {r.price && <span className="text-[7px] text-muted-foreground font-mono">{fmtPrice(r.price, "crypto")}</span>}
+              </div>
+            </button>
+          ))}
+          {results.length === 0 && <p className="text-[8px] text-muted-foreground italic px-2">Scanning watchlist…</p>}
+        </div>
+      )}
+    </div>
   );
 }

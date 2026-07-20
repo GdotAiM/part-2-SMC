@@ -92,6 +92,9 @@ export interface MarketState {
   currentEntryPrice: number | null;
   currentStopLoss: number | null;
   currentTargets: number[];
+  manualEntryOverride: number | null;
+  manualSlOverride: number | null;
+  manualTpOverride: number | null;
 
   // ── UI state ──
   decisionFunnelOpen: boolean;
@@ -125,6 +128,7 @@ export interface MarketActions {
   setSystemHealth: (health: Partial<SystemHealth>) => void;
   setInTrade: (inTrade: boolean) => void;
   setTradeLevels: (entry: number | null, stop: number | null, targets: number[]) => void;
+  setManualLevels: (entry: number | null, sl: number | null, tp: number | null) => void;
   toggleDecisionFunnel: () => void;
   openEvidence: (targetId: string) => void;
   closeEvidence: () => void;
@@ -222,6 +226,9 @@ const initialState: MarketState = {
   currentEntryPrice: null,
   currentStopLoss: null,
   currentTargets: [],
+  manualEntryOverride: null,
+  manualSlOverride: null,
+  manualTpOverride: null,
   decisionFunnelOpen: false,
   evidencePanelOpen: false,
   evidenceTargetId: null,
@@ -306,6 +313,9 @@ export const useMarketStore = create<MarketState & MarketActions>()((set, get) =
 
   setTradeLevels: (entry, stop, targets) =>
     set({ currentEntryPrice: entry, currentStopLoss: stop, currentTargets: targets }),
+
+  setManualLevels: (entry, sl, tp) =>
+    set({ manualEntryOverride: entry, manualSlOverride: sl, manualTpOverride: tp }),
 
   toggleDecisionFunnel: () =>
     set((s) => ({ decisionFunnelOpen: !s.decisionFunnelOpen })),

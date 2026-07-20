@@ -191,7 +191,24 @@ export function EntryView() {
   const [showAltModels, setShowAltModels] = useState(false);
   const [showReasoning, setShowReasoning] = useState(false);
 
-  const levels = useMemo(() => deriveEntryLevels(reports, marketType), [reports, marketType]);
+  const derivedLevels = useMemo(() => deriveEntryLevels(reports, marketType), [reports, marketType]);
+  const manualEntry = useMarketStore((s) => s.manualEntryOverride);
+  const manualSl = useMarketStore((s) => s.manualSlOverride);
+  const manualTp = useMarketStore((s) => s.manualTpOverride);
+  const setManualLevels = useMarketStore((s) => s.setManualLevels);
+
+  // Use manual overrides if set, otherwise derived
+  const levels = useMemo(() => {
+    if (!derivedLevels) return null;
+    return {
+      ...derivedLevels,
+      entryLow: manualEntry ?? derivedLevels.entryLow,
+      entryHigh: manualEntry ?? derivedLevels.entryHigh,
+      avgEntry: manualEntry ?? derivedLevels.avgEntry,
+      stopLoss: manualSl ?? derivedLevels.stopLoss,
+      takeProfit: manualTp ?? derivedLevels.takeProfit,
+    };
+  }, [derivedLevels, manualEntry, manualSl, manualTp]);
   const checklist = useSetupChecklist(reports, profile);
   const strategyEvidence = useStrategyEvidence();
 
@@ -266,6 +283,19 @@ export function EntryView() {
         </div>
         <h1 className="text-xl lg:text-2xl font-black tracking-tight">{symbol}</h1>
         <p className="mt-1 text-xs text-muted-foreground">{stageReasoning}</p>
+
+        {/* Killzone warning — show if entry triggered outside high-probability session */}
+        {session.name !== "NY_AM" && session.name !== "LONDON" && session.name !== "NY_PM" && (
+          <div className="mt-3 rounded-sm bg-amber-400/10 border border-amber-400/20 p-3 flex items-center gap-2">
+            <span>⚠️</span>
+            <div>
+              <span className="text-[10px] font-bold text-amber-400">Outside Killzone</span>
+              <p className="text-[9px] text-amber-400/70">
+                Current session ({session.label}) is not a high-probability entry window. ICT teaches entries in London, NY AM, or NY PM only.
+              </p>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* ── Main grid ── */}
@@ -293,50 +323,51 @@ export function EntryView() {
 
             {/* Price levels grid */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              {/* Entry zone */}
+              {/* Entry zone — editable */}
               <div className="rounded-sm bg-muted/20 border border-border/20 p-3">
-                <div className="text-[9px] text-muted-foreground uppercase tracking-wider">Entry Zone</div>
-                <div className="mt-1 text-lg font-black font-mono text-foreground">
-                  {levels.entryLow && levels.entryHigh
-                    ? `${fmtPrice(levels.entryLow, marketType)} – ${fmtPrice(levels.entryHigh, marketType)}`
-                    : "—"}
-                </div>
-                {levels.avgEntry && (
-                  <div className="text-[9px] text-muted-foreground mt-0.5">
-                    ~ {fmtPrice(levels.avgEntry, marketType)} avg
-                  </div>
+                <div className="text-[9px] text-muted-foreground uppercase tracking-wider">Entry</div>
+                <input
+                  type="number"
+                  step="any"
+                  value={levels.avgEntry ?? ""}
+                  onChange={(e) => setManualLevels(e.target.value ? Number(e.target.value) : null, manualSl, manualTp)}
+                  placeholder={derivedLevels?.avgEntry ? fmtPrice(derivedLevels.avgEntry, marketType) : "—"}
+                  className="mt-1 w-full bg-transparent text-lg font-black font-mono text-foreground border-b border-border/30 focus:border-primary outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                />
+                {derivedLevels?.avgEntry && manualEntry !== derivedLevels.avgEntry && (
+                  <button onClick={() => setManualLevels(null, manualSl, manualTp)} className="text-[8px] text-primary mt-0.5">↩ reset to {fmtPrice(derivedLevels.avgEntry, marketType)}</button>
                 )}
               </div>
 
-              {/* Stop loss */}
+              {/* Stop loss — editable */}
               <div className="rounded-sm bg-destructive/5 border border-destructive/20 p-3">
                 <div className="text-[9px] text-muted-foreground uppercase tracking-wider">Stop Loss</div>
-                <div className="mt-1 text-lg font-black font-mono text-destructive">
-                  {levels.stopLoss ? fmtPrice(levels.stopLoss, marketType) : "—"}
-                </div>
-                {levels.avgEntry && levels.stopLoss && (
-                  <div className="text-[9px] text-destructive/70 mt-0.5">
-                    {Math.abs(levels.avgEntry - levels.stopLoss) < 1
-                      ? (Math.abs(levels.avgEntry - levels.stopLoss) * 10000).toFixed(0) + " pts"
-                      : "$" + Math.abs(levels.avgEntry - levels.stopLoss).toFixed(2)}
-                    {" risk"}
-                  </div>
+                <input
+                  type="number"
+                  step="any"
+                  value={levels.stopLoss ?? ""}
+                  onChange={(e) => setManualLevels(manualEntry, e.target.value ? Number(e.target.value) : null, manualTp)}
+                  placeholder={derivedLevels?.stopLoss ? fmtPrice(derivedLevels.stopLoss, marketType) : "—"}
+                  className="mt-1 w-full bg-transparent text-lg font-black font-mono text-destructive border-b border-border/30 focus:border-destructive outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                />
+                {derivedLevels?.stopLoss && manualSl !== derivedLevels.stopLoss && (
+                  <button onClick={() => setManualLevels(manualEntry, null, manualTp)} className="text-[8px] text-destructive/70 mt-0.5">↩ reset to {fmtPrice(derivedLevels.stopLoss, marketType)}</button>
                 )}
               </div>
 
-              {/* Take profit */}
+              {/* Take profit — editable */}
               <div className="rounded-sm bg-emerald-500/5 border border-emerald-500/20 p-3">
                 <div className="text-[9px] text-muted-foreground uppercase tracking-wider">Take Profit</div>
-                <div className="mt-1 text-lg font-black font-mono text-emerald-500">
-                  {levels.takeProfit ? fmtPrice(levels.takeProfit, marketType) : "—"}
-                </div>
-                {levels.avgEntry && levels.takeProfit && (
-                  <div className="text-[9px] text-emerald-500/70 mt-0.5">
-                    {Math.abs(levels.takeProfit - levels.avgEntry) < 1
-                      ? (Math.abs(levels.takeProfit - levels.avgEntry) * 10000).toFixed(0) + " pts"
-                      : "$" + Math.abs(levels.takeProfit - levels.avgEntry).toFixed(2)}
-                    {" reward"}
-                  </div>
+                <input
+                  type="number"
+                  step="any"
+                  value={levels.takeProfit ?? ""}
+                  onChange={(e) => setManualLevels(manualEntry, manualSl, e.target.value ? Number(e.target.value) : null)}
+                  placeholder={derivedLevels?.takeProfit ? fmtPrice(derivedLevels.takeProfit, marketType) : "—"}
+                  className="mt-1 w-full bg-transparent text-lg font-black font-mono text-emerald-500 border-b border-border/30 focus:border-emerald-500 outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                />
+                {derivedLevels?.takeProfit && manualTp !== derivedLevels.takeProfit && (
+                  <button onClick={() => setManualLevels(manualEntry, manualSl, null)} className="text-[8px] text-emerald-500/70 mt-0.5">↩ reset to {fmtPrice(derivedLevels.takeProfit, marketType)}</button>
                 )}
               </div>
 
@@ -453,7 +484,23 @@ export function EntryView() {
               onClick={handleSendToTV}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-sm bg-muted/20 border border-border/30 text-[10px] text-muted-foreground hover:text-foreground hover:border-primary/30 transition-colors"
             >
-              ✏️ Send to TV
+              ✏️ Show in TV
+            </button>
+            <button
+              onClick={async () => {
+                const price = levels?.entryLow ?? levels?.avgEntry ?? levels?.anchorPrice ?? 0;
+                try {
+                  await fetch("/api/agent-loop/tv-alert-create", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ price, condition: "crossing", message: `${symbol} entry zone` }),
+                  });
+                  pushTimelineEvent({ type: "alert", title: `Alert set at ${fmtPrice(price, marketType)}`, description: "Entry zone approach alert", symbol, actionable: false });
+                } catch {}
+              }}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-sm bg-primary/10 border border-primary/20 text-[10px] text-primary font-semibold hover:bg-primary/15 transition-colors"
+            >
+              🔔 Alert on Zone
             </button>
             <button
               onClick={handleGenerateSignal}

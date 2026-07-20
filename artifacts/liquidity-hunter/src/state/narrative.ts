@@ -191,9 +191,6 @@ export function deriveNarrativeStage(input: NarrativeInput): {
   }
 
   // ── Cross-TF checks ─────────────────────────────────────────────────────
-  // Check across ALL reports (not just anchor TF) for sweeps, displacement,
-  // and structure breaks. This makes the derivation robust when different
-  // events happen on different timeframes (e.g. sweep on 15m, CHoCH on 4h).
   const allReports = Object.values(reports).filter((r): r is SmcReport => r !== null);
 
   const hasSweep = allReports.some((r) =>
@@ -215,10 +212,59 @@ export function deriveNarrativeStage(input: NarrativeInput): {
     ? entryReport.fvg.some((f) => f.fillFraction < 0.3 && !f.isInversion)
     : false;
 
-  // Check for NO TRADE conditions
-  const phase = deriveMarketPhase(anchorReport);
+  // Check for NO TRADE conditions — MUST be checked BEFORE progressive stages
   const session = detectSession();
   const sessionOk = session.name === "NY_AM" || session.name === "LONDON" || session.name === "NY_PM";
+
+  // ── Killzone gating: outside high-probability sessions, NO_TRADE always ──
+  if (!sessionOk) {
+    return {
+      stage: "NO_TRADE",
+      reasoning: `${session.label} — not a high-probability session window for your active models.`,
+      matchedModelId: null,
+    };
+  }
+
+  // ── Stage regression checks: invalidate setup if conditions break down ──
+  // If entry FVG was filled, regress from ENTRY_READY/FVG_FORMED
+  const entryFvgFilled = entryReport
+    ? entryReport.fvg.some((f) => f.fillFraction > 0.7 && !f.isInversion)
+    : false;
+
+  // If a new opposite-direction sweep appeared (invalidation)
+  const hasOppositeBreaks = allReports.some((r) =>
+    r.structure.breaks.some((b) => b.type === "CHoCH" && b.direction !== anchorReport?.structure.bias),
+  );
+
+  // If structure completely broke down (mixed signals)
+  const structureBrokenDown = allReports.some((r) =>
+    r.structure.bias === "neutral" && r.structure.confidence < 0.3,
+  );
+
+  // If the FVG that got us here is now filled — regress
+  if (entryFvgFilled && hasSweep && hasDisplacement && hasMss) {
+    return {
+      stage: "FVG_FORMED",
+      reasoning: "Entry FVG filled — waiting for new entry-level imbalance.",
+      matchedModelId: null,
+    };
+  }
+
+  if (hasOppositeBreaks && hasSweep) {
+    return {
+      stage: "LIQUIDITY_SWEPT",
+      reasoning: "Opposite-direction structure break detected — re-evaluating setup.",
+      matchedModelId: null,
+    };
+  }
+
+  if (structureBrokenDown) {
+    return {
+      stage: "SCANNING",
+      reasoning: "Structure confidence degraded — waiting for clear signals.",
+      matchedModelId: null,
+    };
+  }
 
   // Progressive stage resolution
   if (hasSweep && hasDisplacement && hasMss && hasUnmitigatedFvg) {
@@ -249,14 +295,6 @@ export function deriveNarrativeStage(input: NarrativeInput): {
     return {
       stage: "DISPLACEMENT",
       reasoning: "Liquidity swept. Evaluating structural displacement.",
-      matchedModelId: null,
-    };
-  }
-
-  if (!sessionOk) {
-    return {
-      stage: "NO_TRADE",
-      reasoning: `${session.label} — not a high-probability session window for your active models.`,
       matchedModelId: null,
     };
   }
