@@ -10,6 +10,23 @@ import { useSystemEvidence } from "@/hooks/useEvidence";
 import { SESSION_LABELS } from "@/state/narrative";
 import { TvStatus } from "@/components/TvStatus";
 
+type TfPreset = "scalp" | "intraday" | "swing";
+
+const TF_PRESETS: Record<TfPreset, { label: string; tfs: string[]; icon: string }> = {
+  scalp:    { label: "Scalp",    tfs: ["1m", "5m", "15m"],                icon: "⚡" },
+  intraday: { label: "Intraday", tfs: ["15m", "1h", "4h"],                icon: "🕐" },
+  swing:    { label: "Swing",    tfs: ["4h", "1d", "1w"],                 icon: "📅" },
+};
+
+function detectPreset(tfs: string[]): TfPreset | null {
+  for (const [key, preset] of Object.entries(TF_PRESETS)) {
+    if (preset.tfs.length === tfs.length && preset.tfs.every((t) => tfs.includes(t))) {
+      return key as TfPreset;
+    }
+  }
+  return null;
+}
+
 export function TopBar() {
   const symbol = useMarketStore((s) => s.symbol);
   const marketType = useMarketStore((s) => s.marketType);
@@ -24,6 +41,9 @@ export function TopBar() {
   const tvOk = health.find((h) => h.label === "TradingView")?.status === "pass";
 
   const watchlist = useProfileStore((s) => s.profile.watchlist);
+  const preferredTimeframes = useProfileStore((s) => s.profile.preferredTimeframes);
+  const setTimeframes = useProfileStore((s) => s.setTimeframes);
+  const activePreset = detectPreset(preferredTimeframes);
 
   return (
     <header className="h-14 border-b border-border/30 flex items-center justify-between px-4 lg:px-6 shrink-0 bg-card/20">
@@ -64,6 +84,25 @@ export function TopBar() {
                 .map((s) => <option key={s} value={s}>{s}</option>)
           }
         </select>
+
+        {/* Timeframe preset selector */}
+        <div className="flex rounded-sm overflow-hidden border border-border h-7">
+          {(Object.entries(TF_PRESETS) as [TfPreset, typeof TF_PRESETS[TfPreset]][]).map(([key, preset]) => (
+            <button
+              key={key}
+              onClick={() => setTimeframes(preset.tfs)}
+              title={`${preset.label}: ${preset.tfs.join(", ")}`}
+              className={`px-2 text-[9px] font-bold uppercase tracking-wider transition-colors flex items-center gap-1 ${
+                activePreset === key
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-muted text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              <span className="hidden sm:inline">{preset.icon}</span>
+              <span>{preset.label}</span>
+            </button>
+          ))}
+        </div>
 
         {/* Session badge */}
         <div className="hidden sm:flex items-center gap-2 px-2.5 py-1 rounded-sm bg-muted/30 border border-border/40">
