@@ -26,7 +26,7 @@ const mmsm: StrategyDefinition = {
   ontology: "MARKET_CYCLE",
   priority: "PRIMARY",
   rule: andRules(
-    predicateRule("hasBias", { timeframe: "1d" }),
+    predicateRule("hasBias", { timeframe: "1d", direction: "bearish" }),
     predicateRule("hasMarketStructureShift", { timeframe: "1h" }),
     predicateRule("hasSMTConfirmation", { timeframe: "1h" }),
     predicateRule("hasLiquiditySweep", { timeframe: "1h" }),
@@ -45,7 +45,7 @@ const mmbm: StrategyDefinition = {
   ontology: "MARKET_CYCLE",
   priority: "PRIMARY",
   rule: andRules(
-    predicateRule("hasBias", { timeframe: "1d" }),
+    predicateRule("hasBias", { timeframe: "1d", direction: "bullish" }),
     predicateRule("hasMarketStructureShift", { timeframe: "1h" }),
     predicateRule("hasSMTConfirmation", { timeframe: "1h" }),
     predicateRule("hasLiquiditySweep", { timeframe: "1h" }),
@@ -68,13 +68,10 @@ const silverBulletLondon: StrategyDefinition = {
   ontology: "EXECUTION_MODEL",
   priority: "PRIMARY",
   rule: andRules(
+    predicateRule("hasSession", { session: "LONDON" }),
     predicateRule("hasBias", { timeframe: "15m" }),
     predicateRule("hasMarketStructureShift", { timeframe: "5m" }),
     predicateRule("hasFVG", { timeframe: "5m" }),
-    // TODO: uncomment once the evaluator can inject economic events as args.
-    // The predicate needs events[] from the DB — see hasHighImpactNewsWithin
-    // and isNewsBlackoutWindow in predicates.ts.
-    // predicateRule("isNewsBlackoutWindow", { timeframe: "5m", args: [events, 900_000] }),
   ),
   tags: ["temporal-reversal", "silver-bullet", "london"],
   requiredTimeframes: ["15m", "5m"],
@@ -90,6 +87,7 @@ const silverBulletNyam: StrategyDefinition = {
   ontology: "EXECUTION_MODEL",
   priority: "PRIMARY",
   rule: andRules(
+    predicateRule("hasSession", { session: "NY_AM" }),
     predicateRule("hasBias", { timeframe: "15m" }),
     predicateRule("hasMarketStructureShift", { timeframe: "5m" }),
     predicateRule("hasFVG", { timeframe: "5m" }),
@@ -108,6 +106,7 @@ const silverBulletNypm: StrategyDefinition = {
   ontology: "EXECUTION_MODEL",
   priority: "PRIMARY",
   rule: andRules(
+    predicateRule("hasSession", { session: "NY_PM" }),
     predicateRule("hasBias", { timeframe: "15m" }),
     predicateRule("hasMarketStructureShift", { timeframe: "5m" }),
     predicateRule("hasFVG", { timeframe: "5m" }),

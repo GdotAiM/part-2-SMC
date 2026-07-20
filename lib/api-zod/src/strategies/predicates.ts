@@ -967,6 +967,33 @@ export function hasBreakerBlock(report: SmcReport): PredicateResult {
  * @param report   The SMC analysis report.
  * @param session  Session name: "ASIAN", "LONDON", "NY_AM", "NY_PM".
  */
+export function hasSession(
+  _report: SmcReport,
+  session: string,
+): PredicateResult {
+  const sess = session.toUpperCase();
+  const utcH = new Date().getUTCHours();
+  const utcM = new Date().getUTCMinutes();
+  const totalMin = utcH * 60 + utcM;
+
+  const windows: Record<string, [number, number]> = {
+    ASIAN:   [0, 419],      // 00:00–06:59 UTC
+    LONDON:  [420, 719],    // 07:00–11:59 UTC
+    NY_AM:   [720, 899],    // 12:00–14:59 UTC
+    NY_PM:   [900, 1199],   // 15:00–19:59 UTC
+    LATE:    [1200, 1439],  // 20:00–23:59 UTC
+  };
+
+  const [start, end] = windows[sess] ?? [-1, -1];
+  if (start === -1) return result(false, [`Unknown session: ${sess}`]);
+
+  const active = totalMin >= start && totalMin <= end;
+  return active
+    ? result(true, [`Current UTC time (${utcH}:${String(utcM).padStart(2, "0")}) is within ${sess} window (${Math.floor(start/60)}:${String(start%60).padStart(2, "0")}–${Math.floor(end/60)}:${String(end%60).padStart(2, "0")} UTC).`], 0.9)
+    : result(false, [`Current UTC time is outside ${sess} window.`]);
+}
+
+/** @deprecated use hasSession for time-gating. Checks pool session tags instead of wall clock. */
 export function hasSessionAlignment(
   report: SmcReport,
   session: string,

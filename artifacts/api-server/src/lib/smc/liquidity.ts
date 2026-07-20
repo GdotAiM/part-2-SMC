@@ -20,8 +20,9 @@ function recencyDecay(index: number, totalBars: number, halfLife: number): numbe
 }
 
 function wasSwept(pool: { price: number; type: string }, candle: Candle): boolean {
-  if (pool.type === "BSL" || pool.type === "EQH") return candle.close > pool.price;
-  return candle.close < pool.price;
+  // ICT sweep: price pierces (wick) the level then closes back — not a breakout
+  if (pool.type === "BSL" || pool.type === "EQH") return candle.high > pool.price && candle.close < pool.price;
+  return candle.low < pool.price && candle.close > pool.price;
 }
 
 /**
@@ -135,11 +136,43 @@ export function analyzeLiquidity(candles: Candle[], timeframe: string, market: s
     }
   }
 
+  // ── EQH / EQL detection: group price-proximate pools (institutional engineering) ──
+  const eqThreshold = currentPrice * (SMC_CONFIG as any).equalLevelThreshold;
+  for (let i = 0; i < pools.length; i++) {
+    if (pools[i].type === "EQH" || pools[i].type === "EQL") continue; // already grouped
+    const group: number[] = [i];
+    for (let j = i + 1; j < pools.length; j++) {
+      if (Math.abs(pools[j].price - pools[i].price) <= eqThreshold && pools[j].type === pools[i].type) {
+        group.push(j);
+      }
+    }
+    if (group.length >= 2) {
+      const avgPrice = group.reduce((s, idx) => s + pools[idx].price, 0) / group.length;
+      const totalScore = group.reduce((s, idx) => s + pools[idx].score, 0);
+      const totalTouches = group.reduce((s, idx) => s + (pools[idx] as any).touches || 1, 0);
+      const allSwept = group.every(idx => pools[idx].wasSwept);
+      const eqType: "EQH" | "EQL" = pools[i].type === "BSL" ? "EQH" : "EQL";
+      // Mark group members
+      for (const idx of group) {
+        pools[idx].type = eqType;
+      }
+      // Create a consolidated EQ pool entry
+      pools.push({
+        price: avgPrice, type: eqType, score: totalScore * 1.2, touches: totalTouches,
+        wasSwept: allSwept,
+        sweptAt: allSwept ? pools[i].sweptAt : null,
+        time: pools[i].time, index: pools[i].index,
+        session: pools[i].session,
+        probabilityOfSweep: allSwept ? 0 : Math.min(0.95, (pools[i].probabilityOfSweep || 0.3) * 1.3),
+      } as any);
+    }
+  }
+
   const sortedByScore = [...pools].sort((a, b) => b.score - a.score);
   const topPools      = sortedByScore.slice(0, 20);
   const activePools   = topPools.filter(p => !p.wasSwept);
-  const bslPools      = activePools.filter(p => p.type === "BSL" && p.price > currentPrice);
-  const sslPools      = activePools.filter(p => p.type === "SSL" && p.price < currentPrice);
+  const bslPools      = activePools.filter(p => (p.type === "BSL" || p.type === "EQH") && p.price > currentPrice);
+  const sslPools      = activePools.filter(p => (p.type === "SSL" || p.type === "EQL") && p.price < currentPrice);
 
   const nearestBSL = bslPools.sort((a, b) => a.price - b.price)[0] ?? null;
   const nearestSSL = sslPools.sort((a, b) => b.price - a.price)[0] ?? null;

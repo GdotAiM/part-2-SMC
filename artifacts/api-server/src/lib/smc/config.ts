@@ -56,11 +56,11 @@ export const SMC_CONFIG = {
   } as Record<string, number>,
 
   sessionWeights: {
-    asia:     1.3,
-    london:   1.2,
-    newYork:  1.2,
-    overlap:  1.5,
-    offHours: 0.8,
+    asia:     0.8,   // ICT: Asia is range-building, lower priority
+    london:   1.3,   // ICT: London is premium session (liquidity hunting)
+    newYork:  1.3,   // ICT: NY is premium session (expansion)
+    overlap:  1.5,   // ICT: London-NY overlap is highest probability
+    offHours: 0.5,
   },
 
   smaPeriod: 20,

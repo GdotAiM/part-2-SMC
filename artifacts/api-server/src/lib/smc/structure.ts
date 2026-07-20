@@ -77,7 +77,7 @@ function detectPhase(
 
   // Terminal CHoCH — determines reversal type
   if (last.type === "CHoCH") {
-    if (last.direction === "bullish") return "manipulation";   // bullish sweep of lows then reversal up
+    if (last.direction === "bullish") return "accumulation";   // bullish CHoCH = accumulation at discount after SSL sweep
     if (last.direction === "bearish") return "distribution";   // bearish sweep of highs then roll over
   }
 
@@ -188,15 +188,15 @@ export function analyzeStructure(candles: Candle[], timeframe = "4h"): Structure
     if (isHigh) {
       if (lastHH === null || price > lastHH) {
         pivots.push({ index: i, price, type: "HH", confirmed: true, time: candles[i].time });
-        // BOS bullish: HH breaking above a known LH confirms bullish continuation
-        if (lastLH !== null && price > lastLH) {
+        // BOS bullish: HH breaking above prior HH confirms trend continuation
+        if (lastHH !== null && price > lastHH) {
           breaks.push({ index: i, price, type: "BOS", direction: "bullish", time: candles[i].time });
         }
         lastHH = price;
       } else {
         pivots.push({ index: i, price, type: "LH", confirmed: true, time: candles[i].time });
-        // CHoCH bearish: LH forms after a known HL — potential trend reversal
-        if (lastHL !== null) {
+        // CHoCH bearish: LH must break BELOW last HL — actual structural violation
+        if (lastHL !== null && price < lastHL) {
           breaks.push({ index: i, price, type: "CHoCH", direction: "bearish", time: candles[i].time });
         }
         lastLH = price;
@@ -204,15 +204,15 @@ export function analyzeStructure(candles: Candle[], timeframe = "4h"): Structure
     } else {
       if (lastLL === null || price < lastLL) {
         pivots.push({ index: i, price, type: "LL", confirmed: true, time: candles[i].time });
-        // BOS bearish: LL breaking below a known HL confirms bearish continuation
-        if (lastHL !== null && price < lastHL) {
+        // BOS bearish: LL breaking below prior LL confirms trend continuation
+        if (lastLL !== null && price < lastLL) {
           breaks.push({ index: i, price, type: "BOS", direction: "bearish", time: candles[i].time });
         }
         lastLL = price;
       } else {
         pivots.push({ index: i, price, type: "HL", confirmed: true, time: candles[i].time });
-        // CHoCH bullish: HL forms after a known LH — potential trend reversal
-        if (lastLH !== null) {
+        // CHoCH bullish: HL must break ABOVE last LH — actual structural violation
+        if (lastLH !== null && price > lastLH) {
           breaks.push({ index: i, price, type: "CHoCH", direction: "bullish", time: candles[i].time });
         }
         lastHL = price;
@@ -234,8 +234,9 @@ export function analyzeStructure(candles: Candle[], timeframe = "4h"): Structure
   let bias:  "bullish" | "bearish" | "neutral"  = "neutral";
   let confidence = 0.5;
 
+  const bullishRatio = totalWeight > 0 ? weightedBullish / totalWeight : 0.5;
+
   if (totalWeight > 0) {
-    const bullishRatio = weightedBullish / totalWeight;
     if (bullishRatio > 0.65) {
       trend = "bullish"; bias = "bullish"; confidence = Math.min(0.95, bullishRatio);
     } else if (bullishRatio < 0.35) {
@@ -245,10 +246,19 @@ export function analyzeStructure(candles: Candle[], timeframe = "4h"): Structure
     }
   }
 
-  // Most recent structure break overrides bias (last BOS/CHoCH is ground truth)
-  const lastBreaks = breaks.slice(-3);
-  if (lastBreaks.length > 0) {
-    bias = lastBreaks[lastBreaks.length - 1].direction;
+  // Bias override: last BOS (not CHoCH) provides directional confirmation
+  // Blend: 70% weighted pivot ratio, 30% last break direction
+  if (breaks.length > 0) {
+    const lastBreak = breaks[breaks.length - 1];
+    if (lastBreak.type === "BOS") {
+      const breakWeight = 0.3;
+      if (lastBreak.direction === "bullish") {
+        bias = bullishRatio * (1 - breakWeight) + breakWeight > 0.5 ? "bullish" : bias;
+      } else {
+        bias = (1 - bullishRatio) * (1 - breakWeight) + breakWeight > 0.5 ? "bearish" : bias;
+      }
+    }
+    // CHoCH is a reversal signal, not a direction setter — don't override bias with it
   }
 
   const phase    = detectPhase(breaks, bias);

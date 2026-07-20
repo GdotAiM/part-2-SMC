@@ -96,8 +96,8 @@ function mitigatedBullishOb(): Candle[] {
   for (let i = 23; i < 28; i++) {
     candles.push(c(i, 108, 108.5, 107, 108.2));
   }
-  // Mitigation: price drops back — low touches OB proximal (open=100.2)
-  candles.push(c(28, 108, 108.5, 100, 105, 1000));
+  // Mitigation: price closes below OB distal (low=95) — true ICT mitigation
+  candles.push(c(28, 108, 108.5, 90, 94, 1000));
   for (let i = 29; i < 35; i++) {
     candles.push(c(i, 105, 105.5, 104, 105.2));
   }
@@ -174,7 +174,8 @@ async function run() {
   assert(mitBull.length > 0, `mitigated OB found: ${mitBull.length}`);
   if (mitBull.length > 0) {
     assert(mitBull[0].isMitigated === true, "OB is mitigated");
-    assert(mitBull[0].valid === false, "mitigated OB without breaker is invalid");
+    assert(mitBull[0].isBreaker === true, "close beyond distal = breaker");
+    assert(mitBull[0].valid === true, "breaker OB is valid");
   }
 
   // ── 4. Breaker OB ────────────────────────────────────────────────────────

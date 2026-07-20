@@ -1,13 +1,13 @@
-# SMC Pulse Predict — Liquidity Hunter
+# SMC Pulse OS -- Liquidity Hunter
 
 > **Real-time ICT/SMC market intelligence for crypto and forex traders.**
-> A full-stack web application that algorithmically detects institutional order flow concepts — Order Blocks, Fair Value Gaps, BOS/CHoCH, liquidity pools, and SMT divergence — and surfaces them through a multi-timeframe dashboard with an embedded AI analyst.
+> A full-stack web application that algorithmically detects institutional order flow concepts -- Order Blocks, Fair Value Gaps, BOS/CHoCH, liquidity pools, and SMT divergence -- and surfaces them through a narrative-stage cockpit with an embedded AI analyst.
 
 ---
 
 ## Vision
 
-Most retail traders lose because they see charts the wrong way. Institutions don't buy at support and sell at resistance — they hunt liquidity, create imbalance, and deliver price into equilibrium. SMC Pulse Predict translates the Inner Circle Trader (ICT) methodology into a live, automated analysis engine that processes OHLCV data and produces the same read a trained SMC analyst would perform manually, in seconds, across every timeframe simultaneously.
+Most retail traders lose because they see charts the wrong way. Institutions don't buy at support and sell at resistance -- they hunt liquidity, create imbalance, and deliver price into equilibrium. SMC Pulse OS translates the Inner Circle Trader (ICT) methodology into a live, automated analysis engine that processes OHLCV data and produces the same read a trained SMC analyst would perform manually, in seconds, across every timeframe simultaneously.
 
 ---
 
@@ -15,46 +15,53 @@ Most retail traders lose because they see charts the wrong way. Institutions don
 
 | Feature | Description |
 |---|---|
-| **Multi-TF Dashboard** | Scalp / Intraday / Swing / All modes with cascade bias computation across 7 timeframes |
-| **ICT Structure Engine** | ATR-normalised pivot detection → BOS / CHoCH classification → phase inference (Accumulation → Manipulation → Expansion) |
+| **Session Cockpit** | 10 narrative-stage workflow (Watching -> Scanning -> LiquiditySwept -> Displacement -> MSS Forming -> FVG Formed -> EntryReady -> InTrade -> Review -> NoTrade) -- the trading day organized by market structure events |
+| **3-Column Shell Layout** | LiveTimeline (left) | Stage View (center) | DecisionFunnel + QuickTools (right) with resizable panels |
+| **QuickTools Panel** | 9 collapsible trading widgets: Killzone Timer, Silver Bullet Timer, Breaker Blocks, Displacement Gauge, Range Expansion, OTE Zone Calculator, Risk Calculator, Daily Trade Counter, LuxAlgo Comparison |
+| **Timeframe Presets** | Scalp (1m/5m/15m), Intraday (15m/1h/4h), Swing (4h/1d/1w) with per-TF chips showing bias dots |
+| **ICT Structure Engine** | ATR-normalised pivot detection -> BOS / CHoCH classification -> phase inference (Accumulation -> Manipulation -> Expansion) |
 | **Liquidity Hunter** | BSL / SSL / Equal Highs / Equal Lows pool detection with session-weighted scoring and probability-of-sweep |
 | **Order Block Detection** | Bullish & bearish OBs with breaker block classification, FVG confluence, and institutional confidence scoring |
 | **Fair Value Gap Engine** | FVG detection with fill-fraction tracking and inversion FVG identification |
 | **PD Array** | Premium / Discount / Equilibrium zone computation from dealing range |
-| **Daily Bias** | HTF 1D structure-primary bias (0.55–0.88 strength) used to gate lower-TF OB confidence |
+| **Daily Bias** | HTF 1D structure-primary bias (0.55--0.88 strength) used to gate lower-TF OB confidence |
 | **SMT Divergence** | Correlated-pair divergence detection (BTC/ETH, EUR/GBP) with magnitude + timing scoring |
 | **Draw on Liquidity** | Confluence-boosted target scoring that ranks BSL/SSL/OB/FVG as next price objectives |
 | **Visual Chart Layer** | TradingView Lightweight Charts (v5) with session backgrounds, OB/FVG rectangles, BOS/CHoCH markers, KZO lines |
-| **TradingView Desktop CDP Integration** | Dual-path CDP connection to TV Desktop App: **(1)** Legacy Puppeteer path for drawing SMC levels (BSL/SSL/FVGs/killzones) via keyboard shortcuts, used as data fallback. **(2)** New chrome-remote-interface path with 70+ MCP tools for full chart control — switch symbol/timeframe, draw shapes, read OHLCV bars, read indicator levels (LuxAlgo), add indicators, create alerts, read Depth of Market, control replay mode. Used as primary data source when Binance/Yahoo are DNS-blocked |
+| **TradingView Desktop CDP Integration** | Dual-path CDP connection to TV Desktop App: **(1)** Legacy Puppeteer path for drawing SMC levels (BSL/SSL/FVGs/killzones) via keyboard shortcuts, used as data fallback. **(2)** New chrome-remote-interface path with 70+ MCP tools for full chart control -- switch symbol/timeframe, draw shapes, read OHLCV bars, read indicator levels (LuxAlgo), add indicators, create alerts, read Depth of Market, control replay mode. Used as primary data source when Binance/Yahoo are DNS-blocked |
+| **Mark BOS/CHoCH Drawing** | `POST /api/agent-loop/tv-draw` with `"bos"` action -- draws BOS/CHoCH lines from structure breaks directly on the TV Desktop chart |
+| **Set Alert Form** | Create price alerts with crossing/above/below conditions from the cockpit -> `POST /api/agent-loop/tv-alert-create` |
 | **TV Desktop Agent Awareness** | Both AI agents (`POST /api/agents/ask` and `POST /api/agents/ask-mcp`) are fully aware of all 70+ TV Desktop capabilities. They can read your TV indicators (LuxAlgo ICT tools), cross-reference against the internal SMC engine, draw levels, open/close panels, and click Buy/Sell buttons for paper trading |
 | **LuxAlgo / Pine Indicator Comparison** | Reads horizontal line levels from ANY Pine Script indicator on your TV chart (LuxAlgo ICT Concepts, Smart Money Concepts, etc.), auto-classifies into OB/FVG/BOS/CHoCH/liquidity sweep types, and cross-references against the internal SMC engine via the Comparison Engine. Produces agreement rates, price discrepancies, and Truth Engine arbitrated verdicts per detection type |
 | **Chart Bar Reader (TV Fallback)** | `GET /api/analysis/from-tv` reads OHLCV bars directly from TV Desktop via CDP and runs the full SMC analysis (300+ candles). Seeds the candle store so all SMC tools work seamlessly. Essential on machines where Binance/Yahoo APIs are DNS-blocked |
 | **TV UI Trading** | The MCP agent can click Buy/Sell buttons on your TV Desktop chart (via `tv_ui_click` with data-name selectors) if you're signed into your paper trading account. Also supports Alpaca paper trading via env vars |
-| **AI Agent System** | Fireworks AI (DeepSeek V4 Pro) — streaming Q&A (`/api/agents/ask`) with full TV/comparison capability awareness + MCP tool-calling agent (`/api/agents/ask-mcp`) with 27 autonomous tools (11 SMC + 10 TV Desktop + 6 Comparison Engine) |
+| **AI Agent Chat** | Accessible from the cockpit TopBar -- streaming Q&A with full TV/comparison capability awareness, plus MCP tool-calling mode (27 autonomous tools: 11 SMC + 10 TV Desktop + 6 Comparison Engine). Supports both tool-calling and classic chat modes |
 | **Langfuse Observability** | LLM call tracing, cost tracking, and run scoring via Langfuse (configurable via env vars, graceful fallback) |
 | **Prompt Optimization** | LLM-as-judge evaluation and improvement of agent prompts (DSPy-equivalent) for ongoing performance gains |
 | **RAG / News / Vector Memory** | News fetching (RSS + CoinMarketCap), text chunking, PDF parsing, and Qdrant vector database for long-term setup memory with "find similar past setups" |
-| **Structured Outputs** | Zod-powered structured output extraction with retry (Instructor pattern) — eliminates JSON parsing errors from pipeline |
-| **Backtest Runner** | Sliding-window SMC backtest engine with configurable lookback, timeframe, and asset selection — results populate the Performance Matrix |
-| **MCP Tier 3** | FastMCP v4.3.2 server on port 3002 — 11 SMC tools, 2 resources, 1 prompt for external AI agent access |
+| **Structured Outputs** | Zod-powered structured output extraction with retry (Instructor pattern) -- eliminates JSON parsing errors from pipeline |
+| **Capability Coverage Tracking** | 96% UI coverage (52/54 capabilities) measured via `uiCoverage` tracking in `capabilities.ts` |
+| **Backtest Runner** | Sliding-window SMC backtest engine with configurable lookback, timeframe, and asset selection -- results populate the Performance Matrix |
+| **Strategy Evaluation System** | 59 ICT/SMC model templates across 7 ontology layers, predicate-based rule engine, multi-TF detection via `POST /api/strategies/detect` |
+| **MCP Tier 3** | FastMCP v4.3.2 server on port 3002 -- 73 TV Desktop tools + 12 SMC tools, 4 resources, 2 prompts for external AI agent access |
 | **Broker Execution** | Broker-agnostic trade execution with REVIEW/LIVE mode toggle, Alpaca Paper API adapter, file-based mock broker |
-| **Broker Dashboard** | `/broker` page — account overview, open orders table, mode switch with typed-LIVE confirmation, execution log |
+| **Broker Dashboard** | `/broker` page -- account overview, open orders table, mode switch with typed-LIVE confirmation, execution log |
 | **Market Narrative** | Auto-generated institutional narrative string per report |
 | **Session State** | Real-time ICT session inference: Asian Range / London Expansion / NY Open / PM Distribution |
 | **Real-Time Price Feed** | Binance US WebSocket (crypto) + Finnhub WS / Yahoo polling (forex) with SSE push to browser |
 | **Live Price Badge** | Green pulsing indicator when real-time stream is connected, price updates in real-time |
 | **60s Cache** | In-memory TTL cache prevents repeated data-provider hits on dashboard refresh |
-| **Auto Candle-Close Refresh** | Server rebuilds SMC reports on candle close and pushes to browser — no polling needed |
+| **Auto Candle-Close Refresh** | Server rebuilds SMC reports on candle close and pushes to browser -- no polling needed |
 
 ---
 
 ## Screenshots
 
-> _Open the app and hit the **CHART** button to see the visual layer._
+> _Screenshots pending. Open the app and hit the **CHART** button to see the visual layer._
 
-| Intelligence Dashboard | Chart View |
+| Session Cockpit | Chart View |
 |---|---|
-| Multi-TF cascade with confluence card | Candlesticks + OB/FVG/session overlays |
+| 3-column stage-driven trading cockpit with LiveTimeline, Stage View, and QuickTools | Candlesticks + OB/FVG/session overlays |
 
 ---
 
@@ -62,47 +69,75 @@ Most retail traders lose because they see charts the wrong way. Institutions don
 
 Run locally (see Installation below) then visit `http://localhost:5173`.
 
-- Select **CRYPTO** → **BTC/USDT** → **INTRADAY**
-- View the cascade: H4 sets direction, H1 confirms, M15 triggers
-- Tap any card → **Intelligence Sheet** for deep analysis
-- Tap **CHART** for the visual chart with SMC overlays
-- Tap **SMT** on any card → AI agent pipeline fires
-- Navigate to `/agent-loop` for the Agent Loop dashboard — run one-shot analysis, start background monitors, browse historical runs, and inspect learned patterns
+### Session Cockpit workflow
+
+- **Select a symbol** from the TopBar symbol selector
+- Choose a **Timeframe Preset**: Scalp (1m/5m/15m), Intraday (15m/1h/4h), or Swing (4h/1d/1w)
+- The **Session Cockpit** auto-detects the current narrative stage from live market structure
+- Watch the **LiveTimeline** (left) for chronological events: structure breaks, sweeps, FVG fills
+- Use **QuickTools** (right) for killzone timers, OTE calculator, risk calculator, and LuxAlgo comparison
+- Tap the **Agent Chat** button in the TopBar to ask the AI about current market conditions
+- Press **Ctrl+K** for the Capability Explorer to search all 54 capabilities
+- Tap the **TV** status indicator in the TopBar to draw levels, FVGs, BOS/CHoCH, or create alerts on your TV Desktop chart
+
+### Classic dashboard pages
+
+- Navigate to `/agent-loop` for the Agent Loop dashboard -- run one-shot analysis, start background monitors, browse historical runs, and inspect learned patterns
 - Visit `/analytics` for trade ledger, performance matrix, and signal generation
+- Visit `/broker` for account overview, open orders, and REVIEW/LIVE mode toggle
 
 ---
 
 ## Architecture Overview
 
 ```
-┌──────────────────────────────────────────────────────────┐
-│                    React Frontend                         │
-│  Dashboard → ConfluenceCard → IntelligenceSheet          │
-│             ChartView (Lightweight Charts v5)             │
-│             AgentChat + AgentPipeline (SSE)              │
-│             useRealtimeStream (SSE live prices + candles) │
-└──────────────────────┬───────────────────────────────────┘
+                                Session Cockpit (React SPA)
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  TopBar: symbol selector | timeframe presets | session clock | TV status    │
+├──────────────┬───────────────────────────────┬──────────────────────────────┤
+│              │                               │                              │
+│ LiveTimeline │     Stage View (center)       │  DecisionFunnel              │
+│  (260px)     │                               │  QuickTools (9 widgets)      │
+│              │  Watching / Scanning /        │                              │
+│  Chronological│  LiquiditySwept / Displacement│  Killzone Timer              │
+│  event log   │  MssForming / FvgFormed /     │  Silver Bullet Timer         │
+│              │  EntryReady / InTrade /       │  Breaker Blocks              │
+│              │  Review / NoTrade             │  Displacement Gauge          │
+│              │                               │  OTE Zone Calculator         │
+│              │  Overlays:                    │  Risk Calculator             │
+│              │   - EvidencePanel             │  LuxAlgo Comparison          │
+│              │   - AgentChat (420px)         │                              │
+│              │   - CapabilityExplorer (⌘K)   │                              │
+│              │   - ChartView (fullscreen)    │                              │
+└──────────────┴───────────────────────────────┴──────────────────────────────┘
                        │ HTTP REST + SSE (dual channel)
-┌──────────────────────▼───────────────────────────────────┐
-│                Express 5 API Server                       │
-│  /api/analysis/crypto|forex    /api/agents/ask|pipeline  │
-│  /api/stream/:symbol (SSE)     /api/stream/status        │
-│  /api/broker/mode|status       /api/account              │
-│  /api/ledger                   /api/signals/*            │
-│  60s in-memory TTL cache                                 │
-│  ┌──────────────────────────────────────────────────┐    │
-│  │ Real-Time Pipeline                               │    │
-│  │  binance-ws.ts → candle-store → sse-manager      │    │
-│  │  forex-ws.ts   →     ↓          → analysis-bridge│    │
-│  │                → candleClosed  → buildReport     │    │
-│  │                                 → cache + SSE push│    │
-│  ├──────────────────────────────────────────────────┤    │
-│  │ Execution Layer                                   │    │
-│  │  ExecutionManager → MockBrokerAdapter (file)      │    │
-│  │                   → AlpacaAdapter (paper API)     │    │
-│  │  SignalGenerator → TradeLedgerService (PG)        │    │
-│  └──────────────────────────────────────────────────┘    │
-└──────┬──────────────────────────────┬────────────────────┘
+┌──────────────────────▼───────────────────────────────────────────────────────┐
+│                    Express 5 API Server                                       │
+│  /api/analysis/crypto|forex      /api/agents/ask|ask-mcp                    │
+│  /api/stream/:symbol (SSE)       /api/stream/status                         │
+│  /api/strategies/detect          /api/smc-eval/evaluate|score               │
+│  /api/agent-loop/tv-draw         /api/agent-loop/tv-alert-create            │
+│  /api/analysis/from-tv           /api/learning/comparisons/analyze          │
+│  /api/broker/mode|status         /api/account                               │
+│  /api/ledger                     /api/signals/*                             │
+│  60s in-memory TTL cache                                                    │
+│  ┌──────────────────────────────────────────────────────────────────┐       │
+│  │ Real-Time Pipeline                                               │       │
+│  │  binance-ws.ts -> candle-store -> sse-manager                    │       │
+│  │  forex-ws.ts   ->     |          -> analysis-bridge              │       │
+│  │                -> candleClosed    -> buildReport                 │       │
+│  │                                   -> cache + SSE push            │       │
+│  ├──────────────────────────────────────────────────────────────────┤       │
+│  │ Execution Layer                                                  │       │
+│  │  ExecutionManager -> MockBrokerAdapter (file)                    │       │
+│  │                   -> AlpacaAdapter (paper API)                   │       │
+│  │  SignalGenerator -> TradeLedgerService (PG)                      │       │
+│  ├──────────────────────────────────────────────────────────────────┤       │
+│  │ Strategy Evaluation Layer                                        │       │
+│  │  StrategyRegistry (59 templates) -> PredicateEngine (21 preds)   │       │
+│  │  -> StrategyEvaluator -> POST /api/strategies/detect             │       │
+│  └──────────────────────────────────────────────────────────────────┘       │
+└──────┬──────────────────────────────┬────────────────────────────────────────┘
        │                              │
 ┌──────▼──────────┐  ┌────────────────▼────────────┐
 │  Binance US WS  │  │  Finnhub WS / Yahoo poll    │
@@ -123,12 +158,12 @@ Run locally (see Installation below) then visit `http://localhost:5173`.
 | Logger | Pino (JSON structured logging) |
 | Data (Crypto) | Binance REST + WebSocket (no key required) |
 | Data (Forex) | Yahoo Finance REST + Finnhub WebSocket (optional) |
-| AI | Multi-provider LLM abstraction — Fireworks AI (DeepSeek V4 Pro, default), OpenAI (GPT-4o), self-hosted vLLM (AMD GPU), or custom OpenAI-compatible endpoints |
-| MCP | FastMCP v4.3.2 on port 3002 — 73 TV Desktop tools + 12 SMC tools, 4 resources, 2 prompts |
-| Execution | BrokerAdapter interface — MockBroker (file-based) + AlpacaAdapter (paper API) |
-| Database | PostgreSQL via Drizzle ORM (optional — server runs without it) |
+| AI | Multi-provider LLM abstraction -- Fireworks AI (DeepSeek V4 Pro, default), OpenAI (GPT-4o), Groq (Llama 3), Ollama (local), self-hosted vLLM (AMD GPU), or custom OpenAI-compatible endpoints |
+| MCP | FastMCP v4.3.2 on port 3002 -- 73 TV Desktop tools + 12 SMC tools, 4 resources, 2 prompts |
+| Execution | BrokerAdapter interface -- MockBroker (file-based) + AlpacaAdapter (paper API) |
+| Database | PostgreSQL via Drizzle ORM (optional -- server runs without it) |
 | Cache | In-process Map, 60s TTL |
-| CDP | `chrome-remote-interface` + `puppeteer` — dual-path TradingView Desktop integration |
+| CDP | `chrome-remote-interface` + `puppeteer` -- dual-path TradingView Desktop integration |
 
 ### Frontend
 | Layer | Technology |
@@ -148,9 +183,9 @@ Run locally (see Installation below) then visit `http://localhost:5173`.
 | `artifacts/liquidity-hunter` | Frontend React SPA |
 | `lib/api-client-react` | TanStack Query hooks (manually maintained) |
 | `lib/api-spec` | OpenAPI 3.1 spec |
-| `lib/api-zod` | Zod schemas |
-| `lib/db` | Drizzle ORM — trades + performance matrix tables |
-| `deploy/local` | Local CPU deployment (Docker Compose — Intel/AMD laptop, no GPU) |
+| `lib/api-zod` | Zod schemas + Strategy Evaluation System |
+| `lib/db` | Drizzle ORM -- trades + performance matrix + model definitions tables |
+| `deploy/local` | Local CPU deployment (Docker Compose -- Intel/AMD laptop, no GPU) |
 | `deploy/amd-developer-cloud` | AMD MI300X GPU deployment (Docker Compose + vLLM + Gemma 4) |
 
 ---
@@ -158,25 +193,31 @@ Run locally (see Installation below) then visit `http://localhost:5173`.
 ## AI Pipeline Overview
 
 ```
-User taps "SMT" button
-        ↓
+User taps "SMT" button or asks agent in AgentChat
+        |
 POST /api/agents/pipeline { report: SmcReport }
-        ↓
+        |
 System prompt built from live SmcReport data
 (price, structure, liquidity map, OBs, FVGs, SMT, draw targets)
-        ↓
+        |
 Sequential agent loop (SSE streaming):
-  1. Structure Agent   → market structure narrative
-  2. Liquidity Agent   → BSL/SSL hunt probability
-  3. FVG Agent         → rebalance vs continuation gaps
-  4. Confluence Agent  → final synthesis + invalidation level
-        ↓
+  1. Structure Agent   -> market structure narrative
+  2. Liquidity Agent   -> BSL/SSL hunt probability
+  3. FVG Agent         -> rebalance vs continuation gaps
+  4. Confluence Agent  -> final synthesis + invalidation level
+        |
 Frontend streams each agent token-by-token into AgentPipeline panel
 ```
 
 Also supports:
-- `POST /api/agents/ask` — single-turn Q&A with full report context and conversation history (last 8 turns). Agent is fully aware of TV Desktop CDP, LuxAlgo comparison, reliability scoring, and trading capabilities
-- `POST /api/agents/ask-mcp` — tool-calling agent with 27 autonomous tools (11 SMC analysis + 10 TV Desktop chart/UI + 6 Comparison Engine). Autonomously chains TV connect → read bars → SMC analysis → LuxAlgo compare → reliability check → draw on chart
+- `POST /api/agents/ask` -- single-turn Q&A with full report context and conversation history (last 8 turns). Agent is fully aware of TV Desktop CDP, LuxAlgo comparison, reliability scoring, and trading capabilities
+- `POST /api/agents/ask-mcp` -- tool-calling agent with 27 autonomous tools (11 SMC analysis + 10 TV Desktop chart/UI + 6 Comparison Engine). Autonomously chains TV connect -> read bars -> SMC analysis -> LuxAlgo compare -> reliability check -> draw on chart
+
+---
+
+## ICT Accuracy
+
+The SMC engine was audited for ICT/SMC conceptual correctness on July 20, 2026. All core algorithms -- pivot detection, BOS/CHoCH reversal logic, market phase inference, liquidity pool sweep detection, breaker block polarity flipping, and FVG fill mechanics -- were verified against primary ICT source material and cross-referenced against the 13 ICT Insights reference documents in this repository. A wiring audit also fixed double-multiplication bugs, broken prop connections, and dead import paths across the engine and cockpit layers.
 
 ---
 
@@ -185,9 +226,9 @@ Also supports:
 - Market Structure (Pivots: HH / HL / LH / LL)
 - Break of Structure (BOS)
 - Change of Character (CHoCH / MSS)
-- Market Phase: Accumulation → Manipulation → Expansion → Distribution → Continuation
-- Buy-Side Liquidity (BSL) — Equal Highs, prior session highs
-- Sell-Side Liquidity (SSL) — Equal Lows, prior session lows
+- Market Phase: Accumulation -> Manipulation -> Expansion -> Distribution -> Continuation
+- Buy-Side Liquidity (BSL) -- Equal Highs, prior session highs
+- Sell-Side Liquidity (SSL) -- Equal Lows, prior session lows
 - Probability of Sweep scoring per liquidity pool
 - Order Blocks (Bullish / Bearish)
 - Breaker Blocks (mitigated OBs that flip polarity)
@@ -197,9 +238,11 @@ Also supports:
 - Dealing Range
 - Daily Bias (HTF anchor)
 - SMT Divergence (correlated pair)
-- Draw on Liquidity (DOL) — scored target engine
+- Draw on Liquidity (DOL) -- scored target engine
 - Session analysis: Asian Range / London / NY AM / NY PM / PM Distribution
-- KZO (Key Zone — OB proximal line)
+- KZO (Key Zone -- OB proximal line)
+- Displacement detection (candle expansion vs ATR)
+- MSS (Market Structure Shift) forming detection
 
 ---
 
@@ -208,10 +251,10 @@ Also supports:
 ```
 workspace/
 ├── artifacts/
-│   ├── api-server/              # Express backend
+│   ├── api-server/                  # Express backend
 │   │   └── src/
 │   │       ├── lib/
-│   │       │   ├── smc/         # ICT engine (core algorithms)
+│   │       │   ├── smc/             # ICT engine (core algorithms)
 │   │       │   │   ├── config.ts
 │   │       │   │   ├── types.ts
 │   │       │   │   ├── structure.ts
@@ -229,46 +272,94 @@ workspace/
 │   │       │   │   ├── smt.ts
 │   │       │   │   ├── smt.test.ts
 │   │       │   │   └── report.ts
-│   │       │   ├── fetchers/    # Market data
+│   │       │   ├── fetchers/        # Market data
 │   │       │   │   ├── binance.ts
 │   │       │   │   └── yahoo.ts
-│   │       │   └── realtime/    # Real-time infrastructure
-│   │       │       ├── binance-ws.ts
-│   │       │       ├── forex-ws.ts
-│   │       │       ├── candle-store.ts
-│   │       │       ├── sse-manager.ts
-│   │       │       └── analysis-bridge.ts
-│   │       │   ├── execution/     # Broker execution layer
+│   │       │   ├── realtime/        # Real-time infrastructure
+│   │       │   │   ├── binance-ws.ts
+│   │       │   │   ├── forex-ws.ts
+│   │       │   │   ├── candle-store.ts
+│   │       │   │   ├── sse-manager.ts
+│   │       │   │   └── analysis-bridge.ts
+│   │       │   ├── execution/       # Broker execution layer
 │   │       │   │   ├── BrokerAbstraction.ts
 │   │       │   │   └── AlpacaAdapter.ts
-│   │       │   └── mcp/           # MCP server (FastMCP v4.3)
-│   │       └── routes/          # API endpoints
+│   │       │   ├── comparison/      # LuxAlgo vs SMC Engine comparison
+│   │       │   ├── narrative/       # Market commentary generator
+│   │       │   ├── agents/          # AI agent + reasoning agent
+│   │       │   ├── llm/             # Multi-provider LLM abstraction
+│   │       │   ├── integrations/    # TV Desktop CDP (chrome-remote-interface + Puppeteer)
+│   │       │   └── mcp/             # MCP server (FastMCP v4.3)
+│   │       └── routes/              # API endpoints
 │   │           ├── analysis.ts
 │   │           ├── agents.ts
 │   │           ├── agents-mcp.ts
+│   │           ├── agent-loop.ts
 │   │           ├── stream.ts
-│   │           ├── ledger.ts     # Trading + broker
+│   │           ├── ledger.ts        # Trading + broker
+│   │           ├── smc-eval.ts      # SMC-EVAL benchmark
+│   │           ├── strategies.ts    # Strategy detection
 │   │           ├── symbols.ts
 │   │           └── health.ts
-│   └── liquidity-hunter/        # React frontend
+│   └── liquidity-hunter/            # React frontend
 │       └── src/
-│           ├── pages/
-│           │   ├── dashboard.tsx
+│           ├── shell/               # Session Cockpit shell
+│           │   ├── SessionCockpitShell.tsx
+│           │   ├── TopBar.tsx
+│           │   └── LiveTimeline.tsx
+│           ├── stages/              # Narrative stage views (10 stages)
+│           │   ├── ScanningView.tsx
+│           │   ├── LiquiditySweptView.tsx
+│           │   ├── DisplacementView.tsx
+│           │   ├── MssFormingView.tsx
+│           │   ├── FvgFormedView.tsx
+│           │   ├── EntryView.tsx
+│           │   ├── InTradeView.tsx
+│           │   ├── ReviewView.tsx
+│           │   └── NoTradeView.tsx
+│           ├── panels/              # Cockpit panels
+│           │   ├── DecisionFunnel.tsx
+│           │   ├── QuickTools.tsx
+│           │   ├── EvidencePanel.tsx
+│           │   └── SessionFlowIndicator.tsx
+│           ├── state/               # State management
+│           │   ├── narrative.ts
+│           │   ├── capabilities.ts
+│           │   ├── market-store.ts
+│           │   └── profile-store.ts
+│           ├── pages/               # Classic pages (legacy)
+│           │   ├── OsDashboard.tsx
 │           │   ├── Analytics.tsx
 │           │   └── Broker.tsx
-│           └── components/
+│           └── components/          # Shared components
 │               ├── IntelligenceSheet.tsx
 │               ├── ConfluenceCard.tsx
 │               ├── ConfluenceSheet.tsx
 │               ├── ChartView.tsx
 │               ├── AgentChat.tsx
 │               ├── AgentPipeline.tsx
-│               ├── TradeLedgerDashboard.tsx
+│               ├── TvStatus.tsx
+│               ├── CapabilityExplorer.tsx
 │               └── SignalDetailSheet.tsx
+├── ICT Insights/                    # ICT theory reference documents
+│   ├── 01-pivot-detection.md
+│   ├── 02-bos-choch.md
+│   ├── 03-market-phase.md
+│   ├── 04-liquidity-pools.md
+│   ├── 05-order-blocks.md
+│   ├── 06-fair-value-gaps.md
+│   ├── 07-inversion-fvg.md
+│   ├── 08-pd-array.md
+│   ├── 09-daily-bias.md
+│   ├── 10-smt-divergence.md
+│   ├── 11-draw-on-liquidity.md
+│   ├── 12-session-analysis.md
+│   └── 13-configuration-reference.md
 ├── lib/
-│   ├── api-spec/                # OpenAPI 3.1 definition
-│   ├── api-client-react/        # TanStack Query hooks
-│   └── api-zod/                 # Zod schemas
+│   ├── api-spec/                    # OpenAPI 3.1 definition
+│   ├── api-client-react/            # TanStack Query hooks
+│   ├── api-zod/                     # Zod schemas + Strategy Evaluation System
+│   └── db/                          # Drizzle ORM + seeds
 └── pnpm-workspace.yaml
 ```
 
@@ -276,7 +367,7 @@ workspace/
 
 ## Installation
 
-### Option 1: Docker (recommended — zero-config)
+### Option 1: Docker (recommended -- zero-config)
 
 Choose the deployment that matches your hardware:
 
@@ -287,7 +378,7 @@ No GPU required. LLM inference runs on Fireworks AI's cloud.
 ```bash
 cd deploy/local
 cp .env.example .env
-# Edit .env → add your FIREWORKS_API_KEY from https://fireworks.ai/api-keys
+# Edit .env -> add your FIREWORKS_API_KEY from https://fireworks.ai/api-keys
 docker compose up -d
 ```
 
@@ -301,7 +392,7 @@ Requires an AMD Developer Cloud VM with MI300X GPUs.
 cd deploy/amd-developer-cloud
 chmod +x setup.sh && ./setup.sh
 cp .env.amd .env
-# Edit .env → set HF_TOKEN for gated models
+# Edit .env -> set HF_TOKEN for gated models
 docker compose up -d
 ```
 
@@ -309,7 +400,7 @@ See `deploy/local/README.md` and `deploy/amd-developer-cloud/README.md` for full
 
 ### Option 2: Run from source (dev mode)
 
-**Prerequisites:** Node.js ≥ 20, pnpm ≥ 9
+**Prerequisites:** Node.js >= 20, pnpm >= 9
 
 ```bash
 git clone <repo-url>
@@ -333,9 +424,9 @@ Then open `http://localhost:5173`.
 
 | Variable | Required | Description |
 |---|---|---|
-| `LLM_PROVIDER` | No | LLM backend: `fireworks` (default), `openai`, `custom`, or `amd`. See `deploy/local/README.md` for provider options. |
+| `LLM_PROVIDER` | No | LLM backend: `fireworks` (default), `openai`, `custom`, `amd`, `ollama`, or `groq`. See `deploy/local/README.md` for provider options. |
 | `FIREWORKS_API_KEY` | Yes (for Fireworks) | Fireworks AI key for the analyst agent. Get one free at https://fireworks.ai |
-| `LLM_API_KEY` | Depends on provider | API key for your chosen LLM provider. Set via `FIREWORKS_API_KEY`, `OPENAI_API_KEY`, or `LLM_API_KEY` depending on provider. |
+| `LLM_API_KEY` | Depends on provider | API key for your chosen LLM provider. Set via `FIREWORKS_API_KEY`, `OPENAI_API_KEY`, `GROQ_API_KEY`, or `LLM_API_KEY` depending on provider. |
 | `FINNHUB_API_KEY` | No | Finnhub API key for forex real-time WebSocket. Without it, Yahoo polling is used as fallback (free, no key). Get one free at https://finnhub.io |
 | `ALPACA_API_KEY_ID` | No | Alpaca Paper Trading API key ID. Set both this and the secret to enable live paper-trading execution through AlpacaAdapter. Without them, the server uses MockBrokerAdapter (file-based, no real orders) |
 | `ALPACA_API_SECRET_KEY` | No | Alpaca Paper Trading API secret key |
@@ -348,16 +439,16 @@ Set via your platform's secrets manager or `.env` at the repo root. Each deploym
 ## Example API Request
 
 ```bash
-# Crypto analysis — BTC/USDT 4h with ETH/USDT correlation
+# Crypto analysis -- BTC/USDT 4h with ETH/USDT correlation
 curl "http://localhost:3001/api/analysis/crypto?symbol=BTCUSDT&timeframe=4h&correlatedSymbol=ETHUSDT"
 
-# Forex analysis — EUR/USD 1h
+# Forex analysis -- EUR/USD 1h
 curl "http://localhost:3001/api/analysis/forex?symbol=EURUSD=X&timeframe=1h"
 
-# Real-time stream — BTC/USDT 1m candles (SSE)
+# Real-time stream -- BTC/USDT 1m candles (SSE)
 curl -N "http://localhost:3001/api/stream/BTCUSDT?timeframes=1m,5m,15m"
 
-# Stream status — active symbols and candle counts
+# Stream status -- active symbols and candle counts
 curl "http://localhost:3001/api/stream/status"
 ```
 
@@ -405,12 +496,12 @@ The app connects to your local TradingView Desktop app via Chrome DevTools Proto
 
 ### Path 1: Legacy Puppeteer (chart drawing + data fallback)
 - Draws BSL/SSL/Current/FVG/killzones directly on your TV Desktop chart from the frontend
-- **Contextual switching** — click the **[TV]** button on any timeframe card → switches TV Desktop to that symbol/timeframe and draws liquidity levels
+- **Contextual switching** -- click the **[TV]** button on any timeframe card -> switches TV Desktop to that symbol/timeframe and draws liquidity levels
 - Reads 300+ bars as data fallback when Binance/Yahoo APIs are DNS-blocked
 
-### Path 2: New chrome-remote-interface (70+ MCP tools — FULL control)
+### Path 2: New chrome-remote-interface (70+ MCP tools -- FULL control)
 - **Chart control**: switch symbol, timeframe, chart type, scroll to date, search symbols
-- **Drawing**: horizontal lines, trend lines, Fibonacci, rectangles, rays, text, arrows
+- **Drawing**: horizontal lines, trend lines, Fibonacci, rectangles, rays, text, arrows, BOS/CHoCH markers
 - **Data reading**: OHLCV bars (for SMC analysis via `/api/analysis/from-tv`), real-time quotes, Depth of Market / order book, indicator values, strategy backtest results
 - **Indicator management**: add, remove, inspect any indicator (LuxAlgo ICT tools, etc.)
 - **Pine Script**: get/set source, compile, publish, library management
@@ -423,7 +514,7 @@ The app connects to your local TradingView Desktop app via Chrome DevTools Proto
 ### AI Agent Awareness
 Both AI agents (`/api/agents/ask` and `/api/agents/ask-mcp`) are fully aware of all TV Desktop capabilities. When asked "can you read LuxAlgo levels?" or "can you place a trade?", they respond with the correct tools and endpoints rather than "I can't do that."
 
-The MCP tool-calling agent (`/api/agents/ask-mcp`) autonomously chains: `tv_connect` → `tv_data_get_ohlcv` → `analyze_from_tv_bars` → `read_tv_indicator_levels` → `compare_engine_vs_tv` → `tv_draw_shape` → `tv_ui_click`
+The MCP tool-calling agent (`/api/agents/ask-mcp`) autonomously chains: `tv_connect` -> `tv_data_get_ohlcv` -> `analyze_from_tv_bars` -> `read_tv_indicator_levels` -> `compare_engine_vs_tv` -> `tv_draw_shape` -> `tv_ui_click`
 
 ### LuxAlgo / TV Indicator Comparison Pipeline
 - Reads horizontal line levels from ANY Pine Script indicator (LuxAlgo ICT Concepts, Smart Money Concepts, custom scripts)
@@ -452,51 +543,56 @@ scripts\launch-tv.bat
 
 | Button | Location | Action |
 |--------|----------|--------|
-| **TV** (header, green pulsing) | Top bar → opens TV Control Panel | Shows connection status, chart info. Has buttons for full drawing (levels, FVGs, killzones, clear) |
+| **TV** (header, green pulsing) | TopBar -> opens TV Status modal | Shows connection status, chart info. Has buttons for draw actions (levels, FVGs, killzones, BOS/CHoCH, clear, all) and Set Alert form |
 | **[TV]** (on each timeframe card) | Inside the timeframe agent card | Switches TV Desktop to that symbol/timeframe, draws BSL/SSL/Current rays |
 
 ### Data Fallback Chain
 
 ```
 Agent Loop or SMC tool needs candles
-  └─ 1. Candle Store (in-memory cache)
-  └─ 2. Binance Direct API / Yahoo Finance
-  └─ 3. TradingView Desktop CDP (chrome-remote-interface)
-       └─ GET /api/analysis/from-tv?symbol=X&timeframe=Y
-           └─ Reads 500 bars from TV chart → runs buildReport()
-           └─ Seeds candle store → subsequent SMC tools hit cache
+  +-- 1. Candle Store (in-memory cache)
+  +-- 2. Binance Direct API / Yahoo Finance
+  +-- 3. TradingView Desktop CDP (chrome-remote-interface)
+       +-- GET /api/analysis/from-tv?symbol=X&timeframe=Y
+           +-- Reads 500 bars from TV chart -> runs buildReport()
+           +-- Seeds candle store -> subsequent SMC tools hit cache
 ```
 
 ### Architecture
 
 ```
 TradingView Desktop (Electron, --remote-debugging-port=9222)
-    │
-    ├── Path 1: Puppeteer CDP (legacy)
-    │   ├── chart.ts (getBars, getSymbol, getTimeframe)
-    │   ├── connection.ts (keyboardPress, mouseClick)
-    │   └── Used by: tool-registry data fallback, agent-loop route
-    │
-    ├── Path 2: chrome-remote-interface (new, active)
-    │   ├── /api/analysis/from-tv — read bars → SMC report
-    │   ├── /api/learning/read-tv-indicator-levels — LuxAlgo levels
-    │   ├── /api/agents/ask-mcp — 27 tools (SMC + TV + Comparison)
-    │   ├── /api/learning/comparisons/analyze — TV vs Engine
-    │   └── 70+ FastMCP tools for external AI agents (Claude Desktop)
-    │
-    └── AI Agent (POST /api/agents/ask-mcp)
-        └── Autonomously chains: connect → read bars → analyze → compare → draw → trade
+    |
+    +-- Path 1: Puppeteer CDP (legacy)
+    |   +-- chart.ts (getBars, getSymbol, getTimeframe)
+    |   +-- connection.ts (keyboardPress, mouseClick)
+    |   +-- Used by: tool-registry data fallback, agent-loop route
+    |
+    +-- Path 2: chrome-remote-interface (new, active)
+    |   +-- /api/analysis/from-tv -- read bars -> SMC report
+    |   +-- /api/learning/read-tv-indicator-levels -- LuxAlgo levels
+    |   +-- /api/agents/ask-mcp -- 27 tools (SMC + TV + Comparison)
+    |   +-- /api/learning/comparisons/analyze -- TV vs Engine
+    |   +-- /api/agent-loop/tv-draw -- draw shapes with "bos" action
+    |   +-- /api/agent-loop/tv-alert-create -- create price alerts
+    |   +-- 70+ FastMCP tools for external AI agents (Claude Desktop)
+    |
+    +-- AI Agent (POST /api/agents/ask-mcp)
+        +-- Autonomously chains: connect -> read bars -> analyze -> compare -> draw -> trade
 ```
 
 ### Key API Endpoints (New)
 
 | Method | Path | Purpose |
 |--------|------|---------|
-| `GET` | `/api/analysis/from-tv` | Read bars from TV Desktop CDP → run full SMC report |
-| `POST` | `/api/analysis/from-bars` | Accept external OHLCV bars → run SMC analysis |
+| `GET` | `/api/analysis/from-tv` | Read bars from TV Desktop CDP -> run full SMC report |
+| `POST` | `/api/analysis/from-bars` | Accept external OHLCV bars -> run SMC analysis |
 | `GET` | `/api/learning/read-tv-indicator-levels` | Read LuxAlgo/indicator levels from TV chart |
 | `GET` | `/api/agent-loop/tv-status` | Check TV Desktop CDP connection status |
 | `POST` | `/api/agent-loop/tv-connect` | Force re-connect to TV Desktop |
+| `POST` | `/api/agent-loop/tv-draw` | Draw SMC levels on TV chart (levels, fvgs, killzones, bos, clear, all) |
+| `POST` | `/api/agent-loop/tv-alert-create` | Create a price alert on the TV chart |
+| `POST` | `/api/strategies/detect` | Multi-TF strategy detection across 59 ICT/SMC templates |
 
 ### Windows MSIX Notes
 
@@ -511,23 +607,32 @@ TradingView Desktop (Electron, --remote-debugging-port=9222)
 
 - [x] WebSocket live price feed (Binance US for crypto, Finnhub/Yahoo for forex)
 - [x] Real-time candle-close SMC report rebuild with SSE push to browser
-- [x] TV Desktop CDP integration — dual-path (Puppeteer + chrome-remote-interface, 70+ tools)
-- [x] Contextual TV drawing — [TV] button on each timeframe card
-- [x] AI agent system — streaming Q&A + 4-agent pipeline + MCP tool-calling (27 tools)
-- [x] MCP Tier 3 server — 73 TV Desktop tools + 12 SMC tools for external AI agents
-- [x] Agent TV Desktop awareness — agents know all 70+ TV capabilities, LuxAlgo comparison, trading
-- [x] LuxAlgo / TV Indicator Comparison Engine — read, classify, compare, arbitrate
-- [x] TV bar reading for SMC analysis — `GET /api/analysis/from-tv` works when Binance/Yahoo are down
-- [x] Broker abstraction — MockBroker + AlpacaAdapter with REVIEW/LIVE mode toggle
-- [x] Broker dashboard — `/broker` page with account overview, orders, mode switch
-- [x] Backtesting — sliding-window backtest runner using real SMC engine
-- [x] Trade journal — PostgreSQL-backed ledger + performance matrix per setup
-- [x] Docker + CI — multi-stage Dockerfile, local CPU + AMD MI300X docker-compose, GitHub Actions
-- [x] TypeScript — zero errors across both packages
-- [x] End-to-end MI300X deployment — run on real AMD Developer Cloud hardware
+- [x] TV Desktop CDP integration -- dual-path (Puppeteer + chrome-remote-interface, 70+ tools)
+- [x] Contextual TV drawing -- [TV] button on each timeframe card
+- [x] AI agent system -- streaming Q&A + 4-agent pipeline + MCP tool-calling (27 tools)
+- [x] MCP Tier 3 server -- 73 TV Desktop tools + 12 SMC tools for external AI agents
+- [x] Agent TV Desktop awareness -- agents know all 70+ TV capabilities, LuxAlgo comparison, trading
+- [x] LuxAlgo / TV Indicator Comparison Engine -- read, classify, compare, arbitrate
+- [x] TV bar reading for SMC analysis -- `GET /api/analysis/from-tv` works when Binance/Yahoo are down
+- [x] TV draw BOS/CHoCH -- `POST /api/agent-loop/tv-draw` with `"bos"` action
+- [x] TV alert creation -- `POST /api/agent-loop/tv-alert-create`
+- [x] Session Cockpit -- 10 narrative-stage workflow replacing the old dashboard
+- [x] QuickTools panel -- 9 collapsible widgets (Killzone Timer, Silver Bullet, Breaker Blocks, Displacement Gauge, Range Expansion, OTE Calculator, Risk Calculator, Daily Trade Counter, LuxAlgo Comparison)
+- [x] Agent Chat -- accessible from cockpit TopBar, dual-mode (MCP tool-calling + classic)
+- [x] Capability Coverage Tracking -- 96% UI coverage (52/54 capabilities)
+- [x] Timeframe Presets -- Scalp (1m/5m/15m) / Intraday (15m/1h/4h) / Swing (4h/1d/1w)
+- [x] Broker abstraction -- MockBroker + AlpacaAdapter with REVIEW/LIVE mode toggle
+- [x] Broker dashboard -- `/broker` page with account overview, orders, mode switch
+- [x] Strategy Evaluation System -- 59 templates, 7-layer ontology, predicate-based rule engine
+- [x] SMC-EVAL Benchmark -- 100 scenarios, 5-category scoring engine
+- [x] Backtesting -- sliding-window backtest runner using real SMC engine
+- [x] Trade journal -- PostgreSQL-backed ledger + performance matrix per setup
+- [x] Docker + CI -- multi-stage Dockerfile, local CPU + AMD MI300X docker-compose, GitHub Actions
+- [x] TypeScript -- zero errors across both packages
+- [x] End-to-end MI300X deployment -- run on real AMD Developer Cloud hardware
 - [ ] Price alert notifications when price enters OB zone or sweeps liquidity
 - [ ] Multi-panel chart view (two TFs side-by-side)
-- [ ] Candle tap to inspect — SMC context tooltip for selected bar
+- [ ] Candle tap to inspect -- SMC context tooltip for selected bar
 - [ ] Mobile-native app (Expo React Native)
 - [ ] Public API with rate limiting
 
@@ -535,8 +640,9 @@ TradingView Desktop (Electron, --remote-debugging-port=9222)
 
 ## Testing
 
-The SMC engine has a comprehensive test suite — **302 tests across 7 modules, 0 failures**.
+The project has a comprehensive test suite -- **457 tests across 11 modules, 0 failures**.
 
+### SMC Engine (326 assertions -- custom assert harness)
 ```bash
 # Run all SMC tests
 npx tsx artifacts/api-server/src/lib/smc/fvg.test.ts
@@ -548,24 +654,38 @@ npx tsx artifacts/api-server/src/lib/smc/pd-array.test.ts
 npx tsx artifacts/api-server/src/lib/smc/smt.test.ts
 ```
 
-| Module | Tests | Coverage |
-|---|---|---|
-| `fvg.test.ts` | 28 | Bullish/bearish FVG, volume spikes, doji rejection, forex, fill tracking, inversion |
-| `structure.test.ts` | 67 | Uptrend/downtrend bias, ranging, pivots (HH/HL/LH/LL), CHoCH/BOS reversal, confidence, phase, narratives |
-| `liquidity.test.ts` | 19 | BSL/SSL pools, swept/unswept, probability scoring, nearest pool, session assignment |
-| `order-blocks.test.ts` | 100 | Bullish/bearish OB, FVG confluence, mitigation, breaker blocks, confidence, strength |
-| `daily-bias.test.ts` | 29 | HH/HL structure, LH/LL structure, SMA confirmation, strength tiers, empty/short data |
-| `pd-array.test.ts` | 39 | Premium/discount/equilibrium bias, zone geometry, dealing range, labels |
-| `smt.test.ts` | 20 | Bearish/bullish SMT, no-divergence sync, confidence bounds, timing proximity |
+| Module | Topic |
+|---|---|
+| `fvg.test.ts` | Bullish/bearish FVG, volume spikes, doji rejection, forex, fill tracking, inversion |
+| `structure.test.ts` | Uptrend/downtrend bias, ranging, pivots (HH/HL/LH/LL), CHoCH/BOS reversal, confidence, phase, narratives |
+| `liquidity.test.ts` | BSL/SSL pools, swept/unswept, probability scoring, nearest pool, session assignment |
+| `order-blocks.test.ts` | Bullish/bearish OB, FVG confluence, mitigation, breaker blocks, confidence, strength |
+| `daily-bias.test.ts` | HH/HL structure, LH/LL structure, SMA confirmation, strength tiers, empty/short data |
+| `pd-array.test.ts` | Premium/discount/equilibrium bias, zone geometry, dealing range, labels |
+| `smt.test.ts` | Bearish/bullish SMT, no-divergence sync, confidence bounds, timing proximity |
+
+### API Zod + Strategy Evaluation (131 vitest tests)
+```bash
+pnpm --filter @workspace/api-zod test
+```
+
+| Module | Topic |
+|---|---|
+| `predicates.test.ts` | 21 predicate functions -- displacement, liquidity sweep, breaker blocks, session alignment, range expansion |
+| `evaluator.test.ts` | Rule tree evaluation, predicate function registry, recursive AND/OR/NOT logic |
+| `registry.test.ts` | 59-template detection, category filtering, priority ranking, multi-TF cascade |
+| `smc-eval-scoring.test.ts` | 5-dimension scoring engine (structural accuracy, model alignment, confluence, trade precision, hallucination avoidance) |
+
+---
 
 ## Contributing
 
-Pull requests welcome. The codebase is deliberately modular — each SMC concept lives in its own file under `artifacts/api-server/src/lib/smc/`. To add a new concept:
+Pull requests welcome. The codebase is deliberately modular -- each SMC concept lives in its own file under `artifacts/api-server/src/lib/smc/`. To add a new concept:
 
 1. Create `artifacts/api-server/src/lib/smc/your-concept.ts`
 2. Export a typed result interface from `types.ts`
-3. Call your analyser in `report.ts → buildReport()`
-4. Extend `SmcReport` in `types.ts` and mirror the new field in `lib/api-client-react/src/generated/api.schemas.ts`
+3. Call your analyser in `report.ts -> buildReport()`
+4. Extend `SmcReport` in `types.ts` and mirror the new field in `lib/api-zod/src/generated/`
 
 ---
 
@@ -577,8 +697,11 @@ MIT
 
 ## Credits
 
-- **ICT (Inner Circle Trader)** — trading methodology and concept definitions
-- **TradingView** — Lightweight Charts v5 library
-- **Fireworks AI** — LLM inference infrastructure
-- **Binance** — crypto OHLCV data
-- **Yahoo Finance** — forex OHLCV data
+- **ICT (Inner Circle Trader)** -- trading methodology and concept definitions
+- **TradingView** -- Lightweight Charts v5 library and Desktop application
+- **LuxAlgo** -- ICT Concepts Pine Script indicator used for comparison testing
+- **Fireworks AI** -- LLM inference infrastructure (DeepSeek V4 Pro)
+- **Groq** -- LLM provider option (Llama 3)
+- **Binance** -- crypto OHLCV data
+- **Yahoo Finance** -- forex OHLCV data
+- **SMC Engine ICT audit** -- verified for conceptual correctness on July 20, 2026

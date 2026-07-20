@@ -93,13 +93,12 @@ export function analyzeOrderBlocks(candles: Candle[], fvgs: FairValueGap[]): Ord
       }
       if (impulseIdx === -1) continue;
 
-      // Find the last bearish candle in the consolidation before the impulse
-      let lastBearishIdx = i;
-      for (let scan = impulseIdx - 1; scan >= Math.max(0, impulseIdx - lf - 1); scan--) {
-        if (candles[scan].close < candles[scan].open) { lastBearishIdx = scan; break; }
-      }
+      // OB is the immediately preceding candle (ICT: last opposing candle before displacement)
+      const obIdx = impulseIdx - 1;
+      if (obIdx < 0) continue;
+      if (candles[obIdx].close > candles[obIdx].open) continue; // must be bearish (red)
 
-      const ob = candles[lastBearishIdx];
+      const ob = candles[obIdx];
 
       /**
        * ICT bullish OB zone: open (top of body) → low (distal wick)
@@ -115,16 +114,17 @@ export function analyzeOrderBlocks(candles: Candle[], fvgs: FairValueGap[]): Ord
       let isMitigated = false;
       let isBreaker   = false;
       for (let k = impulseIdx + 1; k < n; k++) {
-        if (candles[k].low <= proximal) {
+        // ICT mitigation: close beyond distal = zone consumed + polarity flips (breaker)
+        if (candles[k].close < distal) {
           isMitigated = true;
-          if (candles[k].close < distal) isBreaker = true;
+          isBreaker = true;
           break;
         }
       }
 
-      const strength = (ob.high - ob.low) / (atr[lastBearishIdx] || 1);
+      const strength = (ob.high - ob.low) / (atr[obIdx] || 1);
       const { confidence, factors } = scoreOBConfidence(
-        { hasFvg, isMitigated, isBreaker, strength, index: lastBearishIdx },
+        { hasFvg, isMitigated, isBreaker, strength, index: obIdx },
         n,
       );
 
@@ -133,7 +133,7 @@ export function analyzeOrderBlocks(candles: Candle[], fvgs: FairValueGap[]): Ord
         proximal,
         distal,
         time: ob.time,
-        index: lastBearishIdx,
+        index: obIdx,
         valid: !isMitigated || isBreaker,
         isMitigated,
         isBreaker,
@@ -155,12 +155,12 @@ export function analyzeOrderBlocks(candles: Candle[], fvgs: FairValueGap[]): Ord
       }
       if (impulseIdx === -1) continue;
 
-      let lastBullishIdx = i;
-      for (let scan = impulseIdx - 1; scan >= Math.max(0, impulseIdx - lf - 1); scan--) {
-        if (candles[scan].close > candles[scan].open) { lastBullishIdx = scan; break; }
-      }
+      // OB is the immediately preceding candle (ICT: last opposing candle before displacement)
+      const obIdx2 = impulseIdx - 1;
+      if (obIdx2 < 0) continue;
+      if (candles[obIdx2].close < candles[obIdx2].open) continue; // must be bullish (green)
 
-      const ob = candles[lastBullishIdx];
+      const ob = candles[obIdx2];
 
       /**
        * ICT bearish OB zone: open (bottom of body) → high (distal wick)
@@ -178,16 +178,17 @@ export function analyzeOrderBlocks(candles: Candle[], fvgs: FairValueGap[]): Ord
       let isMitigated = false;
       let isBreaker   = false;
       for (let k = impulseIdx + 1; k < n; k++) {
-        if (candles[k].high >= proximal) {
+        // ICT mitigation: close beyond distal = zone consumed + polarity flips (breaker)
+        if (candles[k].close > distal) {
           isMitigated = true;
-          if (candles[k].close > distal) isBreaker = true;
+          isBreaker = true;
           break;
         }
       }
 
-      const strength = (ob.high - ob.low) / (atr[lastBullishIdx] || 1);
+      const strength = (ob.high - ob.low) / (atr[obIdx2] || 1);
       const { confidence, factors } = scoreOBConfidence(
-        { hasFvg, isMitigated, isBreaker, strength, index: lastBullishIdx },
+        { hasFvg, isMitigated, isBreaker, strength, index: obIdx2 },
         n,
       );
 
@@ -196,7 +197,7 @@ export function analyzeOrderBlocks(candles: Candle[], fvgs: FairValueGap[]): Ord
         proximal,
         distal,
         time: ob.time,
-        index: lastBullishIdx,
+        index: obIdx2,
         valid: !isMitigated || isBreaker,
         isMitigated,
         isBreaker,

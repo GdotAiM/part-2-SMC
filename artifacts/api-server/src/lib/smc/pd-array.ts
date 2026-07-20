@@ -23,8 +23,8 @@ export function analyzePdArray(candles: Candle[], timeframe: string): PdArrayRes
   const zones: PdZone[] = [];
 
   const sessionPremiumTop = sessionRange.high;
-  const sessionPremiumBottom = sessionEq + (sessionRange.high - sessionEq) * 0.5;
-  const sessionDiscountTop = sessionEq - (sessionEq - sessionRange.low) * 0.5;
+  const sessionPremiumBottom = sessionEq;  // premium = top half of range (ICT: 50-100%)
+  const sessionDiscountTop = sessionEq;    // discount = bottom half of range (ICT: 0-50%)
   const sessionDiscountBottom = sessionRange.low;
 
   zones.push({
@@ -52,8 +52,8 @@ export function analyzePdArray(candles: Candle[], timeframe: string): PdArrayRes
   });
 
   const dailyPremiumTop = dailyRange.high;
-  const dailyPremiumBottom = dailyEq + (dailyRange.high - dailyEq) * 0.5;
-  const dailyDiscountTop = dailyEq - (dailyEq - dailyRange.low) * 0.5;
+  const dailyPremiumBottom = dailyEq;  // premium = top half (ICT: 50-100%)
+  const dailyDiscountTop = dailyEq;  // discount = bottom half (ICT: 0-50%)
   const dailyDiscountBottom = dailyRange.low;
 
   zones.push({
