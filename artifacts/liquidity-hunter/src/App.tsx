@@ -4,7 +4,10 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 
-// Code-split pages — each loads only when navigated to
+// Session Cockpit — new narrative-driven primary interface
+const SessionCockpit = lazy(() => import("@/shell/SessionCockpitShell"));
+
+// Legacy pages (kept for backward compatibility)
 const OsDashboard = lazy(() => import("@/pages/OsDashboard"));
 const Analytics = lazy(() => import("@/pages/Analytics"));
 const Broker = lazy(() => import("@/pages/Broker"));
@@ -35,11 +38,12 @@ function Router() {
   return (
     <Suspense fallback={<PageFallback />}>
       <Switch>
-        {/* Legacy routes (keep these first so they match before OS routes) */}
+        {/* Legacy routes */}
         <Route path="/analytics" component={Analytics} />
         <Route path="/broker" component={Broker} />
         <Route path="/agent-loop" component={AgentLoop} />
-        {/* SMC Pulse OS routes — each is a deep-linkable view */}
+
+        {/* Old SMC Pulse OS routes — kept for backward compatibility */}
         <Route path="/overview" component={OsDashboard} />
         <Route path="/market" component={OsDashboard} />
         <Route path="/analyze" component={OsDashboard} />
@@ -47,8 +51,13 @@ function Router() {
         <Route path="/learn" component={OsDashboard} />
         <Route path="/evaluate" component={OsDashboard} />
         <Route path="/agent" component={OsDashboard} />
-        {/* Default OS route */}
-        <Route path="/" component={OsDashboard} />
+
+        {/* New Session Cockpit — narrative-driven primary interface */}
+        <Route path="/cockpit" component={SessionCockpit} />
+
+        {/* Default: Session Cockpit */}
+        <Route path="/" component={SessionCockpit} />
+
         {/* 404 catch-all */}
         <Route component={NotFound} />
       </Switch>
